@@ -8,6 +8,9 @@ on:
       maxzoom:
         description: "Highest zoom level to include (14 = smaller file, 15 = more detail)"
         default: "15"
+      dry_run:
+        description: "Only build and report sizes, do not publish"
+        default: "false"
   schedule:
     - cron: "17 2 1 */3 *"
 
@@ -100,7 +103,40 @@ jobs:
           python3 tools/make_pack.py pack "mallah-iraq-map.zip" "$BUILD" "$MAXZOOM" "$BBOX"
           ls -la mallah-iraq-map.zip
 
+      - name: Check the pack and write a report
+        run: |
+          python3 - <<'PY'
+          import zipfile, json, os, struct
+          z = zipfile.ZipFile("mallah-iraq-map.zip")
+          names = z.namelist()
+          t = z.getinfo("iraq.pmtiles")
+          assert t.compress_type == zipfile.ZIP_STORED, "tiles must be stored"
+          with open("mallah-iraq-map.zip", "rb") as f:
+              f.seek(t.header_offset); h = f.read(30)
+              n, x = struct.unpack("<HH", h[26:30]); f.seek(t.header_offset + 30 + n + x)
+              assert f.read(7) == b"PMTiles", "tiles not readable in place"
+          places = sum(1 for _ in open("pack/places.tsv", encoding="utf-8")) - 1
+          rep = {"zip_bytes": os.path.getsize("mallah-iraq-map.zip"), "tiles_bytes": t.file_size,
+                 "maxzoom": int(os.environ["MAXZOOM"]), "build": os.environ["BUILD"], "entries": len(names),
+                 "font_files": sum(1 for n in names if n.startswith("fonts/")), "sprites": sum(1 for n in names if n.startswith("sprites/")),
+                 "places": places}
+          print(rep)
+          os.makedirs("updates", exist_ok=True)
+          json.dump(rep, open(f"updates/report-z{rep['maxzoom']}.json", "w"), indent=1)
+          PY
+
+      - name: Save report only (dry run)
+        if: ${{ github.event.inputs.dry_run == 'true' }}
+        run: |
+          git config user.name "mallah-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add updates/report-*.json
+          git commit -m "Map size report (maxzoom $MAXZOOM)" || true
+          git pull --rebase -q origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
       - name: Publish release and update manifest
+        if: ${{ github.event.inputs.dry_run != 'true' }}
         run: |
           TAG="map-$BUILD"
           SIZE=$(stat -c %s mallah-iraq-map.zip)
@@ -119,12 +155,13 @@ jobs:
           PY
           git config user.name "mallah-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add updates/map.json
+          git add updates/map.json updates/report-*.json
           git commit -m "Map pack $V" || echo "manifest unchanged"
           git pull --rebase -q origin "${GITHUB_REF_NAME}"
           git push origin "HEAD:${GITHUB_REF_NAME}"
 
       - name: Keep only the two newest map releases
+        if: ${{ github.event.inputs.dry_run != 'true' }}
         run: |
           gh release list --limit 50 --json tagName --jq '.[].tagName' | grep '^map-' | sort -r | tail -n +3 | \
             while read t; do gh release delete "$t" -y --cleanup-tag; done || true
