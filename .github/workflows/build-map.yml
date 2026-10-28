@@ -7,7 +7,7 @@ on:
     inputs:
       maxzoom:
         description: "Highest zoom level to include (14 = smaller file, 15 = more detail)"
-        default: "15"
+        default: "14"
       dry_run:
         description: "Only build and report sizes, do not publish"
         default: "false"
@@ -50,7 +50,7 @@ jobs:
       - name: Extract Iraq vector tiles
         run: |
           mkdir -p pack
-          MZ="${{ github.event.inputs.maxzoom || '15' }}"
+          MZ="${{ github.event.inputs.maxzoom || '14' }}"
           extract () {
             rm -f pack/iraq.pmtiles
             docker run --rm -v "$PWD/pack:/data" protomaps/go-pmtiles:latest \
