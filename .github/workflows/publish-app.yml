@@ -1,0 +1,29 @@
+name: Publish app release
+
+# When a new APK is committed to apk/, publish it as a GitHub release (app-v<version>).
+on:
+  push:
+    branches: [main]
+    paths: ["apk/Mallah-Navigator.apk", "updates/app.json"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create or refresh the release
+        run: |
+          V=$(python3 -c "import json;print(json.load(open('updates/app.json'))['versionName'])")
+          NOTES=$(python3 -c "import json;print(json.load(open('updates/app.json')).get('notes',''))")
+          TAG="app-v$V"
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release upload "$TAG" apk/Mallah-Navigator.apk --clobber
+          else
+            gh release create "$TAG" apk/Mallah-Navigator.apk --title "الملاح $V" --notes "$NOTES — ثبّته فوق الإصدار السابق، تبقى بياناتك وخرائطك كما هي."
+          fi
