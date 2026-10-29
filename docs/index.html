@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>الملاح</title>
+<meta name="theme-color" content="#0f172a">
+<meta name="description" content="ملاحة عربية تعمل مع الإنترنت وبدونه">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="الملاح">
+<link rel="stylesheet" href="lib/leaflet.css">
+<script>
+/* one-time hand-over of saved data from the old file:// origin (v1.x) */
+(function () { try { if (window.Android && Android.takeMigration) { var j = Android.takeMigration(); if (j) { var o = JSON.parse(j); for (var k in o) { if (localStorage.getItem(k) === null) localStorage.setItem(k, o[k]); } } } } catch (e) {} })();
+</script>
+<style>
+:root{
+  --bg:#0f172a; --panel:#111c33; --panel2:#1b2a4a; --line:#2a3b61; --text:#e7eefc; --muted:#93a4c6;
+  --accent:#38bdf8; --accent2:#0ea5e9; --go:#22c55e; --warn:#f59e0b; --danger:#ef4444; --route:#2563eb;
+  --shadow:0 8px 24px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:system-ui,"Noto Sans Arabic","Segoe UI",Tahoma,sans-serif;overflow:hidden}
+#map{position:absolute;inset:0;z-index:1;background:#dfe6ee;direction:ltr}
+body.layer-sat #map{background:#5b5a52}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+.hidden{display:none!important}
+
+/* search */
+#searchWrap{position:absolute;top:calc(10px + env(safe-area-inset-top));left:10px;right:10px;z-index:500}
+#searchBar{display:flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:6px 8px;box-shadow:var(--shadow)}
+#searchBar input{flex:1;min-width:0;background:transparent;border:0;outline:0;color:var(--text);font-size:16px;padding:8px 4px}
+#searchBar input::placeholder{color:var(--muted)}
+.iconBtn{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none}
+.iconBtn:active{background:var(--panel2)}
+.iconBtn svg{width:22px;height:22px}
+#results{margin-top:8px;background:var(--panel);border:1px solid var(--line);border-radius:16px;max-height:55vh;overflow:auto;box-shadow:var(--shadow)}
+.res{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-bottom:1px solid var(--line)}
+.res:last-child{border-bottom:0}
+.res:active{background:var(--panel2)}
+.res .t{font-weight:600;font-size:15px}
+.res .s{color:var(--muted);font-size:12.5px;margin-top:2px;line-height:1.4}
+.res .ic{flex:none;width:30px;height:30px;border-radius:50%;background:var(--panel2);display:grid;place-items:center;margin-top:2px}
+.secTitle{padding:10px 14px 4px;color:var(--muted);font-size:12px}
+
+/* floating buttons */
+#fabs{position:absolute;left:12px;bottom:calc(24px + env(safe-area-inset-bottom));z-index:450;display:flex;flex-direction:column;gap:10px;transition:bottom .25s}
+.fab{width:52px;height:52px;border-radius:16px;background:var(--panel);border:1px solid var(--line);display:grid;place-items:center;box-shadow:var(--shadow)}
+.fab svg{width:24px;height:24px}
+.fab.on{color:var(--accent)}
+#layerMenu{position:absolute;left:72px;bottom:0;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:6px;box-shadow:var(--shadow);min-width:150px}
+#layerMenu button{display:block;width:100%;text-align:right;padding:10px 12px;border-radius:10px;font-size:14px}
+#layerMenu button.sel{background:var(--panel2);color:var(--accent)}
+
+/* bottom sheet */
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:600;background:var(--panel);border-top:1px solid var(--line);border-radius:22px 22px 0 0;padding:10px 16px calc(16px + env(safe-area-inset-bottom));box-shadow:0 -8px 30px rgba(0,0,0,.35)}
+.grab{width:42px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 10px}
+#destName{font-size:18px;font-weight:700;line-height:1.35}
+#destSub{color:var(--muted);font-size:13px;margin-top:3px;line-height:1.4}
+.modes{display:flex;gap:8px;margin:14px 0 10px}
+.mode{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 4px;border-radius:14px;background:var(--panel2);border:1px solid transparent;font-size:12.5px;color:var(--muted)}
+.mode svg{width:22px;height:22px}
+.mode.sel{border-color:var(--accent);color:var(--text);background:#16325a}
+.mode b{font-size:13.5px;color:var(--text)}
+#routeInfo{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin:6px 2px 12px;min-height:30px}
+#routeInfo .big{font-size:24px;font-weight:800;color:var(--go)}
+#routeInfo .small{color:var(--muted);font-size:14px}
+.row{display:flex;gap:10px}
+.btn{flex:1;height:50px;border-radius:15px;font-weight:700;font-size:16px;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn svg{width:20px;height:20px}
+.btn.primary{background:var(--go);color:#04210f}
+.btn.primary:disabled{opacity:.45}
+.btn.ghost{background:var(--panel2)}
+.btn.small{flex:none;width:50px}
+.btn.danger{background:var(--danger);color:#fff}
+
+/* navigation UI */
+#navTop{position:absolute;top:calc(10px + env(safe-area-inset-top));left:10px;right:10px;z-index:700;background:#0b5c3b;border-radius:20px;box-shadow:var(--shadow);overflow:hidden}
+#navMain{display:flex;align-items:center;gap:12px;padding:14px 14px 12px}
+#navArrow{flex:none;width:62px;height:62px;display:grid;place-items:center;background:rgba(255,255,255,.12);border-radius:16px}
+#navArrow svg{width:46px;height:46px}
+#navDist{font-size:30px;font-weight:800;line-height:1}
+#navText{font-size:16px;margin-top:6px;line-height:1.35}
+#navThen{background:rgba(0,0,0,.22);padding:8px 14px;font-size:13.5px;display:flex;align-items:center;gap:8px}
+#navThen svg{width:20px;height:20px}
+#navBottom{position:absolute;left:0;right:0;bottom:0;z-index:700;background:var(--panel);border-top:1px solid var(--line);border-radius:22px 22px 0 0;padding:12px 14px calc(14px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:10px;box-shadow:0 -8px 30px rgba(0,0,0,.35)}
+#navStats{flex:1;min-width:0}
+#navEta{font-size:22px;font-weight:800;color:var(--go)}
+#navRemain{color:var(--muted);font-size:13.5px;margin-top:2px}
+#speed{position:absolute;right:12px;bottom:calc(104px + env(safe-area-inset-bottom));z-index:650;width:64px;height:64px;border-radius:50%;background:#fff;color:#111;border:4px solid #e5e7eb;display:grid;place-items:center;text-align:center;font-weight:800;font-size:20px;line-height:1;box-shadow:var(--shadow)}
+#speed small{display:block;font-size:10px;font-weight:600;color:#555}
+
+/* steps panel */
+#stepsPanel{position:absolute;inset:0;z-index:900;background:var(--bg);display:flex;flex-direction:column}
+#stepsHead{display:flex;align-items:center;gap:8px;padding:calc(10px + env(safe-area-inset-top)) 10px 10px;border-bottom:1px solid var(--line)}
+#stepsHead h2{font-size:17px;margin:0;flex:1}
+#stepsList{flex:1;overflow:auto;padding-bottom:env(safe-area-inset-bottom)}
+.step{display:flex;gap:12px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+.step .a{flex:none;width:40px;height:40px;border-radius:12px;background:var(--panel2);display:grid;place-items:center}
+.step .a svg{width:26px;height:26px}
+.step .x{flex:1;font-size:14.5px;line-height:1.4}
+.step .d{color:var(--muted);font-size:12.5px;flex:none}
+
+/* banners & toasts */
+#gpsBanner{position:absolute;top:calc(74px + env(safe-area-inset-top));left:10px;right:10px;z-index:480;background:#3b2a07;border:1px solid #7c5a10;color:#fde7b0;border-radius:14px;padding:10px 12px;font-size:13.5px;display:flex;align-items:center;gap:10px;box-shadow:var(--shadow)}
+#gpsBanner span{flex:1;line-height:1.4}
+#gpsBanner button{background:#7c5a10;color:#fff;border-radius:10px;padding:8px 12px;font-size:13px;font-weight:600}
+#toast{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(120px + env(safe-area-inset-bottom));z-index:1000;background:rgba(15,23,42,.95);border:1px solid var(--line);padding:10px 16px;border-radius:14px;font-size:14px;max-width:86vw;text-align:center;box-shadow:var(--shadow);transition:opacity .25s;pointer-events:none}
+#loading{position:absolute;inset:0;z-index:950;display:grid;place-items:center;background:rgba(0,0,0,.25);pointer-events:none}
+.spin{width:44px;height:44px;border-radius:50%;border:4px solid rgba(255,255,255,.25);border-top-color:var(--accent);animation:sp 0.8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* menu & panels */
+#menuDrop{position:absolute;left:0;top:58px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:6px;box-shadow:var(--shadow);min-width:210px;z-index:520}
+#menuDrop button{display:flex;align-items:center;gap:10px;width:100%;text-align:right;padding:12px;border-radius:10px;font-size:15px}
+#menuDrop button:active{background:var(--panel2)}
+#menuDrop svg{width:20px;height:20px;color:var(--accent)}
+.panel{position:absolute;inset:0;z-index:900;background:var(--bg);display:flex;flex-direction:column}
+.panelHead{display:flex;align-items:center;gap:8px;padding:calc(10px + env(safe-area-inset-top)) 10px 10px;border-bottom:1px solid var(--line)}
+.panelHead h2{font-size:17px;margin:0;flex:1}
+.panelBody{flex:1;overflow:auto;padding:0 0 calc(20px + env(safe-area-inset-bottom))}
+.card{margin:12px 12px 0;background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.card h3{font-size:13px;color:var(--muted);font-weight:600;margin:0;padding:12px 14px 6px}
+.item{display:flex;align-items:center;gap:10px;padding:12px 14px;border-top:1px solid var(--line)}
+.item:first-of-type{border-top:0}
+.card h3 + .item{border-top:0}
+.item .grow{flex:1;min-width:0}
+.item .t{font-weight:600;font-size:15px}
+.item .s{color:var(--muted);font-size:12.5px;margin-top:3px;line-height:1.4}
+.chip{flex:none;height:36px;padding:0 12px;border-radius:11px;background:var(--panel2);font-size:13.5px;font-weight:600;display:inline-flex;align-items:center;gap:6px}
+.chip.go{background:#14532d;color:#bbf7d0}
+.chip.del{background:#3f1d1d;color:#fecaca}
+.chip:disabled{opacity:.45}
+.ok{color:var(--go)} .warnTxt{color:var(--warn)}
+.bar{height:8px;border-radius:5px;background:var(--panel2);overflow:hidden;margin-top:8px}
+.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .3s}
+.note{color:var(--muted);font-size:12.5px;line-height:1.6;padding:12px 16px}
+.wide{margin:12px;width:calc(100% - 24px)}
+#offBadge{position:absolute;top:calc(68px + env(safe-area-inset-top));right:12px;z-index:470;background:#3b2a07;border:1px solid #7c5a10;color:#fde7b0;font-size:12px;font-weight:600;padding:5px 10px;border-radius:999px}
+#navTop ~ #offBadge{top:auto}
+
+/* destination actions */
+.acts{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.acts .chip{height:34px}
+.chip.on{background:#3a2f07;color:#fde68a}
+/* quick places */
+.quick{display:flex;gap:8px;padding:10px 12px 4px;flex-wrap:wrap}
+.qchip{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 14px;border-radius:12px;background:var(--panel2);font-size:14px;font-weight:600}
+.qchip.unset{color:var(--muted);font-weight:500;border:1px dashed var(--line);background:transparent}
+/* modal */
+#modal{position:absolute;inset:0;z-index:1100;display:flex;align-items:flex-end}
+#modal .mbg{position:absolute;inset:0;background:rgba(0,0,0,.5)}
+#modal .mbox{position:relative;width:100%;background:var(--panel);border-radius:22px 22px 0 0;padding:14px 12px calc(14px + env(safe-area-inset-bottom));box-shadow:0 -8px 30px rgba(0,0,0,.4)}
+#mTitle{font-weight:700;font-size:16px;padding:4px 6px 10px;line-height:1.4}
+#mBtns button{display:flex;align-items:center;gap:10px;width:100%;text-align:right;padding:14px 12px;border-radius:12px;font-size:15.5px}
+#mBtns button:active{background:var(--panel2)}
+#mBtns button.cancel{justify-content:center;color:var(--muted);margin-top:4px;border-top:1px solid var(--line);border-radius:0}
+#mBtns button.danger{color:#fca5a5}
+/* layer menu night section */
+#layerMenu .sep{border-top:1px solid var(--line);margin:6px 4px;padding-top:8px;color:var(--muted);font-size:12px;padding-right:8px}
+#layerMenu .seg{display:flex;gap:4px;padding:2px 4px 4px}
+#layerMenu .seg button{flex:1;text-align:center;padding:8px 4px;font-size:13px}
+/* night mode: darken street maps (not satellite) */
+body.night .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.92) contrast(.88) saturate(.55)}
+body.night.layer-sat .leaflet-tile-pane{filter:brightness(.8)}
+body.night.layer-vec .leaflet-tile-pane{filter:none}
+body.night #map{background:#1a1f2b}
+#glmap{position:absolute;inset:0;z-index:0;background:#e2dfda}
+body.night #glmap{background:#2b2f36}
+body.vec-on #map{background:transparent}
+.leaflet-fade-anim .leaflet-tile{transition:none}
+body.vec-on .leaflet-tile-pane{filter:none!important}
+
+/* field mode */
+#destCoords{margin-top:6px;font-size:13px;color:#fdba74;direction:ltr;text-align:right;font-family:ui-monospace,Menlo,monospace}
+#navTop.direct{background:#7c2d12}
+.siteLbl span{position:absolute;transform:translateX(-50%);white-space:nowrap;background:rgba(15,23,42,.85);color:#fed7aa;font-size:11.5px;font-weight:700;padding:2px 6px;border-radius:6px;direction:ltr}
+.frm{padding:6px 14px 12px}
+.frm label{display:block;color:var(--muted);font-size:12.5px;margin:10px 0 5px}
+.frm select,.frm input[type=text],.frm input[type=number]{width:100%;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font:inherit;font-size:15px;padding:0 10px}
+.frm .two{display:flex;gap:8px}.frm .two>div{flex:1}
+.sw{display:flex;align-items:center;gap:12px;padding:14px}
+.sw .grow{flex:1}
+.sw input{width:48px;height:28px;accent-color:var(--go)}
+.btnRow{display:flex;gap:8px;flex-wrap:wrap;padding:4px 14px 14px}
+
+/* phase 3 */
+#recBar{position:absolute;top:calc(74px + env(safe-area-inset-top));left:12px;z-index:475;display:flex;align-items:center;gap:8px;background:#4c0519;border:1px solid #9f1239;color:#fecdd3;border-radius:999px;padding:4px 4px 4px 12px;font-size:12.5px;font-weight:600;box-shadow:var(--shadow)}
+#recBar .dot{width:9px;height:9px;border-radius:50%;background:#f43f5e;animation:blink 1.2s infinite}
+@keyframes blink{50%{opacity:.25}}
+#recBar button{background:#9f1239;color:#fff;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:700}
+#navTop:not(.hidden) ~ #recBar{top:calc(150px + env(safe-area-inset-top))}
+#trackChip{position:absolute;bottom:calc(24px + env(safe-area-inset-bottom));right:12px;z-index:460;background:#3b0764;color:#e9d5ff;border:1px solid #6b21a8;border-radius:12px;padding:10px 12px;font-size:13px;font-weight:600;max-width:60vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:var(--shadow)}
+#zoneBanner{position:absolute;left:10px;right:10px;top:calc(150px + env(safe-area-inset-top));z-index:720;color:#fff;font-weight:800;font-size:14.5px;padding:12px 14px;border-radius:14px;box-shadow:var(--shadow);text-align:center;animation:pulse 1.6s infinite}
+@keyframes pulse{50%{filter:brightness(1.25)}}
+.zoneTip{background:rgba(15,23,42,.85);color:#fff;border:0;font-weight:700;font-size:12px;box-shadow:none}
+.zoneTip:before{display:none}
+
+/* measurement */
+#measPanel{position:absolute;left:0;right:0;bottom:0;z-index:640;background:var(--panel);border-top:1px solid var(--line);border-radius:22px 22px 0 0;padding:10px 12px calc(12px + env(safe-area-inset-bottom));box-shadow:0 -8px 30px rgba(0,0,0,.35)}
+#mModes{display:flex;gap:6px;margin-bottom:10px}
+#mModes button{flex:1;padding:9px 2px;border-radius:12px;background:var(--panel2);font-size:13px;color:var(--muted);border:1px solid transparent}
+#mModes button.sel{border-color:#facc15;color:var(--text);background:#3a3410}
+#mMain{font-size:24px;font-weight:800;color:#facc15;line-height:1.3}
+#mSub{font-size:13.5px;color:var(--text);margin-top:4px;line-height:1.6}
+#mSub .muted{color:var(--muted)}
+#mWarn{font-size:12.5px;color:#fde68a;background:#3a2f07;border-radius:10px;padding:7px 10px;margin-top:8px;line-height:1.5}
+#mGps{font-size:12.5px;color:var(--muted);margin:8px 0 2px}
+.mrow{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.mrow .chip{flex:1;justify-content:center;min-width:64px}
+#mWalkRec.rec,#mHere.rec{background:#9f1239;color:#fff}
+#mHintBar{position:absolute;top:calc(10px + env(safe-area-inset-top));left:10px;right:10px;z-index:620;background:rgba(15,23,42,.92);border:1px solid var(--line);border-radius:14px;padding:10px 12px;font-size:13px;line-height:1.5;box-shadow:var(--shadow)}
+#mCross{position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-17px 0 0 -17px;z-index:610;pointer-events:none}
+#mCross:before,#mCross:after{content:"";position:absolute;background:#facc15;box-shadow:0 0 0 1px rgba(0,0,0,.6)}
+#mCross:before{left:16px;top:0;width:2px;height:34px}#mCross:after{top:16px;left:0;height:2px;width:34px}
+.mV div{width:26px;height:26px;border-radius:50%;background:#facc15;color:#1f2937;border:2px solid #fff;font-size:12px;font-weight:800;display:grid;place-items:center;box-shadow:0 1px 4px rgba(0,0,0,.5)}
+.mV.w div{background:#f97316;color:#fff}
+.mLbl span{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;background:rgba(15,23,42,.85);color:#fef08a;font-size:11.5px;font-weight:700;padding:2px 6px;border-radius:6px;direction:ltr}
+.mLbl.big span{font-size:14px;padding:4px 9px;background:rgba(113,63,18,.92);color:#fff}
+
+/* guide */
+.gIntro{padding:14px 16px 4px;font-size:14px;line-height:1.7;color:var(--text)}
+.gSec{margin:10px 12px 0;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.gSec summary{list-style:none;display:flex;align-items:center;gap:10px;padding:14px;font-weight:700;font-size:15px;cursor:pointer}
+.gSec summary::-webkit-details-marker{display:none}
+.gSec summary:after{content:"‹";margin-right:auto;color:var(--muted);font-size:20px;transition:transform .2s}
+.gSec[open] summary:after{transform:rotate(-90deg)}
+.gSec .gi{width:30px;height:30px;border-radius:9px;background:var(--panel2);display:grid;place-items:center;font-size:16px;flex:none}
+.gBody{padding:0 16px 14px;font-size:14px;line-height:1.75;color:#d5deef}
+.gBody ul,.gBody ol{margin:6px 0;padding-right:20px;padding-left:0}
+.gBody li{margin:5px 0}
+.gBody p{margin:8px 0}
+.gBody .tip{background:#0f2c46;border-right:3px solid var(--accent);padding:8px 10px;border-radius:8px;font-size:13px}
+.gBody ul.ltr{direction:ltr;text-align:left;padding-left:20px;padding-right:0;font-family:ui-monospace,Menlo,monospace;font-size:13px}
+.ltr{direction:ltr;unicode-bidi:isolate}
+.credit{margin:18px 12px 8px;padding:18px 14px;border-radius:16px;background:linear-gradient(160deg,#13294b,#0f1d36);border:1px solid #23406b;text-align:center}
+.credit .cLogo{font-size:30px}
+.credit .cApp{color:var(--muted);font-size:12.5px;margin-top:4px}
+.credit .cBy{margin-top:12px;font-size:13px;color:var(--muted)}
+.credit .cName{font-size:19px;font-weight:800;color:#fff;margin:4px 0 10px}
+.credit .cPhone{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;flex-wrap:wrap}
+.credit .cPhone .ltr{font-weight:700;font-size:15px;letter-spacing:.3px;color:#bae6fd;min-width:150px}
+#setCredit{padding:14px 16px 4px;color:var(--muted);font-size:12.5px;text-align:center}
+#setCredit a{color:var(--accent)}
+
+/* wide screens (laptop): panels on the right instead of full width */
+@media (min-width: 760px) {
+  #searchWrap{left:auto;width:420px;right:16px}
+  .sheet,#navBottom,#measPanel{left:auto;right:16px;width:420px;bottom:16px;border-radius:22px;border:1px solid var(--line)}
+  .panel{left:auto;width:440px;border-left:1px solid var(--line);box-shadow:var(--shadow)}
+  #navTop{left:auto;right:16px;width:420px}
+  #gpsBanner,#zoneBanner{left:auto;right:16px;width:420px}
+  #mHintBar{left:auto;right:16px;width:420px;top:calc(76px + env(safe-area-inset-top))}
+  #toast{bottom:40px}
+  #modal{align-items:center;justify-content:center}
+  #modal .mbox{width:420px;border-radius:22px}
+  #speed{right:452px;bottom:24px}
+  #fabs{bottom:24px!important}
+  body.web .leaflet-container{cursor:default}
+}
+
+/* map markers */
+.me{width:28px;height:28px;position:relative}
+.me .dot{position:absolute;inset:5px;border-radius:50%;background:#2563eb;border:3px solid #fff;box-shadow:0 0 0 2px rgba(37,99,235,.35),0 2px 6px rgba(0,0,0,.4)}
+.me .hd{position:absolute;inset:-10px;transition:transform .4s}
+.me.nav{width:40px;height:40px}
+.me.nav .dot{display:none}
+.me.nav .hd{inset:0}
+.pin svg{width:34px;height:44px;filter:drop-shadow(0 3px 3px rgba(0,0,0,.35))}
+.leaflet-control-attribution{font-size:9px!important;direction:ltr}
+.leaflet-control-attribution{transition:opacity .4s}
+body.attr-min .leaflet-control-attribution{opacity:0;pointer-events:none}
+#attrBtn{position:absolute;right:6px;bottom:calc(4px + env(safe-area-inset-bottom));z-index:450;width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.75);color:#334155;font:700 13px/22px Georgia,serif;text-align:center;opacity:0;pointer-events:none;transition:opacity .4s}
+body.attr-min #attrBtn{opacity:.8;pointer-events:auto}
+.leaflet-control-zoom{display:none}
+</style>
+</head>
+<body>
+<div id="map"></div>
+<button id="attrBtn" aria-label="مصادر الخريطة">i</button>
+
+<!-- search -->
+<div id="searchWrap">
+  <form id="searchBar" autocomplete="off">
+    <button type="submit" class="iconBtn" aria-label="بحث"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button>
+    <input id="q" type="search" placeholder="ابحث عن مكان أو عنوان…" enterkeyhint="search">
+    <button type="button" id="clearQ" class="iconBtn hidden" aria-label="مسح"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <button type="button" id="menuBtn" class="iconBtn" aria-label="القائمة"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  </form>
+  <div id="menuDrop" class="hidden">
+    <button id="openMaps"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></svg>الخرائط بدون إنترنت</button>
+    <button id="openFavs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>الأماكن المفضلة</button>
+    <button id="shareMe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>مشاركة موقعي</button>
+    <button id="openSites" class="hidden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>مواقع العمل</button>
+    <button id="openTracks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19c3 0 3-4 6-4s3 4 6 4 2-6 4-6"/><circle cx="4" cy="19" r="1.6" fill="currentColor"/><circle cx="20" cy="13" r="1.6" fill="currentColor"/><path d="M8 5l2 2 4-4"/></svg>المسارات المسجّلة</button>
+    <button id="openZones" class="hidden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><circle cx="12" cy="12" r="9" stroke-dasharray="3 3"/><path d="M12 7v6M12 16.5v.5" stroke-linecap="round"/></svg>مناطق التنبيه</button>
+    <button id="openVisits" class="hidden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 12l2 2 4-4"/></svg>سجل الزيارات</button>
+    <button id="openMeasure"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 20L9 5l11 5-6 10z"/><circle cx="4" cy="20" r="1.5" fill="currentColor"/><circle cx="9" cy="5" r="1.5" fill="currentColor"/><circle cx="20" cy="10" r="1.5" fill="currentColor"/><circle cx="14" cy="20" r="1.5" fill="currentColor"/></svg>قياس المساحة والمسافة</button>
+    <button id="openSaved"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg>المسارات المحفوظة</button>
+    <button id="openGuide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5M9 7h6M9 11h6"/></svg>دليل الاستخدام</button>
+    <button id="openSettings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>الإعدادات</button>
+  </div>
+  <div id="results" class="hidden"></div>
+</div>
+
+<div id="gpsBanner" class="hidden"><span id="gpsMsg"></span><button id="gpsBtn">الإعدادات</button></div>
+
+<!-- floating buttons -->
+<div id="fabs">
+  <div style="position:relative">
+    <button class="fab" id="layersBtn" aria-label="طبقات الخريطة"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg></button>
+    <div id="layerMenu" class="hidden"></div>
+  </div>
+  <button class="fab" id="locBtn" aria-label="موقعي"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
+</div>
+
+<!-- destination sheet -->
+<div id="sheet" class="sheet hidden">
+  <div class="grab"></div>
+  <div id="destName"></div>
+  <div id="destSub"></div>
+  <div id="destCoords" class="hidden"></div>
+  <div class="acts"><button class="chip" id="favBtn">☆ حفظ في المفضلة</button><button class="chip" id="shareDestBtn">↗ مشاركة</button><button class="chip" id="directBtn">🧭 اتجاه مباشر</button><button class="chip hidden" id="visitBtn">✅ تسجيل زيارة</button><button class="chip hidden" id="zoneDestBtn">⚠ منطقة تنبيه</button><button class="chip hidden" id="addSiteBtn">➕ حفظ كموقع عمل</button></div>
+  <div class="modes" id="modes">
+    <button class="mode sel" data-m="car"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M5 16V11l2-5h10l2 5v5"/><path d="M3 16h18v3H3z"/><circle cx="7.5" cy="16" r="1.4" fill="currentColor"/><circle cx="16.5" cy="16" r="1.4" fill="currentColor"/></svg><span>سيارة</span><b data-t="car">—</b></button>
+    <button class="mode" data-m="bike"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="16" r="3.5"/><circle cx="18.5" cy="16" r="3.5"/><path d="M5.5 16l4-8h5l4 8M9.5 8l3 8h-7M14 5h3"/></svg><span>دراجة</span><b data-t="bike">—</b></button>
+    <button class="mode" data-m="foot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="4" r="2"/><path d="M10 21l2-6-3-3 2-5 4 3 3 1M12 15l3 6M9 12l-3 2"/></svg><span>مشي</span><b data-t="foot">—</b></button>
+  </div>
+  <div id="routeInfo"></div>
+  <div class="row">
+    <button class="btn primary" id="startBtn" disabled><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l7 19-7-4-7 4z"/></svg>ابدأ الملاحة</button>
+    <button class="btn ghost small" id="saveRouteBtn" aria-label="حفظ المسار" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg></button>
+    <button class="btn ghost small" id="stepsBtn" aria-label="الخطوات"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg></button>
+    <button class="btn ghost small" id="closeSheet" aria-label="إغلاق"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+</div>
+
+<!-- navigation -->
+<div id="navTop" class="hidden">
+  <div id="navMain"><div id="navArrow"></div><div style="flex:1;min-width:0"><div id="navDist"></div><div id="navText"></div></div></div>
+  <div id="navThen" class="hidden"></div>
+</div>
+<div id="speed" class="hidden"><div><span id="spdVal">0</span><small>كم/س</small></div></div>
+<div id="navBottom" class="hidden">
+  <button class="btn danger small" id="endBtn" aria-label="إنهاء"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  <div id="navStats"><div id="navEta"></div><div id="navRemain"></div></div>
+  <button class="btn ghost small" id="navShareBtn" aria-label="مشاركة الوصول"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg></button>
+  <button class="btn ghost small" id="muteBtn" aria-label="الصوت"></button>
+  <button class="btn ghost small" id="navStepsBtn" aria-label="الخطوات"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg></button>
+</div>
+
+<div id="stepsPanel" class="hidden">
+  <div id="stepsHead"><button class="iconBtn" id="stepsClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></button><h2>خطوات المسار</h2></div>
+  <div id="stepsList"></div>
+</div>
+
+<div id="offBadge" class="hidden">بدون اتصال</div>
+
+<div id="mapsPanel" class="panel hidden">
+  <div class="panelHead"><button class="iconBtn" data-close="mapsPanel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></button><h2>الخرائط بدون إنترنت</h2></div>
+  <div class="panelBody">
+    <div class="card hidden" id="dlCard"><h3>جارٍ التنزيل</h3><div class="item"><div class="grow"><div class="t" id="dlName"></div><div class="s" id="dlInfo"></div><div class="bar"><i id="dlBar"></i></div></div><button class="chip del" id="dlCancel">إيقاف</button></div></div>
+    <div class="card" id="areasCard"><h3>الخرائط المنزّلة</h3><div id="areasList"></div></div>
+    <button class="btn ghost wide" id="dlView"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" stroke-dasharray="3 3"/><path d="M12 8v7M9 12l3 3 3-3"/></svg>تنزيل المنطقة الظاهرة على الشاشة</button>
+    <div class="card"><h3>تنزيل خريطة مدينة</h3><div id="citiesList"></div></div>
+    <div class="note">تُحفظ الخرائط داخل الهاتف وتظهر تلقائيًا عند انقطاع الإنترنت (بطبقة «خريطة الشوارع»). التفاصيل متاحة حتى مستوى الشوارع، والتكبير الأكبر يعرض نفس الخريطة مكبّرة. البحث وحساب المسارات الجديدة ما زالا يحتاجان إنترنت، لذا احفظ مساراتك المهمة مسبقًا.</div>
+  </div>
+</div>
+
+<div id="savedPanel" class="panel hidden">
+  <div class="panelHead"><button class="iconBtn" data-close="savedPanel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></button><h2>المسارات المحفوظة</h2></div>
+  <div class="panelBody"><div class="card"><div id="savedList"></div></div>
+  <div class="note">لحفظ مسار: اختر وجهة، ثم اضغط زر الحفظ بجانب «ابدأ الملاحة». المسار المحفوظ يعمل بالكامل بدون إنترنت مع الإرشاد الصوتي.</div></div>
+</div>
+
+<div id="favPanel" class="panel hidden">
+  <div class="panelHead"><button class="iconBtn" data-close="favPanel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></button><h2>الأماكن المفضلة</h2></div>
+  <div class="panelBody"><div class="card"><div id="favList"></div></div>
+  <div class="note">لإضافة مكان: اختر وجهة من البحث أو بالضغط المطوّل على الخريطة، ثم اضغط «☆ حفظ في المفضلة». المفضلة تعمل بدون إنترنت.</div></div>
+</div>
+
+<input type="file" id="siteFile" class="hidden">
+<input type="file" id="trackFile" class="hidden">
+
+<div id="recBar" class="hidden"><span class="dot"></span><span id="recInfo"></span><button id="recToggle">⏹ إيقاف</button></div>
+<button id="trackChip" class="hidden"></button>
+<div id="zoneBanner" class="hidden"></div>
+
+<div id="tracksPanel" class="panel hidden">
+  <div class="panelHead"><button class="iconBtn" data-close="tracksPanel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></button><h2>المسارات المسجّلة</h2></div>
+  <div class="panelBody">
+    <button class="btn danger wide" id="recStartBtn"></button>
+    <div class="card"><div id="tracksList"></div></div>
+    <button class="btn ghost wide" id="trackImpBtn">⬆ استيراد مسار (GPX / KML)</button>
+    <div class="note">سجّل الطريق الذي تسلكه فعلًا — مثل الطرق الترابية داخل الحقول — ثم استخدم «ملاحة» للسير عليه مع إرشاد صوتي عند كل منعطف، أو للعودة على نفس الطريق. يعمل بالكامل بدون إنترنت.<br>⚠️ أبقِ التطبيق مفتوحًا أثناء التسجيل؛ الشاشة تبقى مضاءة تلقائيًا.</div>
+  </div>
+</div>
+
+<div id="zonesPanel" class="panel hidden">
+  <div class="panelHead"><button class="iconBtn" data-close="zonesPanel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></button><h2>مناطق التنبيه</h2></div>
+  <div class="panelBody">
+    <div class="card"><div id="zonesList"></div></div>
+    <button class="btn ghost wide" id="zoneHereBtn">➕ منطقة حول موقعي الحالي</button>
+    <div class="note">يُنبّهك التطبيق بالصوت والاهتزاز عند الاقتراب من المنطقة (200 م) وعند دخولها والخروج منها، ويبقى شريط تحذير ظاهرًا ما دمت داخلها. لإضافة منطقة حول أي نقطة: اختر النقطة على الخريطة ثم «⚠ منطقة تنبيه».</div>
+  </div>
+</div>
+
+<div id="visitsPanel" class="panel hidden">
+  <div class="panelHead"><button class="iconBtn" data-close="visitsPanel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></button><h2>سجل الزيارات</h2></div>
+  <div class="panelBody">
+    <div class="card"><h3 id="visitsCount"></h3><div id="visitsList"></div></div>
+    <div class="row" style="padding:12px"><button class="btn primary" id="visitsExport">💾 تصدير Excel (CSV)</button><button class="btn ghost small" id="visitsClear" aria-label="حذف الكل">🗑</button></div>
+    <div class="note">كل زيارة تُسجَّل مع الوقت وموقع GPS والمسافة الفعلية عن الموقع، كإثبات للحضور. الملف المصدَّر يُفتح في Excel ويمكن استيراده في برنامج صيانة الصمامات أو أي نظام آخر.</div>
+  </div>
+</div>
+
+<div id="sitesPanel" class="panel hidden">
+  <div class="panelHead"><button class="iconBtn" data-close="sitesPanel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></button><h2>مواقع العمل</h2></div>
+  <div class="panelBody">
+    <div class="card hidden" id="sitesLock"><div class="item"><div class="grow"><div class="t">🔒 مواقع العمل مقفلة</div><div class="s">أدخل رمز القفل لعرضها.</div></div><button class="chip go" id="unlockBtn">فتح</button></div></div>
+    <div id="sitesBody">
+      <div class="card"><h3>القوائم المستوردة</h3><div id="setsList"></div></div>
+      <div class="row" style="padding:12px 12px 0"><button class="btn primary" id="impBtn">⬆ استيراد</button><button class="btn ghost" id="expAllBtn">💾 تصدير الكل</button></div>
+      <button class="btn ghost wide" id="addHereBtn">➕ إضافة موقعي الحالي كموقع عمل</button>
+      <div class="note">الصيغ المدعومة: Excel (xlsx/xls) و CSV و KML (من Google Earth) و GPX.<br>
+      يكفي أن يحتوي الملف على عمود للاسم أو الرقم، وعمودين للإحداثيات: خط العرض والطول (عشري أو درجات/دقائق/ثوانٍ)، أو Easting و Northing بنظام UTM. سيتعرّف التطبيق على الأعمدة تلقائيًا ويمكنك تعديلها قبل الاستيراد.<br>
+      🔐 المواقع تُحفظ داخل هذا الهاتف فقط ولا تُرسل لأي جهة.</div>
+    </div>
+  </div>
+</div>
+
+<div id="importPanel" class="panel hidden">
+  <div class="panelHead"><button class="iconBtn" data-close="importPanel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></button><h2>استيراد المواقع</h2></div>
+  <div class="panelBody">
+    <div class="card"><div class="frm">
+      <div class="s" id="impFile" style="color:var(--muted);padding-top:8px;direction:ltr;text-align:right"></div>
+      <label>اسم القائمة</label><input type="text" id="impName">
+      <div id="impTable">
+        <div id="impSheetRow"><label>الورقة</label><select id="impSheet"></select></div>
+        <label>عمود الاسم / الرقم</label><select id="impColName"></select>
+        <label>نوع الإحداثيات</label>
+        <select id="impType"><option value="deg">خط العرض وخط الطول</option><option value="utm">UTM (Easting / Northing)</option><option value="one">عمود واحد يحتوي الإحداثيات</option></select>
+        <div id="impDegRows" class="two"><div><label>خط العرض</label><select id="impColLat"></select></div><div><label>خط الطول</label><select id="impColLng"></select></div></div>
+        <div id="impUtmRows"><div class="two"><div><label>Easting</label><select id="impColE"></select></div><div><label>Northing</label><select id="impColN"></select></div></div></div>
+        <div id="impOneRow"><label>عمود الإحداثيات</label><select id="impColOne"></select></div>
+        <label>الوصف (يظهر تحت الاسم)</label><select id="impColDesc"></select>
+      </div>
+      <div class="two" id="impZoneRow"><div><label>نطاق UTM</label><input type="number" id="impZone" min="1" max="60"></div><div><label>نصف الكرة</label><select id="impHemi"><option value="N">شمالي</option><option value="S">جنوبي</option></select></div></div>
+    </div></div>
+    <div class="card"><h3 id="impCount"></h3><div id="impPreview"></div></div>
+    <button class="btn primary wide" id="impGo">استيراد</button>
+  </div>
+</div>
+
+<div id="setPanel" class="panel hidden">
+  <div class="panelHead"><button class="iconBtn" data-close="setPanel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></button><h2>الإعدادات</h2></div>
+  <div class="panelBody">
+    <div class="card"><label class="sw"><div class="grow"><div class="t" style="font-weight:600">وضع العمل الميداني</div><div class="s" style="color:var(--muted);font-size:12.5px;margin-top:3px">يضيف مواقع العمل (آبار، صمامات، محطات) وعرض الإحداثيات</div></div><input type="checkbox" id="setField"></label></div>
+    <div id="setFieldOpts">
+      <div class="card"><h3>رمز القفل لمواقع العمل</h3><div class="item"><div class="grow s" id="pinState"></div></div>
+        <div class="btnRow"><button class="chip go" id="pinSet">تعيين رمز</button><button class="chip" id="pinLock">قفل الآن</button><button class="chip del" id="pinOff">إزالة الرمز</button></div></div>
+    </div>
+    <div class="card"><h3>الإحداثيات</h3><div class="frm">
+      <label>صيغة عرض الإحداثيات</label><select id="setFmt"><option value="dec">عشرية (30.508500, 47.780400)</option><option value="dms">درجات ودقائق وثوانٍ</option><option value="utm">UTM</option></select>
+      <div class="two"><div><label>نطاق UTM الافتراضي</label><input type="number" id="setZone" min="1" max="60"></div><div><label>نصف الكرة</label><select id="setHemi"><option value="N">شمالي</option><option value="S">جنوبي</option></select></div></div>
+    </div><div class="note" style="padding-top:0">البصرة ومعظم جنوب العراق ضمن النطاق 38، والفاو وأقصى الشرق ضمن 39. يُستخدم هذا النطاق عند كتابة Easting و Northing بدون رقم نطاق.</div></div>
+    <div class="note">يمكنك كتابة الإحداثيات مباشرة في مربع البحث بأي صيغة، مثل:<br><span style="direction:ltr;display:inline-block">30.5085, 47.7804 · 30°30'30"N 47°46'49"E · 38R 785000 3378000</span></div>
+    <div id="setCredit"></div>
+  </div>
+</div>
+
+<div id="mHintBar" class="hidden"><span id="mHint"></span></div>
+<div id="mCross" class="hidden"></div>
+<div id="measPanel" class="hidden">
+  <div id="mModes"><button data-m="poly">📐 زوايا</button><button data-m="rect">▭ مستطيل</button><button data-m="walk">🚶 مشي GPS</button><button data-m="line">📏 مسافة</button></div>
+  <div id="mMain"></div><div id="mSub"></div><div id="mWarn" class="hidden"></div>
+  <div id="mWalkBtns" class="hidden"><div id="mGps"></div><div class="mrow"><button class="chip go" id="mHere">📍 زاوية هنا</button><button class="chip" id="mWalkRec">⏺ تسجيل مستمر</button></div></div>
+  <div class="mrow">
+    <button class="chip" id="mCenterAdd">＋ نقطة الوسط</button>
+    <button class="chip" id="mUndo">↶ تراجع</button>
+    <button class="chip" id="mType">⌨️ إحداثيات</button>
+    <button class="chip" id="mDims">✖️ أبعاد</button>
+  </div>
+  <div class="mrow">
+    <button class="chip go" id="mSave" disabled>💾 حفظ</button>
+    <button class="chip" id="mShare">↗ مشاركة</button>
+    <button class="chip" id="mList">📂 المحفوظة</button>
+    <button class="chip del" id="mClear">🗑 مسح</button>
+    <button class="chip" id="mClose">✕ إنهاء</button>
+  </div>
+</div>
+
+<div id="measListPanel" class="panel hidden">
+  <div class="panelHead"><button class="iconBtn" data-close="measListPanel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></button><h2>القياسات المحفوظة</h2></div>
+  <div class="panelBody"><div class="card"><div id="measList"></div></div>
+  <div class="note">الدونم العراقي = 2500 م²، والهكتار = 10,000 م². النتائج تقديرية بحسب دقة النقاط ولا تغني عن المسح الرسمي في المعاملات القانونية.</div></div>
+</div>
+
+<div id="guidePanel" class="panel hidden">
+  <div class="panelHead"><button class="iconBtn" data-close="guidePanel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></button><h2>دليل الاستخدام</h2></div>
+  <div class="panelBody" id="guideBody"></div>
+</div>
+
+<div id="modal" class="hidden"><div class="mbg"></div><div class="mbox"><div id="mTitle"></div><div id="mBtns"></div></div></div>
+
+<div id="toast" style="opacity:0"></div>
+<div id="loading" class="hidden"><div class="spin"></div></div>
+
+<script src="lib/leaflet.js"></script>
+<script src="app.js"></script>
+<script src="field.js"></script>
+<script src="ops.js"></script>
+<script src="measure.js"></script>
+<script src="guide.js"></script>
+<script src="pack-web.js"></script>
+<script src="vector.js"></script>
+<script src="web.js"></script>
+</body>
+</html>
