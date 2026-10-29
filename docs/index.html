@@ -366,7 +366,7 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
 
 /* brand */
 .brandRow{display:flex;align-items:center;gap:10px;padding:8px 10px 10px;margin-bottom:4px;border-bottom:1px solid var(--line)}
-.brandRow img{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#0d2547,#071022);padding:4px}
+.brandRow img{width:40px;height:40px;border-radius:10px}
 .brandRow b{display:block;font-size:17px;letter-spacing:.2px}
 .brandRow small{color:var(--muted);font-size:12px}
 /* welcome screens */
@@ -383,7 +383,7 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
 .onbSlide .lead{font-size:18px;color:#dbe7ff}
 .onbSlide .onbCredit{margin-top:26px;font-size:13px;color:var(--muted)}
 .onbSlide .muted{color:var(--muted);font-size:13.5px}
-.onbLogo{width:132px;height:132px;filter:drop-shadow(0 10px 30px rgba(56,189,248,.35))}
+.onbLogo{width:132px;height:132px;border-radius:30px;filter:drop-shadow(0 12px 30px rgba(14,165,233,.35))}
 .onbLogo.sm{width:96px;height:96px}
 .feats{display:flex;flex-direction:column;gap:12px;width:100%;max-width:420px;margin-top:6px;text-align:right}
 .feat{display:flex;align-items:center;gap:14px;background:rgba(255,255,255,.04);border:1px solid rgba(148,163,184,.14);border-radius:16px;padding:12px 14px}
@@ -423,6 +423,27 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
 #northBtn .nd{transition:none}
 #fabs{display:flex;flex-direction:column;gap:10px}
 #redrawTag{position:absolute;top:calc(74px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:800;background:rgba(15,23,42,.92);border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-size:13px;color:var(--muted)}
+
+/* camera navigation */
+#arBtn{color:var(--accent)}
+#arView{position:fixed;inset:0;z-index:1300;background:#000;overflow:hidden}
+#arView video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.arTop{position:absolute;top:calc(12px + env(safe-area-inset-top));left:12px;right:12px;display:flex;gap:12px;align-items:center;background:rgba(2,6,23,.74);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid rgba(148,163,184,.25);border-radius:18px;padding:12px 14px;color:#fff;z-index:2}
+.arIc{flex:none;width:46px;height:46px;border-radius:14px;background:#0ea5e9;display:grid;place-items:center;font-size:24px;font-weight:700}
+.arTx{flex:1;min-width:0}.arTx .ad{font-size:24px;font-weight:700;line-height:1.2}.arTx .at{font-size:14.5px;color:#cbd5e1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.arX{flex:none;width:42px;height:42px;border-radius:13px;background:rgba(255,255,255,.12);color:#fff;font-size:18px}
+.arGround{position:absolute;left:50%;bottom:calc(14% + env(safe-area-inset-bottom));width:210px;height:210px;margin-left:-105px;perspective:520px;pointer-events:none}
+.arGround svg{width:100%;height:100%;transform-origin:50% 60%;filter:drop-shadow(0 10px 18px rgba(14,165,233,.55));transition:opacity .2s}
+.arMark{position:absolute;transform:translate(-50%,-100%);text-align:center;pointer-events:none;transition:left .12s linear,top .12s linear}
+.arMark .pin{font-size:46px;filter:drop-shadow(0 4px 8px rgba(0,0,0,.6))}
+.arMark .lb{display:inline-block;margin-top:2px;background:rgba(2,6,23,.8);color:#fff;border-radius:999px;padding:4px 12px;font-weight:700;font-size:15px}
+.arEdge{position:absolute;top:46%;direction:ltr;display:flex;gap:8px;align-items:center;background:rgba(2,6,23,.8);color:#fde68a;border:1px solid #f59e0b;border-radius:999px;padding:10px 16px;font-weight:700;font-size:16px}
+.arEdge.r{right:12px}.arEdge.l{left:12px}
+.arHint{position:absolute;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);max-width:92vw;background:rgba(2,6,23,.78);color:#e2e8f0;border-radius:14px;padding:8px 14px;font-size:13.5px;text-align:center}
+.arHint:empty{display:none}
+.arSafe{position:absolute;inset:0;z-index:3;background:rgba(2,6,23,.9);display:grid;place-items:center;text-align:center;color:#fff;padding:24px}
+.arSafe div{display:flex;flex-direction:column;gap:10px;align-items:center;font-size:40px}
+.arSafe b{font-size:20px}.arSafe span{font-size:15px;color:#cbd5e1;max-width:300px;line-height:1.6}
 </style>
 </head>
 <body>
@@ -477,6 +498,7 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
 
 <!-- floating buttons -->
 <div id="fabs">
+    <button class="fab hidden" id="arBtn" aria-label="الملاحة بالكاميرا" title="الملاحة بالكاميرا"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
     <button class="fab hidden" id="northBtn" aria-label="اتجاه الشمال للأعلى" title="الشمال للأعلى"><svg class="nd" viewBox="0 0 24 24" width="26" height="26"><path d="M12 2l4.5 10h-9z" fill="#ef4444"/><path d="M12 22l-4.5-10h9z" fill="#cbd5e1"/><circle cx="12" cy="12" r="1.6" fill="#0f172a"/></svg></button>
   <button class="fab" id="locBtn" aria-label="موقعي"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
 </div>
@@ -685,6 +707,7 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
 <script src="provinces.js"></script>
 <script src="vector.js"></script>
 <script src="home.js"></script>
+<script src="ar.js"></script>
 <script src="onboard.js"></script>
 <script src="web.js"></script>
 </body>

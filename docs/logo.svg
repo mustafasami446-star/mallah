@@ -1,12 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0d2547"/><stop offset="1" stop-color="#071022"/></linearGradient>
-    <linearGradient id="sa" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7dd3fc"/><stop offset="1" stop-color="#38bdf8"/></linearGradient>
-    <linearGradient id="sb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#38bdf8"/><stop offset="1" stop-color="#0284c7"/></linearGradient>
-  </defs><g transform="translate(256 262) scale(1.0) translate(-256 -262)"><!-- the sail / navigation arrow -->
-  <path d="M256 92 L256 318 L146 352 Z" fill="url(#sb)"/>
-  <path d="M256 92 C 300 170 336 260 366 352 L256 318 Z" fill="url(#sa)"/>
-  <!-- water -->
-  <path d="M120 392 C 160 372 196 372 236 392 S 312 412 352 392 S 392 380 396 382" fill="none" stroke="#38bdf8" stroke-width="18" stroke-linecap="round"/>
-  <path d="M168 430 C 200 418 228 418 256 430 S 312 442 344 430" fill="none" stroke="#0ea5e9" stroke-width="14" stroke-linecap="round" opacity=".55"/>
-  <circle cx="256" cy="66" r="10" fill="#fde68a"/>
-</g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+ <defs>
+  <radialGradient id="bg" cx=".5" cy=".25" r=".85"><stop offset="0" stop-color="#0f6b80"/><stop offset="1" stop-color="#031820"/></radialGradient>
+  <radialGradient id="pin" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#e0f2fe"/><stop offset=".35" stop-color="#38bdf8"/><stop offset="1" stop-color="#075985"/></radialGradient>
+  <linearGradient id="hull" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fde68a"/><stop offset=".5" stop-color="#f59e0b"/><stop offset="1" stop-color="#92400e"/></linearGradient>
+  <radialGradient id="hole" cx=".5" cy=".4" r=".6"><stop offset="0" stop-color="#022c3a"/><stop offset="1" stop-color="#05506a"/></radialGradient>
+  <filter id="sh"><feDropShadow dx="0" dy="16" stdDeviation="12" flood-color="#000" flood-opacity=".5"/></filter>
+ </defs>
+ <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+ <ellipse cx="256" cy="350" rx="90" ry="14" fill="#000" opacity=".35"/>
+ <g filter="url(#sh)">
+  <path d="M256 70c-62 0-108 47-108 104 0 76 108 168 108 168s108-92 108-168c0-57-46-104-108-104z" fill="url(#pin)"/>
+  <circle cx="256" cy="172" r="40" fill="url(#hole)"/>
+  <path d="M205 112 C 222 96 246 90 266 92" stroke="#fff" stroke-width="10" stroke-linecap="round" fill="none" opacity=".75"/>
+  <path d="M64 322c46 44 120 66 192 66s146-22 192-66c-6 58-90 104-192 104S70 380 64 322z" fill="url(#hull)"/>
+  <path d="M84 340 C 150 380 362 380 428 340" stroke="#fffbeb" stroke-width="5" fill="none" opacity=".6"/>
+ </g>
+ <path d="M110 458c30-12 60-12 92 0s62 12 92 0 62-12 92 0" stroke="#7dd3fc" stroke-width="10" stroke-linecap="round" fill="none" opacity=".6"/>
+</svg>

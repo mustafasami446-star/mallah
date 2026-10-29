@@ -733,6 +733,7 @@ function onNavLocation() {
 /* ---------------- back button ---------------- */
 window.handleBack = function () {
   if (typeof onbHandleBack === 'function' && onbHandleBack()) return true;
+  if (typeof arHandleBack === 'function' && arHandleBack()) return true;
   if (!$('modal').classList.contains('hidden')) { closeModal(); return true; }
   if (typeof guideHandleBack === 'function' && guideHandleBack()) return true;
   if (typeof measHandleBack === 'function' && measHandleBack()) return true;
