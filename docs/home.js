@@ -89,7 +89,7 @@ async function showNearby(id) {
   if (seq !== nearSeq) return;
   clearNear(); nearHits = hits;
   if (!hits.length) {
-    resEl.innerHTML = `<div class="secTitle">${cat.i} ${cat.n}</div><div class="res"><div class="s">${src === 'error' ? 'تعذّر البحث — تحقّق من الاتصال.' : navigator.onLine === false && !places ? 'لا يوجد اتصال. نزّل خريطة العراق للبحث بدون إنترنت.' : 'لا توجد نتائج قريبة.'}</div></div>`;
+    resEl.innerHTML = `<div class="secTitle">${cat.i} ${cat.n}</div><div class="res"><div class="s">${src === 'error' ? 'تعذّر البحث — تحقّق من الاتصال.' : navigator.onLine === false && !places ? 'لا يوجد اتصال. نزّل خريطة محافظتك للبحث بدون إنترنت.' : 'لا توجد نتائج قريبة.'}</div></div>`;
     return;
   }
   resEl.innerHTML = `<div class="secTitle">${cat.i} ${cat.n} — الأقرب إليك${src === 'offline' ? ' (بدون إنترنت)' : ''}</div>` + hits.map((h, i) =>

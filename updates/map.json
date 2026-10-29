@@ -1,7 +1,7 @@
 {
-  "version": "2026-10-29",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/map-20261029/mallah-iraq-map.zip",
-  "size": 241446433,
+  "version": "2026-10-28",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/map-20261028/mallah-iraq-map.zip",
+  "size": 241428082,
   "maxzoom": 14,
   "built": "2026-10-29T16:27Z",
   "packs": [
@@ -9,9 +9,9 @@
       "id": "iraq",
       "name": "العراق كاملًا",
       "name_en": "Iraq",
-      "url": "https://github.com/mustafasami446-star/mallah/releases/download/map-20261029/mallah-iraq-map.zip",
-      "size": 241446433,
-      "version": "2026-10-29"
+      "url": "https://github.com/mustafasami446-star/mallah/releases/download/map-20261028/mallah-iraq-map.zip",
+      "size": 241428082,
+      "version": "2026-10-28"
     },
     {
       "id": "qadisiyah",

@@ -704,6 +704,7 @@ window.handleBack = function () {
   if (typeof measHandleBack === 'function' && measHandleBack()) return true;
   if (typeof opsHandleBack === 'function' && opsHandleBack()) return true;
   if (fieldHandleBack()) return true;
+  if (typeof vecHandleBack === 'function' && vecHandleBack()) return true;
   for (const id of ['mapsPanel', 'savedPanel', 'favPanel']) if (!$(id).classList.contains('hidden')) { $(id).classList.add('hidden'); return true; }
   if (!$('menuDrop').classList.contains('hidden')) { $('menuDrop').classList.add('hidden'); return true; }
   if (!$('stepsPanel').classList.contains('hidden')) { $('stepsPanel').classList.add('hidden'); return true; }

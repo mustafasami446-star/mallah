@@ -321,6 +321,26 @@ body.attr-min .leaflet-control-attribution{opacity:0;pointer-events:none}
 #attrBtn{position:absolute;right:6px;bottom:calc(4px + var(--sheetH,0px) + env(safe-area-inset-bottom));z-index:450;width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.75);color:#334155;font:700 13px/22px Georgia,serif;text-align:center;opacity:0;pointer-events:none;transition:opacity .4s}
 body.attr-min #attrBtn{opacity:.8;pointer-events:auto}
 .leaflet-control-zoom{display:none}
+
+/* province picker */
+.provHint{color:var(--muted);font-size:13px;text-align:center;padding:12px 16px 0}
+#provMapWrap{padding:6px 10px 0}
+#provSvg{width:100%;height:auto;max-height:56vh;display:block;margin:auto;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.pv{fill:#1e293b;stroke:#64748b;stroke-width:1.4;stroke-linejoin:round;cursor:pointer;transition:fill .2s}
+.pv.inst{fill:#14532d;stroke:#22c55e}
+.pv.busy{fill:#713f12;stroke:#f59e0b}
+.pv.sel{fill:#0c4a6e;stroke:#38bdf8;stroke-width:4}
+.pv.inst.sel{fill:#166534;stroke:#4ade80}
+.pvl{font:600 22px Plex,system-ui,sans-serif;fill:#e2e8f0;text-anchor:middle;dominant-baseline:middle;pointer-events:none;paint-order:stroke;stroke:#0b1220;stroke-width:5px}
+.pvl.sm{font-size:16px}
+.pvMe{fill:#3b82f6;stroke:#fff;stroke-width:3}
+.hereTag{font-size:12px;color:#93c5fd;font-weight:600}
+.provRow{cursor:pointer}
+.provRow.on{background:rgba(56,189,248,.10)}
+#covHint{position:absolute;top:calc(74px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:800;background:rgba(15,23,42,.94);border:1px solid #f59e0b;color:#fde68a;border-radius:999px;padding:8px 14px;font-size:13px;white-space:nowrap;box-shadow:var(--shadow);max-width:92vw;overflow:hidden;text-overflow:ellipsis}
+#covHint b{color:#fff}
+body.ui-nav #covHint,body.ui-meas #covHint,body.ui-dest #covHint{display:none}
+body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
 </style>
 </head>
 <body>
@@ -576,6 +596,7 @@ body.attr-min #attrBtn{opacity:.8;pointer-events:auto}
 <script src="measure.js"></script>
 <script src="guide.js"></script>
 <script src="pack-web.js"></script>
+<script src="provinces.js"></script>
 <script src="vector.js"></script>
 <script src="home.js"></script>
 <script src="web.js"></script>

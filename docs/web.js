@@ -64,7 +64,7 @@
   /* features that only exist in the Android app */
   const cities = $('citiesList'); if (cities && cities.parentElement) cities.parentElement.classList.add('hidden');
   const dv = $('dlView'); if (dv) dv.classList.add('hidden');
-  document.querySelectorAll('#mapsPanel .note').forEach((n) => { n.innerHTML = 'في نسخة الويب: نزّل «خريطة العراق الكاملة» أعلاه لتعمل الخريطة والبحث بدون إنترنت. تحتاج المتصفح إلى مساحة تقارب 250 م.ب.'; });
+  document.querySelectorAll('#mapsPanel .note').forEach((n) => { n.innerHTML = 'في نسخة الويب: نزّل خريطة محافظتك أو العراق كاملًا من الأعلى لتعمل الخريطة والبحث بدون إنترنت.'; });
   const gpsBtn = $('gpsBtn'); if (gpsBtn) gpsBtn.classList.add('hidden');
   document.body.classList.add('web');
 })();
