@@ -229,9 +229,9 @@ body.ui-nav #topBar,body.ui-meas #topBar{display:none}
 #layerMenu .seg{display:flex;gap:4px;padding:2px 4px 4px}
 #layerMenu .seg button{flex:1;text-align:center;padding:8px 4px;font-size:13px}
 /* night mode: darken street maps (not satellite) */
-body.night .leaflet-tile-pane,body.night .leaflet-underPane-pane{filter:invert(1) hue-rotate(180deg) brightness(.92) contrast(.88) saturate(.55)}
-body.night.layer-sat .leaflet-tile-pane,body.night.layer-sat .leaflet-underPane-pane{filter:brightness(.8)}
-body.night.layer-vec .leaflet-tile-pane,body.night.layer-vec .leaflet-underPane-pane{filter:none}
+body.night .leaflet-tile-pane,body.night .leaflet-under-pane{filter:invert(1) hue-rotate(180deg) brightness(.92) contrast(.88) saturate(.55)}
+body.night.layer-sat .leaflet-tile-pane,body.night.layer-sat .leaflet-under-pane{filter:brightness(.8)}
+body.night.layer-vec .leaflet-tile-pane,body.night.layer-vec .leaflet-under-pane{filter:none}
 body.night #map{background:#1a1f2b}
 #glmap{position:absolute;inset:0;z-index:0;background:#e2dfda}
 body.night #glmap{background:#2b2f36}

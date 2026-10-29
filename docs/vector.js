@@ -768,6 +768,7 @@ function diagText(extra) {
     'الرسم: ' + (liteMode() ? 'أخف' : 'عادي') + ' · دقة ' + glPixelRatio() + ' · معالجات ' + (navigator.hardwareConcurrency || '?') + ' · ذاكرة ' + (navigator.deviceMemory || '?') + ' ج.ب',
     'البلاط: طلبات ' + VD.req + ' · نجح ' + VD.hit + ' · فارغ ' + VD.empty + ' · أخطاء ' + VD.err,
     'الخرائط المحفوظة تلقائيًا (من التصفح): ' + (NATIVE && Android.netCacheSize ? fmtMB(Android.netCacheSize()) : '—'),
+    'تنزيل أجزاء الخريطة من الإنترنت: ' + (() => { try { const s = JSON.parse(Android.netStats()); if (!s.n) return 'لا شيء بعد · من المحفوظ ' + s.hits; return s.n + ' جزء · متوسط ' + (s.ms / s.n / 1000).toFixed(1) + ' ث للجزء · السرعة ' + Math.round(s.bytes / Math.max(1, s.ms)) + ' ك.ب/ث · فشل ' + s.fail + ' · من المحفوظ ' + s.hits; } catch (e) { return '—'; } })(),
     'الإنترنت: ' + (navigator.onLine === false ? 'غير متصل' : 'متصل') + ' · الموقع: ' + (me ? me.lat.toFixed(4) + ', ' + me.lng.toFixed(4) + ' ±' + Math.round(me.acc) + 'م' : '—'),
   ];
   if (VD.lastErr) L.push('آخر خطأ في القراءة: ' + VD.lastErr);
