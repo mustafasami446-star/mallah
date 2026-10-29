@@ -1,10 +1,145 @@
 {
- "zip_bytes": 241428082,
- "tiles_bytes": 236019234,
+ "zip_bytes": 241446433,
+ "tiles_bytes": 236037281,
  "maxzoom": 14,
- "build": "20261028",
+ "build": "20261029",
  "entries": 65,
  "font_files": 54,
  "sprites": 8,
- "places": 138473
+ "places": 138486,
+ "provinces": [
+  {
+   "id": "qadisiyah",
+   "name_en": "Al-Qadisiyah",
+   "size": 8046900,
+   "tiles": 3422,
+   "places": 2488
+  },
+  {
+   "id": "anbar",
+   "name_en": "Anbar",
+   "size": 16918056,
+   "tiles": 45271,
+   "places": 4397
+  },
+  {
+   "id": "babil",
+   "name_en": "Babylon",
+   "size": 9471300,
+   "tiles": 2208,
+   "places": 4422
+  },
+  {
+   "id": "baghdad",
+   "name_en": "Baghdad",
+   "size": 13951819,
+   "tiles": 2330,
+   "places": 25114
+  },
+  {
+   "id": "basra",
+   "name_en": "Basra",
+   "size": 11993662,
+   "tiles": 6967,
+   "places": 9890
+  },
+  {
+   "id": "dhiqar",
+   "name_en": "Dhi Qar",
+   "size": 9575728,
+   "tiles": 5128,
+   "places": 4265
+  },
+  {
+   "id": "diyala",
+   "name_en": "Diyala",
+   "size": 16162960,
+   "tiles": 7173,
+   "places": 7118
+  },
+  {
+   "id": "duhok",
+   "name_en": "Duhok",
+   "size": 15551195,
+   "tiles": 2978,
+   "places": 5641
+  },
+  {
+   "id": "erbil",
+   "name_en": "Erbil",
+   "size": 22051831,
+   "tiles": 5319,
+   "places": 15186
+  },
+  {
+   "id": "halabja",
+   "name_en": "Halabja",
+   "size": 7045034,
+   "tiles": 626,
+   "places": 682
+  },
+  {
+   "id": "karbala",
+   "name_en": "Karbala",
+   "size": 8928038,
+   "tiles": 1918,
+   "places": 9493
+  },
+  {
+   "id": "kirkuk",
+   "name_en": "Kirkuk",
+   "size": 12652646,
+   "tiles": 4225,
+   "places": 6186
+  },
+  {
+   "id": "maysan",
+   "name_en": "Maysan",
+   "size": 8559641,
+   "tiles": 6059,
+   "places": 2592
+  },
+  {
+   "id": "muthanna",
+   "name_en": "Muthanna",
+   "size": 9314029,
+   "tiles": 17008,
+   "places": 2761
+  },
+  {
+   "id": "najaf",
+   "name_en": "Najaf",
+   "size": 8939403,
+   "tiles": 9867,
+   "places": 10086
+  },
+  {
+   "id": "nineveh",
+   "name_en": "Nineveh",
+   "size": 23437874,
+   "tiles": 15628,
+   "places": 12518
+  },
+  {
+   "id": "salahaddin",
+   "name_en": "Saladin",
+   "size": 13433460,
+   "tiles": 9830,
+   "places": 5743
+  },
+  {
+   "id": "sulaymaniyah",
+   "name_en": "Sulaymaniyah",
+   "size": 21931363,
+   "tiles": 6881,
+   "places": 12459
+  },
+  {
+   "id": "wasit",
+   "name_en": "Wasit",
+   "size": 9068241,
+   "tiles": 6579,
+   "places": 2460
+  }
+ ]
 }
