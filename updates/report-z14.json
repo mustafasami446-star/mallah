@@ -25,7 +25,7 @@
   {
    "id": "babil",
    "name_en": "Babylon",
-   "size": 9471300,
+   "size": 9471299,
    "tiles": 2208,
    "places": 4422
   },
@@ -81,7 +81,7 @@
   {
    "id": "karbala",
    "name_en": "Karbala",
-   "size": 8928038,
+   "size": 8928039,
    "tiles": 1918,
    "places": 9493
   },
@@ -102,21 +102,21 @@
   {
    "id": "muthanna",
    "name_en": "Muthanna",
-   "size": 9314029,
+   "size": 9314028,
    "tiles": 17008,
    "places": 2761
   },
   {
    "id": "najaf",
    "name_en": "Najaf",
-   "size": 8939403,
+   "size": 8939402,
    "tiles": 9867,
    "places": 10086
   },
   {
    "id": "nineveh",
    "name_en": "Nineveh",
-   "size": 23437874,
+   "size": 23437875,
    "tiles": 15628,
    "places": 12518
   },

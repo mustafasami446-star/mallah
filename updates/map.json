@@ -1,7 +1,302 @@
 {
-  "version": "2026-10-28",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/map-20261028/mallah-iraq-map.zip",
-  "size": 241428082,
+  "version": "2026-10-29",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/map-20261029/mallah-iraq-map.zip",
+  "size": 241446433,
   "maxzoom": 14,
-  "built": "2026-10-28T15:31Z"
+  "built": "2026-10-29T16:27Z",
+  "packs": [
+    {
+      "id": "iraq",
+      "name": "العراق كاملًا",
+      "name_en": "Iraq",
+      "url": "https://github.com/mustafasami446-star/mallah/releases/download/map-20261029/mallah-iraq-map.zip",
+      "size": 241446433,
+      "version": "2026-10-29"
+    },
+    {
+      "id": "qadisiyah",
+      "name": "القادسية",
+      "name_en": "Al-Qadisiyah",
+      "size": 8046900,
+      "bbox": [
+        44.356,
+        31.295,
+        45.798,
+        32.418
+      ],
+      "places": 2488,
+      "url": "https://github.com/mustafasami446-star/mallah/releases/download/map-20261029/mallah-qadisiyah.zip",
+      "version": "2026-10-29"
+    },
+    {
+      "id": "anbar",
+      "name": "الأنبار",
+      "name_en": "Anbar",
+      "size": 16918056,
+      "bbox": [
+        38.793,
+        30.673,
+        44.16,
+        35.11
+      ],
+      "places": 4397,
+      "url": "https://github.com/mustafasami446-star/mallah/releases/download/map-20261029/mallah-anbar.zip",
+      "version": "2026-10-29"
+    },
+    {
+      "id": "babil",
+      "name": "بابل",
+      "name_en": "Babylon",
+      "size": 9471299,
+      "bbox": [
+        44.031,
+        32.099,
+        45.157,
+        33.087
+      ],
+      "places": 4422,
+      "url": "https://github.com/mustafasami446-star/mallah/releases/download/map-20261029/mallah-babil.zip",
+      "version": "2026-10-29"
+    },
+    {
+      "id": "baghdad",
+      "name": "بغداد",
+      "name_en": "Baghdad",
+      "size": 13951819,
+      "bbox": [
+        43.845,
+        32.836,
+        44.969,
+        33.775
+      ],
+      "places": 25114,
+      "url": "https://github.com/mustafasami446-star/mallah/releases/download/map-20261029/mallah-baghdad.zip",
+      "version": "2026-10-29"
+    },
+    {
+      "id": "basra",
+      "name": "البصرة",
+      "name_en": "Basra",
+      "size": 11993662,
+      "bbox": [
+        46.567,
+        29.12,
+        49.107,
+        31.289
+      ],
+      "places": 9890,
+      "url": "https://github.com/mustafasami446-star/mallah/releases/download/map-20261029/mallah-basra.zip",
+      "version": "2026-10-29"
+    },
+    {
+      "id": "dhiqar",
+      "name": "ذي قار",
+      "name_en": "Dhi Qar",
+      "size": 9575728,
+      "bbox": [
+        45.629,
+        30.529,
+        47.139,
+        32.004
+      ],
+      "places": 4265,
+      "url": "https://github.com/mustafasami446-star/mallah/releases/download/map-20261029/mallah-dhiqar.zip",
+      "version": "2026-10-29"
+    },
+    {
+      "id": "diyala",
+      "name": "ديالى",
+      "name_en": "Diyala",
+      "size": 16162960,
+      "bbox": [
+        44.289,
+        33.118,
+        46.008,
+        35.11
+      ],
+      "places": 7118,
+      "url": "https://github.com/mustafasami446-star/mallah/releases/download/map-20261029/mallah-diyala.zip",
+      "version": "2026-10-29"
+    },
+    {
+      "id": "duhok",
+      "name": "دهوك",
+      "name_en": "Duhok",
+      "size": 15551195,
+      "bbox": [
+        42.348,
+        36.73,
+        44.101,
+        37.381
+      ],
+      "places": 5641,
+      "url": "https://github.com/mustafasami446-star/mallah/releases/download/map-20261029/mallah-duhok.zip",
+      "version": "2026-10-29"
+    },
+    {
+      "id": "erbil",
+      "name": "أربيل",
+      "name_en": "Erbil",
+      "size": 22051831,
+      "bbox": [
+        43.589,
+        35.773,
+        45.072,
+        37.323
+      ],
+      "places": 15186,
+      "url": "https://github.com/mustafasami446-star/mallah/releases/download/map-20261029/mallah-erbil.zip",
+      "version": "2026-10-29"
+    },
+    {
+      "id": "halabja",
+      "name": "حلبجة",
+      "name_en": "Halabja",
+      "size": 7045034,
+      "bbox": [
+        45.798,
+        35.038,
+        46.204,
+        35.461
+      ],
+      "places": 682,
+      "url": "https://github.com/mustafasami446-star/mallah/releases/download/map-20261029/mallah-halabja.zip",
+      "version": "2026-10-29"
+    },
+    {
+      "id": "karbala",
+      "name": "كربلاء",
+      "name_en": "Karbala",
+      "size": 8928039,
+      "bbox": [
+        43.257,
+        32.159,
+        44.31,
+        32.847
+      ],
+      "places": 9493,
+      "url": "https://github.com/mustafasami446-star/mallah/releases/download/map-20261029/mallah-karbala.zip",
+      "version": "2026-10-29"
+    },
+    {
+      "id": "kirkuk",
+      "name": "كركوك",
+      "name_en": "Kirkuk",
+      "size": 12652646,
+      "bbox": [
+        43.352,
+        34.686,
+        44.799,
+        35.909
+      ],
+      "places": 6186,
+      "url": "https://github.com/mustafasami446-star/mallah/releases/download/map-20261029/mallah-kirkuk.zip",
+      "version": "2026-10-29"
+    },
+    {
+      "id": "maysan",
+      "name": "ميسان",
+      "name_en": "Maysan",
+      "size": 8559641,
+      "bbox": [
+        46.322,
+        31.124,
+        47.866,
+        32.868
+      ],
+      "places": 2592,
+      "url": "https://github.com/mustafasami446-star/mallah/releases/download/map-20261029/mallah-maysan.zip",
+      "version": "2026-10-29"
+    },
+    {
+      "id": "muthanna",
+      "name": "المثنى",
+      "name_en": "Muthanna",
+      "size": 9314028,
+      "bbox": [
+        43.813,
+        29.059,
+        46.749,
+        31.755
+      ],
+      "places": 2761,
+      "url": "https://github.com/mustafasami446-star/mallah/releases/download/map-20261029/mallah-muthanna.zip",
+      "version": "2026-10-29"
+    },
+    {
+      "id": "najaf",
+      "name": "النجف",
+      "name_en": "Najaf",
+      "size": 8939402,
+      "bbox": [
+        42.706,
+        29.873,
+        44.769,
+        32.362
+      ],
+      "places": 10086,
+      "url": "https://github.com/mustafasami446-star/mallah/releases/download/map-20261029/mallah-najaf.zip",
+      "version": "2026-10-29"
+    },
+    {
+      "id": "nineveh",
+      "name": "نينوى",
+      "name_en": "Nineveh",
+      "size": 23437875,
+      "bbox": [
+        41.209,
+        34.898,
+        44.304,
+        37.061
+      ],
+      "places": 12518,
+      "url": "https://github.com/mustafasami446-star/mallah/releases/download/map-20261029/mallah-nineveh.zip",
+      "version": "2026-10-29"
+    },
+    {
+      "id": "salahaddin",
+      "name": "صلاح الدين",
+      "name_en": "Saladin",
+      "size": 13433460,
+      "bbox": [
+        42.424,
+        33.647,
+        44.945,
+        35.698
+      ],
+      "places": 5743,
+      "url": "https://github.com/mustafasami446-star/mallah/releases/download/map-20261029/mallah-salahaddin.zip",
+      "version": "2026-10-29"
+    },
+    {
+      "id": "sulaymaniyah",
+      "name": "السليمانية",
+      "name_en": "Sulaymaniyah",
+      "size": 21931363,
+      "bbox": [
+        44.527,
+        34.545,
+        46.347,
+        36.52
+      ],
+      "places": 12459,
+      "url": "https://github.com/mustafasami446-star/mallah/releases/download/map-20261029/mallah-sulaymaniyah.zip",
+      "version": "2026-10-29"
+    },
+    {
+      "id": "wasit",
+      "name": "واسط",
+      "name_en": "Wasit",
+      "size": 9068241,
+      "bbox": [
+        44.532,
+        31.974,
+        46.565,
+        33.489
+      ],
+      "places": 2460,
+      "url": "https://github.com/mustafasami446-star/mallah/releases/download/map-20261029/mallah-wasit.zip",
+      "version": "2026-10-29"
+    }
+  ]
 }
