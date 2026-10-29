@@ -96,7 +96,7 @@ class PackSource {
 let archives = [];
 const NATIVE_TILES = !!(NATIVE && window.Android && Android.mapNativeTiles);
 /* what the offline map is doing — shown in Settings ← «تشخيص الخريطة» */
-const VD = { req: 0, hit: 0, empty: 0, err: 0, lastErr: '', glErr: '', fellBack: '', t: {} };
+const VD = { req: 0, hit: 0, empty: 0, err: 0, lastErr: '', glErr: '', fellBack: '', t: {}, ctxLost: 0, ctxBack: 0, zoomMs: [], tileMs: 0, tileN: 0, slowTile: 0 };
 const diagLogs = [];
 function diagLog(s) { diagLogs.push(new Date().toTimeString().slice(0, 8) + ' ' + String(s).slice(0, 200)); if (diagLogs.length > 15) diagLogs.shift(); }
 window.addEventListener('error', (e) => diagLog('js: ' + e.message + ' @' + String(e.filename || '').split('/').pop() + ':' + e.lineno));
@@ -118,7 +118,8 @@ async function routeTile(params, abort) {
   if (NATIVE_TILES) {
     // the Android app reads the tile itself (all packs, directories, gzip) and returns it ready to draw
     let r;
-    try { r = await fetch(ORIGIN + '/map/tile/' + z + '/' + x + '/' + y, { signal }); }
+    const tt = performance.now();
+    try { r = await fetch(ORIGIN + '/map/tile/' + z + '/' + x + '/' + y, { signal }); VD.tileN++; const d = performance.now() - tt; VD.tileMs += d; if (d > VD.slowTile) VD.slowTile = d; }
     catch (e) { if (signal && signal.aborted) throw e; VD.err++; VD.lastErr = (e && (e.name + ': ' + e.message)) || String(e); if (VD.err <= 3) diagLog('tile ' + z + '/' + x + '/' + y + ': ' + VD.lastErr); return { data: new Uint8Array(0) }; }
     if (r.status === 200) { const b = await r.arrayBuffer(); VD.hit++; return { data: new Uint8Array(b) }; }
     if (r.status === 204) { VD.empty++; return { data: new Uint8Array(0) }; }
@@ -148,13 +149,28 @@ async function readMaxZoom() {
   vecMaxZ = z || 14;
 }
 function fontPack() { return hasPack(FULL_ID) ? FULL_ID : (packs()[0] || {}).id; }
+/* Can the map's background workers ask the app for tiles themselves? Then tiles skip the page's
+   main thread entirely. Checked once per session with a tiny worker; otherwise tiles go through the page. */
+let directTiles = null;
+function probeWorkerFetch() {
+  if (!NATIVE_TILES || store.get('tileRoute', '') === 'page') return Promise.resolve(false);
+  return new Promise((res) => {
+    try {
+      const code = 'fetch(' + JSON.stringify(ORIGIN + '/map/tile/0/0/0') + ').then(function(r){return r.arrayBuffer().then(function(b){postMessage(r.status===200&&b.byteLength>0?"ok":"s"+r.status)})}).catch(function(){postMessage("e")})';
+      const w = new Worker(URL.createObjectURL(new Blob([code], { type: 'text/javascript' })));
+      const t = setTimeout(() => { w.terminate(); res(false); }, 3000);
+      w.onmessage = (e) => { clearTimeout(t); w.terminate(); res(e.data === 'ok'); };
+      w.onerror = () => { clearTimeout(t); w.terminate(); res(false); };
+    } catch (e) { res(false); }
+  });
+}
 function vecStyle(dark) {
   const flavor = basemaps.namedFlavor(dark ? 'dark' : 'light'), base = PK.fileBase(fontPack());
   return {
     version: 8,
     glyphs: base + 'fonts/{fontstack}/{range}.pbf',
     sprite: base + 'sprites/' + (dark ? 'dark' : 'light'),
-    sources: { protomaps: { type: 'vector', tiles: ['mallahv://{z}/{x}/{y}'], minzoom: 0, maxzoom: vecMaxZ, attribution: VEC_ATTR } },
+    sources: { protomaps: { type: 'vector', tiles: [directTiles ? ORIGIN + '/map/tile/{z}/{x}/{y}' : 'mallahv://{z}/{x}/{y}'], minzoom: 0, maxzoom: vecMaxZ, attribution: VEC_ATTR } },
     layers: basemaps.layers('protomaps', flavor, { lang: 'ar' })
   };
 }
@@ -170,9 +186,22 @@ let glKeep = null;              // {div, gl, stale}
 function liteMode() {
   const s = store.get('mapLite', null);
   if (s != null) return !!s;
-  return (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 3;   // weaker phones
+  return NATIVE || (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 3;   // phones: lighter by default
 }
 function glPixelRatio() { return Math.min(window.devicePixelRatio || 1, liteMode() ? 1.25 : 2); }
+/* how long the map stays empty after a zoom (shown in diagnostics) */
+let zoomT0 = 0;
+map.on('zoomstart', () => { if (vecLayer && vecLayer._gl) zoomT0 = performance.now(); });
+map.on('zoomend', () => {
+  const g = vecLayer && vecLayer._gl; if (!g || !zoomT0) return;
+  const t0 = zoomT0; zoomT0 = 0;
+  g.once('idle', () => { VD.zoomMs.push(Math.round(performance.now() - t0)); if (VD.zoomMs.length > 8) VD.zoomMs.shift(); });
+});
+function showRedraw(on) {
+  let el = $('redrawTag');
+  if (!el) { el = document.createElement('div'); el.id = 'redrawTag'; el.textContent = 'جارٍ إعادة رسم الخريطة…'; document.body.appendChild(el); }
+  el.classList.toggle('hidden', !on);
+}
 function dropGl() {
   if (!glKeep) return;
   try { glKeep.gl.remove(); } catch (e) {}
@@ -189,6 +218,7 @@ const VecLayer = L.Layer.extend({
       mark('libs');
       const night = document.body.classList.contains('night');
       if (!glKeep) {
+        if (directTiles == null) { directTiles = await probeWorkerFetch(); diagLog('tiles: ' + (directTiles ? 'direct from workers' : 'through the page')); }
         syncArchives(); await readMaxZoom();
         if (!this._alive) return;
         mark('header');
@@ -203,8 +233,19 @@ const VecLayer = L.Layer.extend({
           renderWorldCopies: false, pixelRatio: glPixelRatio()
         });
         mark('created');
-        gl.on('error', (e) => { const msg = (e && e.error && e.error.message) || 'error'; VD.glErr = msg; diagLog('maplibre: ' + msg); console.warn('vec', msg); });
+        gl.on('error', (e) => {
+          const msg = (e && e.error && e.error.message) || 'error'; VD.glErr = msg; diagLog('maplibre: ' + msg); console.warn('vec', msg);
+          // tiles read directly by the workers keep failing: go back to reading them through the page
+          if (directTiles && e && (e.tile || e.sourceId === 'protomaps')) {
+            VD.err++; VD.lastErr = msg;
+            if (VD.err >= 3 && VD.hit === 0) { directTiles = false; diagLog('tiles: direct failed, through the page'); gl.setStyle(vecStyle(vecDark), { diff: false }); }
+          }
+        });
+        gl.on('sourcedata', (e) => { if (directTiles && e && e.tile && e.sourceId === 'protomaps' && e.isSourceLoaded !== undefined) VD.hit++; });
         gl.once('load', () => mark('style'));
+        const cv = gl.getCanvas();
+        cv.addEventListener('webglcontextlost', () => { VD.ctxLost++; diagLog('webgl: context lost'); showRedraw(true); });
+        cv.addEventListener('webglcontextrestored', () => { VD.ctxBack++; diagLog('webgl: context restored'); gl.once('idle', () => showRedraw(false)); });
         gl.once('idle', () => mark('shown'));
         glKeep = { div, gl, stale: false };
       } else {
@@ -696,6 +737,8 @@ function diagText(extra) {
     'الخرائط المنزّلة: ' + (packs().length ? packs().map((p) => p.id + ' ' + fmtVer(p.version) + ' ' + fmtMB(p.size || 0)).join('، ') : 'لا يوجد'),
     'الطبقة الحالية: ' + layerKey + (vecBroken ? ' (تعطّلت المتجهة ' + VD.fellBack + ')' : ''),
     'زمن فتح الخريطة (م.ث): ' + (Object.keys(VD.t).length ? Object.entries(VD.t).map(([k, v]) => k + ' ' + v).join(' · ') : '—'),
+    'بعد التكبير حتى الظهور (م.ث): ' + (VD.zoomMs.join('، ') || '—') + ' · قراءة البلاطة: متوسط ' + (VD.tileN ? Math.round(VD.tileMs / VD.tileN) : '—') + '، أبطأ ' + Math.round(VD.slowTile) + ' · فقدان الرسوميات: ' + VD.ctxLost + ' (عاد ' + VD.ctxBack + ')',
+    'طريقة قراءة البلاط: ' + (directTiles == null ? '—' : directTiles ? 'مباشرة من معالِجات الخريطة' : 'عبر الصفحة'),
     'الرسم: ' + (liteMode() ? 'أخف' : 'عادي') + ' · دقة ' + glPixelRatio() + ' · معالجات ' + (navigator.hardwareConcurrency || '?') + ' · ذاكرة ' + (navigator.deviceMemory || '?') + ' ج.ب',
     'البلاط: طلبات ' + VD.req + ' · نجح ' + VD.hit + ' · فارغ ' + VD.empty + ' · أخطاء ' + VD.err,
     'الإنترنت: ' + (navigator.onLine === false ? 'غير متصل' : 'متصل') + ' · الموقع: ' + (me ? me.lat.toFixed(4) + ', ' + me.lng.toFixed(4) + ' ±' + Math.round(me.acc) + 'م' : '—'),

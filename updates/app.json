@@ -1,7 +1,7 @@
 {
-  "versionCode": 26,
-  "versionName": "3.0",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v3.0/Mallah-Navigator.apk",
+  "versionCode": 27,
+  "versionName": "3.1",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v3.1/Mallah-Navigator.apk",
   "size": 1637435,
-  "notes": "قراءة جديدة للخرائط المنزّلة من داخل التطبيق نفسه: تعمل على كل الهواتف وأخف وأسرع."
+  "notes": "خريطة أسرع عند التكبير والتصغير، ورسم أخف على الهواتف، وقياسات أدق في «تشخيص الخريطة»."
 }
