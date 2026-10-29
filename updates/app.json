@@ -1,7 +1,7 @@
 {
-  "versionCode": 15,
-  "versionName": "2.0.4",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v2.0.4/Mallah-Navigator.apk",
+  "versionCode": 16,
+  "versionName": "2.0.5",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v2.0.5/Mallah-Navigator.apk",
   "size": 870214,
-  "notes": "شاشة أنظف: مصادر الخريطة تُطوى في زر صغير"
+  "notes": "تصغير بدون فراغات حول الخريطة، ومصادر الخريطة في زر صغير"
 }
