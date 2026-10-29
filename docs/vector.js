@@ -167,7 +167,7 @@ const VecLayer = L.Layer.extend({
       const c = m.getCenter();
       this._gl = new maplibregl.Map({
         container: this._div, style: vecStyle(vecDark), interactive: false, attributionControl: false,
-        center: [c.lng, c.lat], zoom: m.getZoom() - 1, maxZoom: 21, fadeDuration: 0,
+        center: [c.lng, c.lat], zoom: m.getZoom() - 1, bearing: -mapBearing(), maxZoom: 21, fadeDuration: 0,
         renderWorldCopies: false, pixelRatio: Math.min(2, window.devicePixelRatio || 1)
       });
       this._gl.on('error', (e) => { const m = (e && e.error && e.error.message) || 'error'; VD.glErr = m; diagLog('maplibre: ' + m); console.warn('vec', m); });
@@ -192,17 +192,17 @@ const VecLayer = L.Layer.extend({
     if (vecLayer === this) vecLayer = null;
     checkCoverage();
   },
-  getEvents() { return { move: this._sync, zoom: this._sync, zoomanim: this._anim, resize: this._resize, viewreset: this._sync }; },
+  getEvents() { return { move: this._sync, zoom: this._sync, rotate: this._sync, zoomanim: this._anim, resize: this._resize, viewreset: this._sync }; },
   _sync() {
     if (!this._gl || this._animating) return;
     const c = this._m.getCenter();
-    this._gl.jumpTo({ center: [c.lng, c.lat], zoom: this._m.getZoom() - 1 });
+    this._gl.jumpTo({ center: [c.lng, c.lat], zoom: this._m.getZoom() - 1, bearing: -mapBearing() });
   },
   _anim(e) {
     if (!this._gl) return;
     this._animating = true;
     clearTimeout(this._animT);
-    this._gl.easeTo({ center: [e.center.lng, e.center.lat], zoom: e.zoom - 1, duration: ZOOM_MS, easing: leafletEase });
+    this._gl.easeTo({ center: [e.center.lng, e.center.lat], zoom: e.zoom - 1, bearing: -mapBearing(), duration: ZOOM_MS, easing: leafletEase });
     this._animT = setTimeout(() => { this._animating = false; this._sync(); }, ZOOM_MS + 20);
   },
   _resize() { if (this._gl) { this._gl.resize(); this._sync(); } },

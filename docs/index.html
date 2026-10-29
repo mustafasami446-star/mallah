@@ -420,6 +420,8 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
   .onbSlide{padding-top:56px}
 }
 .diagOut{white-space:pre-wrap;direction:rtl;text-align:right;font:12.5px/1.7 Plex,monospace;margin:0;padding:12px 14px;color:var(--text);user-select:text;-webkit-user-select:text}
+#northBtn .nd{transition:none}
+#fabs{display:flex;flex-direction:column;gap:10px}
 </style>
 </head>
 <body>
@@ -474,6 +476,7 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
 
 <!-- floating buttons -->
 <div id="fabs">
+    <button class="fab hidden" id="northBtn" aria-label="اتجاه الشمال للأعلى" title="الشمال للأعلى"><svg class="nd" viewBox="0 0 24 24" width="26" height="26"><path d="M12 2l4.5 10h-9z" fill="#ef4444"/><path d="M12 22l-4.5-10h9z" fill="#cbd5e1"/><circle cx="12" cy="12" r="1.6" fill="#0f172a"/></svg></button>
   <button class="fab" id="locBtn" aria-label="موقعي"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
 </div>
 
@@ -671,6 +674,7 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
 <div id="loading" class="hidden"><div class="spin"></div></div>
 
 <script src="lib/leaflet.js"></script>
+<script src="lib/leaflet-rotate.js"></script>
 <script src="app.js"></script>
 <script src="field.js"></script>
 <script src="ops.js"></script>

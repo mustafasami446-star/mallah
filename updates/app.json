@@ -1,7 +1,7 @@
 {
-  "versionCode": 23,
-  "versionName": "2.7",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v2.7/Mallah-Navigator.apk",
-  "size": 1625073,
-  "notes": "إصلاح الوضع الليلي: لم تعد تظهر أجزاء فاتحة وأخرى داكنة من الخريطة عند التكبير والتصغير."
+  "versionCode": 24,
+  "versionName": "2.8",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v2.8/Mallah-Navigator.apk",
+  "size": 1633339,
+  "notes": "تدوير الخريطة بإصبعين، وزر بوصلة يعيد الشمال إلى الأعلى. يعمل مع كل أنواع الخرائط."
 }

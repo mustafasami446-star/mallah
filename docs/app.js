@@ -30,7 +30,8 @@ const LAYERS = {
     opt: { maxZoom: 19, attribution: 'Imagery © Esri' } }
 };
 const lastView = store.get('view', { lat: 33.3152, lng: 44.3661, z: 12 });
-const map = L.map('map', { zoomControl: false, attributionControl: true, tap: true, preferCanvas: false, minZoom: 3, maxZoom: 20, fadeAnimation: false })
+const map = L.map('map', { zoomControl: false, attributionControl: true, tap: true, preferCanvas: false, minZoom: 3, maxZoom: 20, fadeAnimation: false,
+  rotate: true, touchRotate: true, shiftKeyRotate: true, rotateControl: false, bearing: 0 })
   .setView([lastView.lat, lastView.lng], lastView.z);
 let underLayer = null;
 let baseLayer = null, layerKey = store.get('layer', 'osm');
@@ -99,7 +100,7 @@ function setLayer(k, temp) {
     lay = new CachedLayer(LAYERS[k].url, o);
     // a coarse copy underneath (a few big tiles enlarged): when zooming out, the surroundings are already
     // covered by a softer picture instead of empty space, until the sharp tiles arrive
-    if (!map.getPane('underPane')) { map.createPane('underPane').style.zIndex = 150; map.getPane('underPane').style.pointerEvents = 'none'; }
+    if (!map.getPane('underPane')) { map.createPane('underPane', map.getPane('rotatePane') || undefined).style.zIndex = 150; map.getPane('underPane').style.pointerEvents = 'none'; }
     underLayer = new CachedLayer(LAYERS[k].url, Object.assign({}, o, { pane: 'underPane', maxNativeZoom: Math.min(9, o.maxNativeZoom), keepBuffer: 6, updateWhenIdle: false, updateWhenZooming: true, attribution: '' })).addTo(map);
   }
   baseLayer = lay.addTo(map);
@@ -243,10 +244,30 @@ function meIcon(nav, heading) {
     : (h == null ? '' : `<svg viewBox="0 0 48 48" width="48" height="48"><path d="M24 2l7 12H17z" fill="#2563eb" opacity=".85"/></svg>`);
   return L.divIcon({
     className: '', iconSize: nav ? [40, 40] : [28, 28], iconAnchor: nav ? [20, 20] : [14, 14],
-    html: `<div class="me${nav ? ' nav' : ''}"><div class="hd" style="transform:rotate(${h || 0}deg)">${arrow}</div><div class="dot"></div></div>`
+    html: `<div class="me${nav ? ' nav' : ''}"><div class="hd" style="transform:rotate(${(h || 0) + mapBearing()}deg)">${arrow}</div><div class="dot"></div></div>`
   });
 }
 let iconMode = null;
+function mapBearing() { try { return map.getBearing ? map.getBearing() || 0 : 0; } catch (e) { return 0; } }
+/* rotation: two fingers turn the map; the compass button turns it back to north */
+let northAnim = 0;
+function northUp() {
+  const b0 = mapBearing(); if (!b0) return;
+  const from = b0 > 180 ? b0 - 360 : b0, t0 = performance.now(), id = ++northAnim;
+  (function step(t) {
+    if (id !== northAnim) return;
+    const k = Math.min(1, (t - t0) / 300), e = 1 - Math.pow(1 - k, 3);
+    map.setBearing(from * (1 - e));
+    if (k < 1) requestAnimationFrame(step);
+  })(t0);
+}
+function onMapRotate() {
+  const b = mapBearing(), btn = $('northBtn');
+  if (btn) { btn.classList.toggle('hidden', Math.abs(b > 180 ? b - 360 : b) < 0.5); const n = btn.querySelector('.nd'); if (n) n.style.transform = 'rotate(' + b + 'deg)'; }
+  if (meMarker && me) { const hd = meMarker.getElement() && meMarker.getElement().querySelector('.hd'); if (hd) hd.style.transform = 'rotate(' + ((me.heading || 0) + b) + 'deg)'; }
+}
+map.on('rotate', onMapRotate);
+$('northBtn').onclick = northUp;
 function updateMeMarker() {
   if (!me) return;
   const ll = [me.lat, me.lng]; const nav = !!(navState || directState);
@@ -260,7 +281,7 @@ function updateMeMarker() {
     if (key !== iconMode) { meMarker.setIcon(meIcon(nav, me.heading)); iconMode = key; }
     else {
       const hd = meMarker.getElement() && meMarker.getElement().querySelector('.hd');
-      if (hd) hd.style.transform = 'rotate(' + (me.heading || 0) + 'deg)';
+      if (hd) hd.style.transform = 'rotate(' + ((me.heading || 0) + mapBearing()) + 'deg)';
     }
   }
 }
