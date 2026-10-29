@@ -165,10 +165,10 @@ jobs:
           v, url, size, mz = sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4])
           base = url.rsplit("/", 1)[0] + "/"
           provs = json.load(open("provinces/packs.json", encoding="utf-8"))
-          for p in provs: p["url"] = base + p.pop("file"); p.pop("tiles", None)
+          for p in provs: p["url"] = base + p.pop("file"); p.pop("tiles", None); p["version"] = v
           json.dump({"version": v, "url": url, "size": size, "maxzoom": mz,
                      "built": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%MZ"),
-                     "packs": [{"id": "iraq", "name": "العراق كاملًا", "name_en": "Iraq", "url": url, "size": size}] + provs},
+                     "packs": [{"id": "iraq", "name": "العراق كاملًا", "name_en": "Iraq", "url": url, "size": size, "version": v}] + provs},
                     open("updates/map.json", "w"), ensure_ascii=False, indent=2)
           PY
           git config user.name "mallah-bot"
