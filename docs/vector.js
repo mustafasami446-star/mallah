@@ -511,6 +511,7 @@ async function checkUpdates(manual, quiet) {
   offerUpdates(manual);
 }
 function offerUpdates(manual) {
+  if (document.body.classList.contains('onb-on')) return;
   if (navState || directState || window.measActive) return;
   if (!$('modal').classList.contains('hidden') || document.querySelector('.panel:not(.hidden)')) { if (!manual) return; }
   const av = appVersion();

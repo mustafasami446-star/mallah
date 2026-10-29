@@ -699,6 +699,7 @@ function onNavLocation() {
 
 /* ---------------- back button ---------------- */
 window.handleBack = function () {
+  if (typeof onbHandleBack === 'function' && onbHandleBack()) return true;
   if (!$('modal').classList.contains('hidden')) { closeModal(); return true; }
   if (typeof guideHandleBack === 'function' && guideHandleBack()) return true;
   if (typeof measHandleBack === 'function' && measHandleBack()) return true;
@@ -1070,5 +1071,9 @@ applyNight(); renderLayerMenu();
 
 /* ---------------- start ---------------- */
 onConn();
-startLocation();
-setTimeout(() => { if (!dest && !navState && !window.measActive && !document.querySelector('.panel:not(.hidden)') && $('modal').classList.contains('hidden')) toast('ابحث عن مكان أو اضغط مطولًا على الخريطة لاختيار وجهة', 4500); }, 1200);
+/* a fresh install starts with the welcome screens (onboard.js), which ask for the location themselves */
+window.ONB_FIRST = !store.get('onbDone', false) && !store.get('guideSeen', false);
+if (window.ONB_FIRST) store.set('guideSeen', true);
+else if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startLocation);   // after every script has loaded
+else startLocation();
+setTimeout(() => { if (!window.ONB_FIRST && !dest && !navState && !window.measActive && !document.querySelector('.panel:not(.hidden)') && $('modal').classList.contains('hidden')) toast('ابحث عن مكان أو اضغط مطولًا على الخريطة لاختيار وجهة', 4500); }, 1200);

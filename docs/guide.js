@@ -1,7 +1,7 @@
 'use strict';
 /* الملاح — دليل الاستخدام وعن البرنامج */
 
-const APP_VERSION = '2.3';
+const APP_VERSION = '2.4';
 const DESIGNER = { name: 'الأستاذ مصطفى سامي', phones: ['+9647861666400', '+9647755962400'] };
 
 const GUIDE = [
@@ -207,6 +207,7 @@ function guideHandleBack() {
   if (el) el.innerHTML = 'الملاح ' + APP_VERSION + ' · من تصميم <b>' + DESIGNER.name + '</b> · <a href="#" id="setCreditMore">التواصل</a><br><span style="font-size:11px">بيانات الخرائط © مساهمو OpenStreetMap · صور © Esri · Protomaps</span>';
   const a = $('setCreditMore'); if (a) a.onclick = (e) => { e.preventDefault(); $('setPanel').classList.add('hidden'); openGuide(); setTimeout(() => { const c = document.querySelector('#guideBody .credit'); if (c) c.scrollIntoView({ behavior: 'smooth' }); }, 100); };
 })();
+{ const bv = $('brandVer'); if (bv) bv.textContent = 'ملاحتك بالعربي · الإصدار ' + APP_VERSION; }
 /* first run: offer the guide once */
 if (!store.get('guideSeen', false)) {
   store.set('guideSeen', true);
