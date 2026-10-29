@@ -1,7 +1,7 @@
 {
-  "versionCode": 31,
-  "versionName": "3.5",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v3.5/Mallah-Navigator.apk",
+  "versionCode": 32,
+  "versionName": "3.6",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v3.6/Mallah-Navigator.apk",
   "size": 1797237,
-  "notes": "إصلاح ظهور مربع داكن وما حوله فاتح في الوضع الليلي، وقياس سرعة الإنترنت للخرائط في «تشخيص الخريطة»."
+  "notes": "إصلاح خط المسار الأزرق: كان ينزاح عن الطريق أثناء التكبير والتدوير بإصبعين."
 }

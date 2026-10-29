@@ -118,7 +118,7 @@ function allSites() {
   siteSets.forEach((set) => { if (set.visible !== false) set.sites.forEach((s) => out.push({ n: s[0], lat: s[1], lng: s[2], d: s[3] || '', set: set.name })); });
   return out;
 }
-const siteRenderer = L.canvas({ padding: 0.5 });
+const siteRenderer = L.canvas({ padding: 0.8 });
 const sitesLayer = L.layerGroup().addTo(map), labelsLayer = L.layerGroup().addTo(map);
 function renderSitesOnMap() {
   sitesLayer.clearLayers(); labelsLayer.clearLayers();

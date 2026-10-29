@@ -31,7 +31,9 @@ const LAYERS = {
 };
 const lastView = store.get('view', { lat: 33.3152, lng: 44.3661, z: 12 });
 const map = L.map('map', { zoomControl: false, attributionControl: true, tap: true, preferCanvas: false, minZoom: 3, maxZoom: 20, fadeAnimation: false,
-  rotate: true, touchRotate: true, shiftKeyRotate: true, rotateControl: false, bearing: 0 })
+  rotate: true, touchRotate: true, shiftKeyRotate: true, rotateControl: false, bearing: 0,
+  // lines are drawn into an area larger than the screen, so a turned map never shows them cut off
+  renderer: L.svg({ padding: 0.8 }) })
   .setView([lastView.lat, lastView.lng], lastView.z);
 let underLayer = null;
 let baseLayer = null, layerKey = store.get('layer', 'osm');
@@ -269,6 +271,23 @@ function onMapRotate() {
   if (meMarker && me) { const hd = meMarker.getElement() && meMarker.getElement().querySelector('.hd'); if (hd) hd.style.transform = 'rotate(' + ((me.heading || 0) + b) + 'deg)'; }
 }
 map.on('rotate', onMapRotate);
+/* While the map is turned, the rotation plugin moves line layers (routes, tracks, measured shapes) with a
+   known drift during pinch/turn gestures. Redraw them for the exact current view, once per frame, instead. */
+let vecRedrawPending = false;
+function redrawLinesNow() {
+  vecRedrawPending = false;
+  map.eachLayer((l) => { if (l instanceof L.Renderer && l._map) try { l._reset(); } catch (e) {} });
+}
+map.on('zoom rotate', () => {
+  if (!mapBearing() || vecRedrawPending) return;
+  vecRedrawPending = true; requestAnimationFrame(redrawLinesNow);
+});
+/* after turning the map, redraw lines and shapes for the new view (turning alone doesn't trigger it) */
+let rotRedrawT = 0;
+map.on('rotate', () => {
+  clearTimeout(rotRedrawT);
+  rotRedrawT = setTimeout(() => { map.eachLayer((l) => { if (l instanceof L.Renderer && l._update) try { l._update(); } catch (e) {} }); }, 120);
+});
 $('northBtn').onclick = northUp;
 function updateMeMarker() {
   if (!me) return;
