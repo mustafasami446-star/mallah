@@ -1,7 +1,7 @@
 {
-  "versionCode": 20,
-  "versionName": "2.4",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v2.4/Mallah-Navigator.apk",
-  "size": 1620977,
-  "notes": "هوية جديدة للملاح (شعار الشراع والموج)، شاشات ترحيب للمستخدم الجديد تساعده على السماح بالموقع وتنزيل خريطة محافظته، وإصلاحات."
+  "versionCode": 21,
+  "versionName": "2.5",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v2.5/Mallah-Navigator.apk",
+  "size": 1625073,
+  "notes": "إصلاح مهم: الخريطة المنزّلة كانت تظهر فارغة على بعض الهواتف. أُضيف «تشخيص الخريطة» في الإعدادات."
 }

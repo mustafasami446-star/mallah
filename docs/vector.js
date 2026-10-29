@@ -94,6 +94,13 @@ class PackSource {
 /* one archive per installed pack; a tile is taken from the first pack that has it
    (provinces overlap a little at their borders, and all of them hold the whole country at low zoom) */
 let archives = [];
+/* what the offline map is doing — shown in Settings ← «تشخيص الخريطة» */
+const VD = { req: 0, hit: 0, empty: 0, err: 0, lastErr: '', glErr: '', fellBack: '' };
+const diagLogs = [];
+function diagLog(s) { diagLogs.push(new Date().toTimeString().slice(0, 8) + ' ' + String(s).slice(0, 200)); if (diagLogs.length > 15) diagLogs.shift(); }
+window.addEventListener('error', (e) => diagLog('js: ' + e.message + ' @' + String(e.filename || '').split('/').pop() + ':' + e.lineno));
+window.addEventListener('unhandledrejection', (e) => diagLog('promise: ' + ((e.reason && e.reason.message) || e.reason)));
+let vecBroken = false;
 function syncArchives() {
   const old = new Map(archives.map((a) => [a.key, a]));
   const list = packs().slice().sort((a, b) => (a.id === FULL_ID ? -1 : b.id === FULL_ID ? 1 : 0));
@@ -106,12 +113,20 @@ async function routeTile(params, abort) {
   const m = /^mallahv:\/\/(\d+)\/(\d+)\/(\d+)/.exec(params.url);
   if (!m) return { data: new Uint8Array(0) };
   const z = +m[1], x = +m[2], y = +m[3], signal = abort && abort.signal;
+  VD.req++;
   for (const a of archives) {
     try {
       const r = await a.pm.getZxy(z, x, y, signal);
-      if (r && r.data) return { data: new Uint8Array(r.data) };
-    } catch (e) { if (signal && signal.aborted) throw e; }
+      if (r && r.data) { VD.hit++; return { data: new Uint8Array(r.data) }; }
+    } catch (e) {
+      if (signal && signal.aborted) throw e;
+      VD.err++; VD.lastErr = (e && (e.name + ': ' + e.message)) || String(e);
+      if (VD.err <= 3) diagLog('tile ' + z + '/' + x + '/' + y + ' [' + a.id + ']: ' + VD.lastErr);
+      // a failed read stays cached inside the reader: start that archive afresh (at most every 5 s)
+      if (!a.resetT || Date.now() - a.resetT > 5000) { a.resetT = Date.now(); a.pm = new pmtiles.PMTiles(new PackSource(a.id, a.key + '-r' + a.resetT)); }
+    }
   }
+  VD.empty++;
   return { data: new Uint8Array(0) };                 // outside the downloaded maps: an empty tile
 }
 async function readMaxZoom() {
@@ -155,9 +170,18 @@ const VecLayer = L.Layer.extend({
         center: [c.lng, c.lat], zoom: m.getZoom() - 1, maxZoom: 21, fadeDuration: 0,
         renderWorldCopies: false, pixelRatio: Math.min(2, window.devicePixelRatio || 1)
       });
-      this._gl.on('error', (e) => console.warn('vec', e && e.error && e.error.message));
+      this._gl.on('error', (e) => { const m = (e && e.error && e.error.message) || 'error'; VD.glErr = m; diagLog('maplibre: ' + m); console.warn('vec', m); });
       vecLayer = this;
       checkCoverage();
+      // if the offline map can't read a single tile on this phone, don't leave the user with an empty screen
+      const me0 = this;
+      setTimeout(() => {
+        if (vecLayer !== me0 || VD.hit > 0 || VD.err === 0) return;
+        vecBroken = true; VD.fellBack = new Date().toTimeString().slice(0, 8);
+        OFFLINE_LAYER = 'esri';
+        setLayer(navigator.onLine === false ? 'esri' : 'osm', true);
+        toast('تعذّر عرض الخريطة المنزّلة على هذا الهاتف، فتم التحويل إلى خريطة الشوارع. للمساعدة: الإعدادات ← «تشخيص الخريطة» ← مشاركة.', 8000);
+      }, 9000);
     }).catch((e) => { console.error(e); toast('تعذّر تشغيل الخريطة المتجهة على هذا الهاتف — تم التحويل إلى الخريطة العادية', 5000); setLayer('esri'); });
   },
   onRemove() {
@@ -196,11 +220,12 @@ function webglOk() {
 }
 function enableVecLayer() {
   if (!packs().length || !webglOk()) { delete LAYERS.vec; OFFLINE_LAYER = 'esri'; renderLayerMenu(); return false; }
+  if (vecBroken) OFFLINE_LAYER = 'esri';
   LAYERS.vec = { name: hasPack(FULL_ID) ? '🇮🇶 خريطة العراق (بدون إنترنت)' : '🗺 خرائطي المنزّلة (بدون إنترنت)', make: () => new VecLayer() };
   // show it first in the layer menu
   const ordered = { vec: LAYERS.vec }; Object.keys(LAYERS).forEach((k) => { if (k !== 'vec') ordered[k] = LAYERS[k]; });
   Object.keys(LAYERS).forEach((k) => delete LAYERS[k]); Object.assign(LAYERS, ordered);
-  OFFLINE_LAYER = 'vec';
+  if (!vecBroken) OFFLINE_LAYER = 'vec';
   renderLayerMenu();
   return true;
 }
@@ -605,13 +630,74 @@ bindSiteResults = function () {
     el.onclick = () => { const p = lastPlaceHits[+el.dataset.place]; if (!p) return; closeSearch(); setDestination(p.lat, p.lng, p.n, [p.a, p.e].filter(Boolean).join(' · ')); };
   });
 };
+/* ---------------- map diagnostics (Settings) ---------------- */
+function glInfo() {
+  try {
+    const c = document.createElement('canvas'), g = c.getContext('webgl2') || c.getContext('webgl');
+    if (!g) return 'غير مدعوم';
+    const ext = g.getExtension('WEBGL_debug_renderer_info');
+    return (typeof WebGL2RenderingContext !== 'undefined' && g instanceof WebGL2RenderingContext ? 'WebGL2' : 'WebGL1') + ' · ' + (ext ? g.getParameter(ext.UNMASKED_RENDERER_WEBGL) : g.getParameter(g.RENDERER));
+  } catch (e) { return 'خطأ: ' + e.message; }
+}
+function diagText(extra) {
+  const ua = navigator.userAgent, cv = (ua.match(/Chrome\/([\d.]+)/) || [])[1] || '?';
+  let av = ''; try { av = NATIVE ? Android.appVersion() : APP_VERSION + ' (web)'; } catch (e) {}
+  const L = [
+    'الملاح ' + av + (NATIVE ? ' — Android' : ''),
+    'محرّك العرض: Chrome ' + cv + ((/; wv\)/).test(ua) ? ' (WebView)' : ''),
+    'Android: ' + ((ua.match(/Android ([\d.]+)/) || [])[1] || '—') + ' · ' + ((ua.match(/; ([^;)]+) Build/) || [])[1] || ''),
+    'الرسوميات: ' + glInfo(),
+    'الخرائط المنزّلة: ' + (packs().length ? packs().map((p) => p.id + ' ' + fmtVer(p.version) + ' ' + fmtMB(p.size || 0)).join('، ') : 'لا يوجد'),
+    'الطبقة الحالية: ' + layerKey + (vecBroken ? ' (تعطّلت المتجهة ' + VD.fellBack + ')' : ''),
+    'البلاط: طلبات ' + VD.req + ' · نجح ' + VD.hit + ' · فارغ ' + VD.empty + ' · أخطاء ' + VD.err,
+    'الإنترنت: ' + (navigator.onLine === false ? 'غير متصل' : 'متصل') + ' · الموقع: ' + (me ? me.lat.toFixed(4) + ', ' + me.lng.toFixed(4) + ' ±' + Math.round(me.acc) + 'م' : '—'),
+  ];
+  if (VD.lastErr) L.push('آخر خطأ في القراءة: ' + VD.lastErr);
+  if (VD.glErr) L.push('خطأ العرض: ' + VD.glErr);
+  if (extra) L.push('', extra);
+  if (diagLogs.length) L.push('', 'السجل:', ...diagLogs);
+  return L.join('\n');
+}
+async function diagTest() {
+  const out = [];
+  try { await loadLibs(); } catch (e) { return 'تعذّر تحميل مكتبات الخريطة: ' + e.message; }
+  for (const p of packs()) {
+    const pm = new pmtiles.PMTiles(new PackSource(p.id, 'diag-' + p.id + '-' + Date.now()));
+    try {
+      const h = await pm.getHeader();
+      const t = await pm.getZxy(0, 0, 0);
+      out.push('✓ ' + p.id + ': z' + h.minZoom + '–' + h.maxZoom + '، بلاطة 0/0/0 = ' + (t && t.data ? t.data.byteLength + ' بايت' : 'فارغة'));
+    } catch (e) { out.push('✗ ' + p.id + ': ' + (e && (e.name + ': ' + e.message))); }
+  }
+  return 'الاختبار:\n' + (out.join('\n') || 'لا توجد خرائط منزّلة');
+}
+function openDiag() {
+  let el = $('diagPanel');
+  if (!el) {
+    el = document.createElement('div'); el.id = 'diagPanel'; el.className = 'panel hidden';
+    el.innerHTML = `<div class="panelHead"><button class="iconBtn" id="diagClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></button><h2>تشخيص الخريطة</h2></div>
+      <div class="panelBody"><div class="card"><pre id="diagOut" class="diagOut"></pre></div>
+      <div class="btnRow" style="padding:12px"><button class="chip go" id="diagRun">🔁 اختبار الخرائط المنزّلة</button><button class="chip" id="diagShare">📤 مشاركة مع المصمم</button>${packs().length ? '<button class="chip" id="diagVec">🗺 إعادة تجربة الخريطة المنزّلة</button>' : ''}</div>
+      <div class="note">إذا ظهرت لك مشكلة في عرض الخريطة، اضغط «اختبار» ثم «مشاركة» وأرسل النتيجة عبر واتساب إلى مصمم البرنامج.</div></div>`;
+    document.body.appendChild(el);
+    $('diagClose').onclick = () => el.classList.add('hidden');
+    $('diagRun').onclick = async () => { $('diagOut').textContent = diagText('جارٍ الاختبار…'); $('diagOut').textContent = diagText(await diagTest()); };
+    $('diagShare').onclick = () => { const t = $('diagOut').textContent; if (NATIVE && Android.shareText) Android.shareText(t); else if (navigator.share) navigator.share({ text: t }).catch(() => {}); else { try { navigator.clipboard.writeText(t); toast('تم النسخ'); } catch (e) {} } };
+    const v = $('diagVec'); if (v) v.onclick = () => { vecBroken = false; VD.req = VD.hit = VD.empty = VD.err = 0; VD.lastErr = VD.glErr = ''; enableVecLayer(); el.classList.add('hidden'); $('setPanel').classList.add('hidden'); setLayer('vec'); toast('جارٍ تجربة الخريطة المنزّلة…'); };
+  }
+  $('diagOut').textContent = diagText();
+  el.classList.remove('hidden');
+}
 function vecHandleBack() {
+  const d = $('diagPanel');
+  if (d && !d.classList.contains('hidden')) { d.classList.add('hidden'); return true; }
   const p = $('provPanel');
   if (p && !p.classList.contains('hidden')) { p.classList.add('hidden'); return true; }
   return false;
 }
 
 /* ---------------- init ---------------- */
+{ const od = $('openDiag'); if (od) od.onclick = openDiag; }
 (async function initVector() {
   if (PK) { await PK.ready; packState = readPackInfo(); }
   // the packs card sits at the top of the offline maps panel

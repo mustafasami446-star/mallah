@@ -1,4 +1,16 @@
 'use strict';
+/* older Android WebView (before Chrome 100) lacks AbortSignal.throwIfAborted, which the offline map reader uses
+   for every tile — without it the offline map stays empty */
+(function () {
+  try {
+    if (typeof AbortSignal !== 'undefined' && !AbortSignal.prototype.throwIfAborted)
+      AbortSignal.prototype.throwIfAborted = function () {
+        if (!this.aborted) return;
+        if (this.reason) throw this.reason;
+        const e = new Error('The operation was aborted.'); e.name = 'AbortError'; throw e;
+      };
+  } catch (e) {}
+})();
 /* الملاح — Leaflet + OSRM + Nominatim navigation inside an Android WebView */
 
 const NATIVE = typeof window.Android !== 'undefined';

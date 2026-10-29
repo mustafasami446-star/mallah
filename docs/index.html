@@ -364,7 +364,7 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
 .onbLogo.sm{width:96px;height:96px}
 .feats{display:flex;flex-direction:column;gap:12px;width:100%;max-width:420px;margin-top:6px;text-align:right}
 .feat{display:flex;align-items:center;gap:14px;background:rgba(255,255,255,.04);border:1px solid rgba(148,163,184,.14);border-radius:16px;padding:12px 14px}
-.feat .fi{flex:none;width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font-size:22px;background:color-mix(in srgb,var(--c) 22%,transparent)}
+.feat .fi{flex:none;width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font-size:22px;background:rgba(148,163,184,.14);background:color-mix(in srgb,var(--c) 22%,transparent)}
 .feat b{display:block;font-size:15.5px}
 .feat small{display:block;color:var(--muted);font-size:13px;line-height:1.5;margin-top:2px}
 .onbArt{position:relative;width:140px;height:140px;display:grid;place-items:center;margin-bottom:6px}
@@ -396,6 +396,7 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
   #onb>.onbFoot{width:440px;background:#070f20;border-radius:0 0 24px 24px;border:1px solid var(--line);border-top:0}
   .onbSlide{padding-top:56px}
 }
+.diagOut{white-space:pre-wrap;direction:rtl;text-align:right;font:12.5px/1.7 Plex,monospace;margin:0;padding:12px 14px;color:var(--text);user-select:text;-webkit-user-select:text}
 </style>
 </head>
 <body>
@@ -599,6 +600,7 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
       <div class="card"><h3>رمز القفل لمواقع العمل</h3><div class="item"><div class="grow s" id="pinState"></div></div>
         <div class="btnRow"><button class="chip go" id="pinSet">تعيين رمز</button><button class="chip" id="pinLock">قفل الآن</button><button class="chip del" id="pinOff">إزالة الرمز</button></div></div>
     </div>
+    <div class="card"><h3>الخريطة</h3><div class="item" id="openDiag" style="cursor:pointer"><div class="grow"><div class="t">🩺 تشخيص الخريطة</div><div class="s" style="color:var(--muted);font-size:12.5px">إذا لم تظهر الخريطة أو كانت بطيئة: اختبرها وشارك النتيجة مع المصمم</div></div><span style="color:var(--muted)">‹</span></div></div>
     <div class="card"><h3>الإحداثيات</h3><div class="frm">
       <label>صيغة عرض الإحداثيات</label><select id="setFmt"><option value="dec">عشرية (30.508500, 47.780400)</option><option value="dms">درجات ودقائق وثوانٍ</option><option value="utm">UTM</option></select>
       <div class="two"><div><label>نطاق UTM الافتراضي</label><input type="number" id="setZone" min="1" max="60"></div><div><label>نصف الكرة</label><select id="setHemi"><option value="N">شمالي</option><option value="S">جنوبي</option></select></div></div>
