@@ -87,7 +87,30 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 .hcard .chev{margin-right:auto;color:var(--muted);font-size:20px}
 body.ui-dest #searchWrap,body.ui-nav #searchWrap,body.ui-meas #searchWrap{display:none}
 body.ui-nav #topBar,body.ui-meas #topBar{display:none}
-.nearPin{font-size:20px;line-height:30px;width:30px;height:30px;text-align:center;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.4);border:2px solid #0f172a}
+.nearPin{font-size:15px;line-height:24px;width:28px;height:28px;text-align:center;border-radius:50%;background:var(--c,#1e3a5f);box-shadow:0 2px 6px rgba(0,0,0,.45);border:2px solid #fff;transition:transform .15s}
+.nearPin.on{transform:scale(1.45);border-color:var(--accent);box-shadow:0 0 0 4px rgba(56,189,248,.35),0 3px 10px rgba(0,0,0,.5)}
+/* nearby results: list or map */
+#searchWrap.nearOn #homeChips{display:none}
+#searchWrap.nearMap #searchBar{display:none}
+#searchWrap.nearOn #results{border-top:0;margin-top:2px}
+.nearHead{display:flex;align-items:center;gap:8px;padding:6px 2px 4px}
+.nearHead .nh{flex:1;min-width:0}
+.nearHead .nh b{display:block;font-size:16.5px}
+.nearHead .nh small{color:var(--muted);font-size:12px}
+.nearBtn{flex:none;height:36px;padding:0 12px;border-radius:12px;background:rgba(56,189,248,.13);color:var(--accent);font-weight:600;font-size:13.5px}
+.nearX{flex:none;width:36px;height:36px;border-radius:12px;background:var(--panel2);color:var(--muted);font-size:15px}
+.nearCats{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:6px 0 10px}
+.nearCats::-webkit-scrollbar{display:none}
+.ncat{flex:none;height:38px;padding:0 13px;border-radius:19px;background:#0b1222;border:1px solid var(--line);font-size:14px;font-weight:600;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.ncat i{font-style:normal;color:var(--go)}
+.ncat.on{border-color:var(--go);background:rgba(34,197,94,.10)}
+.nres .t{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.nres .nd{flex:none;align-self:center}
+.nres.on{background:rgba(56,189,248,.08)}
+.nearSel{display:flex;align-items:center;gap:8px}
+.nearSel .res{flex:1;border-bottom:0;cursor:pointer}
+.nearSel .chip{height:40px}
+.nearTip{color:var(--muted);font-size:13px;text-align:center;padding:6px 0 4px}
 
 /* floating buttons */
 #fabs{position:absolute;left:12px;bottom:calc(24px + env(safe-area-inset-bottom));z-index:450;display:flex;flex-direction:column;gap:10px;transition:bottom .25s}

@@ -5,7 +5,7 @@ const homeEl = $('searchWrap');
 
 /* ---------------- sheet: collapsed / expanded ---------------- */
 function homeExpand(on) { homeEl.classList.toggle('expanded', on); placeFabs(); }
-$('homeGrab').onclick = () => homeExpand(!homeEl.classList.contains('expanded'));
+$('homeGrab').onclick = () => { if (nearOn() && nearHits.length) setNearMode(nearMode === 'list' ? 'map' : 'list'); else homeExpand(!homeEl.classList.contains('expanded')); };
 qEl.addEventListener('focus', () => homeExpand(true));
 (function swipe() {
   let y0 = null;
@@ -13,6 +13,7 @@ qEl.addEventListener('focus', () => homeExpand(true));
   homeEl.addEventListener('touchend', (e) => {
     if (y0 == null) return;
     const dy = e.changedTouches[0].clientY - y0; y0 = null;
+    if (nearOn()) { if (dy < -40 && nearMode === 'map') setNearMode('list'); else if (dy > 50 && homeEl.scrollTop <= 0 && nearMode === 'list' && nearHits.length) setNearMode('map'); return; }
     if (dy < -40) homeExpand(true);
     else if (dy > 50 && homeEl.scrollTop <= 0) { homeExpand(false); qEl.blur(); }
   }, { passive: true });
@@ -76,34 +77,101 @@ async function nearOnline(cat, ref) {
   }
   return [];
 }
-async function showNearby(id) {
+/* results of a category: a list, or the map with a compact bar (switch with «عرض على الخريطة») */
+let nearCat = null, nearSrc = '', nearMode = 'list', nearSel = -1;
+const nearOn = () => homeEl.classList.contains('nearOn');
+function cleanName(s) { const t = String(s || '').replace(/^[\s@;:.,،\-_*#!|~]+/, '').replace(/[\s@;]+$/, '').replace(/\s{2,}/g, ' ').trim(); return t || String(s || ''); }
+function nearHeadHtml(cat) {
+  const n = nearHits.length;
+  return `<div class="nearHead"><div class="nh"><b>${cat.i} ${cat.n} بالقرب منك</b><small>${n ? n + ' نتيجة' : ''}${n && nearSrc === 'offline' ? ' · بدون إنترنت' : ''}</small></div>`
+    + (n ? `<button class="nearBtn" id="nearToggle">${nearMode === 'list' ? '🗺 عرض على الخريطة' : '☰ القائمة'}</button>` : '')
+    + `<button class="nearX" id="nearClose" aria-label="إغلاق">✕</button></div>`
+    + `<div class="nearCats">${CATS.map((c) => `<button class="ncat${c.id === cat.id ? ' on' : ''}" data-ncat="${c.id}"><span>${c.i}</span>${c.n}${c.id === cat.id ? ' <i>✓</i>' : ''}</button>`).join('')}</div>`;
+}
+function nearRowHtml(h, i, cat) {
+  return `<div class="res nres${i === nearSel ? ' on' : ''}" data-near="${i}"><div class="ic" style="background:${cat.c}">${cat.i}</div><div style="flex:1;min-width:0"><div class="t">${esc(h.n)}</div><div class="s">${esc(h.sub || cat.n)}</div></div><div class="s nd">${fmtDist(h.d)}</div></div>`;
+}
+function renderNear(msg) {
+  const cat = CATS.find((c) => c.id === nearCat); if (!cat) return;
+  let h = nearHeadHtml(cat);
+  if (msg) h += `<div class="res"><div class="s">${msg}</div></div>`;
+  else if (nearMode === 'map') {
+    const x = nearHits[nearSel];
+    h += x ? `<div class="nearSel">${nearRowHtml(x, nearSel, cat)}<button class="chip go" id="nearGo">🧭 اذهب</button></div>`
+      : '<div class="nearTip">اضغط على أي علامة في الخريطة لعرضها</div>';
+  } else h += '<div class="nearList">' + nearHits.map((x, i) => nearRowHtml(x, i, cat)).join('') + '</div>';
+  resEl.innerHTML = h; resEl.classList.remove('hidden');
+  homeEl.classList.add('nearOn'); homeEl.classList.toggle('nearMap', nearMode === 'map');
+  const t = $('nearToggle'); if (t) t.onclick = () => setNearMode(nearMode === 'list' ? 'map' : 'list');
+  $('nearClose').onclick = closeNear;
+  resEl.querySelectorAll('[data-ncat]').forEach((b) => { b.onclick = () => { if (b.dataset.ncat !== nearCat) showNearby(b.dataset.ncat, nearMode); }; });
+  resEl.querySelectorAll('.nearList [data-near]').forEach((el) => { el.onclick = () => pickNear(+el.dataset.near); });
+  const go = $('nearGo'); if (go) go.onclick = () => pickNear(nearSel);
+  const sel = resEl.querySelector('.nearSel [data-near]'); if (sel) sel.onclick = () => pickNear(nearSel);
+  placeFabs();
+}
+function drawNearMarkers() {
+  const cat = CATS.find((c) => c.id === nearCat); if (!cat) return;
+  nearLayer.clearLayers();
+  nearHits.forEach((h, i) => L.marker([h.lat, h.lng], {
+    icon: L.divIcon({ className: '', html: `<div class="nearPin${i === nearSel ? ' on' : ''}" style="--c:${cat.c}">${cat.i}</div>`, iconSize: [28, 28], iconAnchor: [14, 14] }),
+    zIndexOffset: i === nearSel ? 900 : 0
+  }).on('click', () => selectNear(i)).addTo(nearLayer));
+}
+function fitNear() {
+  if (!nearHits.length) return;
+  requestAnimationFrame(() => {
+    const pts = nearHits.slice(0, nearMode === 'map' ? 15 : 6).map((h) => [h.lat, h.lng]);
+    if (me) pts.push([me.lat, me.lng]);
+    const wide = innerWidth >= 760, bottom = wide ? 40 : homeEl.offsetHeight + 24;
+    setFollow(false);
+    map.fitBounds(L.latLngBounds(pts), { paddingTopLeft: [wide ? 40 : 30, 90], paddingBottomRight: [wide ? 470 : 30, bottom], maxZoom: 16 });
+  });
+}
+function setNearMode(m) {
+  nearMode = m;
+  homeExpand(m === 'list');
+  renderNear(); drawNearMarkers();
+  if (m === 'map') fitNear();
+}
+function selectNear(i) {
+  nearSel = i;
+  if (nearMode !== 'map') { nearMode = 'map'; homeExpand(false); }
+  renderNear(); drawNearMarkers();
+  const h = nearHits[i];
+  if (h) requestAnimationFrame(() => {
+    const y = innerWidth >= 760 ? 0 : homeEl.offsetHeight / 2;
+    const p = map.project([h.lat, h.lng], map.getZoom()).add([innerWidth >= 760 ? 220 : 0, y]);
+    map.panTo(map.unproject(p, map.getZoom()), { animate: true });
+  });
+}
+async function showNearby(id, mode) {
   const cat = CATS.find((c) => c.id === id); if (!cat) return;
   const seq = ++nearSeq, ref = nearRef();
-  homeExpand(true);
-  resEl.innerHTML = `<div class="secTitle">${cat.i} ${cat.n} — جارٍ البحث…</div>`; resEl.classList.remove('hidden');
+  nearCat = id; nearSel = -1; nearMode = mode || 'list'; nearHits = []; nearLayer.clearLayers();
+  homeExpand(nearMode === 'list');
+  renderNear('جارٍ البحث…');
   let hits = nearOffline(cat, ref), src = 'offline';
   if (!hits || !hits.length) {
     if (navigator.onLine === false) { hits = hits || []; }
     else { try { hits = await nearOnline(cat, ref); src = 'online'; } catch (e) { hits = hits || []; src = 'error'; } }
   }
-  if (seq !== nearSeq) return;
-  clearNear(); nearHits = hits;
+  if (seq !== nearSeq || nearCat !== id) return;
+  nearHits = hits.map((h) => Object.assign(h, { n: cleanName(h.n), sub: cleanName(h.sub) })); nearSrc = src;
   if (!hits.length) {
-    resEl.innerHTML = `<div class="secTitle">${cat.i} ${cat.n}</div><div class="res"><div class="s">${src === 'error' ? 'تعذّر البحث — تحقّق من الاتصال.' : navigator.onLine === false && !places ? 'لا يوجد اتصال. نزّل خريطة محافظتك للبحث بدون إنترنت.' : 'لا توجد نتائج قريبة.'}</div></div>`;
+    renderNear(src === 'error' ? 'تعذّر البحث — تحقّق من الاتصال.' : navigator.onLine === false && !places ? 'لا يوجد اتصال. نزّل خريطة محافظتك للبحث بدون إنترنت.' : 'لا توجد نتائج قريبة.');
     return;
   }
-  resEl.innerHTML = `<div class="secTitle">${cat.i} ${cat.n} — الأقرب إليك${src === 'offline' ? ' (بدون إنترنت)' : ''}</div>` + hits.map((h, i) =>
-    `<div class="res" data-near="${i}"><div class="ic" style="background:${cat.c}">${cat.i}</div><div style="flex:1;min-width:0"><div class="t">${esc(h.n)}</div><div class="s">${esc(h.sub || '')}</div></div><div class="s" style="flex:none">${fmtDist(h.d)}</div></div>`).join('');
-  resEl.querySelectorAll('[data-near]').forEach((el) => { el.onclick = () => pickNear(+el.dataset.near); });
-  hits.forEach((h, i) => L.marker([h.lat, h.lng], { icon: L.divIcon({ className: '', html: `<div class="nearPin">${cat.i}</div>`, iconSize: [30, 30], iconAnchor: [15, 15] }) })
-    .on('click', () => pickNear(i)).addTo(nearLayer));
-  const b = L.latLngBounds(hits.slice(0, 6).map((h) => [h.lat, h.lng]).concat([ref]));
-  setFollow(false);
-  map.fitBounds(b, { paddingTopLeft: [40, 90], paddingBottomRight: [40, Math.min(innerHeight * 0.55, homeEl.offsetHeight + 30)], maxZoom: 16 });
+  renderNear(); drawNearMarkers(); fitNear();
+}
+function closeNear() {
+  nearSeq++; nearCat = null; nearSel = -1;
+  homeEl.classList.remove('nearOn', 'nearMap');
+  clearNear(); _closeSearchHome(); homeExpand(false);
 }
 function pickNear(i) {
   const h = nearHits[i]; if (!h) return;
-  closeSearch(); homeExpand(false); clearNear();
+  closeNear();
   setDestination(h.lat, h.lng, h.n, h.sub || '', false);
 }
 $('catGrid').querySelectorAll('[data-cat]').forEach((b) => { b.onclick = () => showNearby(b.dataset.cat); });
@@ -156,15 +224,20 @@ if (window.ResizeObserver) new ResizeObserver(placeFabs).observe(homeEl);
 addEventListener('resize', placeFabs);
 
 /* tapping the map folds the sheet away; the back button collapses it */
-map.on('click', () => { if (homeEl.classList.contains('expanded') && resEl.classList.contains('hidden')) homeExpand(false); });
-map.on('movestart', () => { if (homeEl.classList.contains('expanded') && !qEl.value && document.activeElement !== qEl) homeExpand(false); });
+map.on('click', () => {
+  if (nearOn()) { if (nearMode === 'map' && nearSel >= 0) { nearSel = -1; renderNear(); drawNearMarkers(); } return; }
+  if (homeEl.classList.contains('expanded') && resEl.classList.contains('hidden')) homeExpand(false);
+});
+map.on('movestart', () => { if (!nearOn() && homeEl.classList.contains('expanded') && !qEl.value && document.activeElement !== qEl) homeExpand(false); });
+/* typing a search leaves the nearby results */
+qEl.addEventListener('input', () => { if (nearOn()) { nearSeq++; nearCat = null; homeEl.classList.remove('nearOn', 'nearMap'); clearNear(); homeExpand(true); } }, true);
 function homeHandleBack() {
-  if (!resEl.classList.contains('hidden') && nearHits.length) { clearNear(); closeSearch(); return true; }
+  if (nearOn()) { if (nearMode === 'map' && nearHits.length) setNearMode('list'); else closeNear(); return true; }
   if (homeEl.classList.contains('expanded') && !document.body.classList.contains('ui-dest')) { homeExpand(false); qEl.blur(); return true; }
   return false;
 }
-const _closeSearch = closeSearch;
-closeSearch = function () { _closeSearch(); if (nearHits.length && !document.body.classList.contains('ui-dest')) clearNear(); };
+const _closeSearchHome = closeSearch;
+closeSearch = function () { _closeSearchHome(); if (nearOn()) { nearSeq++; nearCat = null; homeEl.classList.remove('nearOn', 'nearMap'); } if (nearHits.length && !document.body.classList.contains('ui-dest')) clearNear(); };
 
 /* ---------------- init ---------------- */
 renderChips(); renderCards(); uiState();
