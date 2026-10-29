@@ -1,7 +1,7 @@
 {
-  "versionCode": 27,
-  "versionName": "3.1",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v3.1/Mallah-Navigator.apk",
-  "size": 1637435,
-  "notes": "خريطة أسرع عند التكبير والتصغير، ورسم أخف على الهواتف، وقياسات أدق في «تشخيص الخريطة»."
+  "versionCode": 28,
+  "versionName": "3.2",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v3.2/Mallah-Navigator.apk",
+  "size": 1641531,
+  "notes": "فحص سلامة الخرائط المنزّلة: يكتشف الملف التالف ويعرض إعادة تنزيله. هذا سبب عدم ظهور الخريطة على بعض الهواتف."
 }

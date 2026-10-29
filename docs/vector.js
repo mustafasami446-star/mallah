@@ -382,6 +382,7 @@ function removePack(id) {
 window.onMapPackProgress = (phase, done, total, id) => {
   if (!packBusyState) packBusyState = { id: id || '', label: '' };
   if (id && !packBusyState.id) packBusyState.id = id;
+  if (phase === 'verify') { packBusyState.label = '🔍 جارٍ فحص سلامة ملف الخريطة…'; packBusyState.info = ''; packBusyState.pct = 100; renderPacks(); return; }
   if (phase === 'install') { packBusyState.label = '⚙️ جارٍ تجهيز خريطة ' + (packBusyState.id ? provName(packBusyState.id) : '') + '…'; packBusyState.info = ''; packBusyState.pct = 100; }
   else {
     packBusyState.pct = total ? Math.floor(done * 100 / total) : 0;
@@ -405,7 +406,11 @@ window.onMapPackDone = (ok, msg, id) => {
       ]), 1200);
     }
     pumpQueue();
-  } else if (msg === 'cancelled') {
+  } else if (msg === 'damaged') {
+    packQueue = [];
+    actionSheet('⚠️ ملف خريطة ' + (id ? provName(id) : '') + ' وصل تالفًا (انقطع التنزيل أو تغيّر أثناءه)، فلم يُثبَّت.', [
+      { label: '⬇ تنزيله من جديد', fn: () => queuePacks([id]) }
+    ]);
     packQueue = [];
     toast(PK && PK.kind === 'web' ? 'تم الإيقاف' : 'تم إيقاف التنزيل — يمكنك المتابعة لاحقًا من نفس النقطة');
   } else if (msg === 'direct') {
@@ -717,6 +722,27 @@ bindSiteResults = function () {
     el.onclick = () => { const p = lastPlaceHits[+el.dataset.place]; if (!p) return; closeSearch(); setDestination(p.lat, p.lng, p.n, [p.a, p.e].filter(Boolean).join(' · ')); };
   });
 };
+/* ---------------- integrity of downloaded maps ---------------- */
+let diagCheckUi = null;
+window.onMapCheck = (id, ok, msg, ms) => {
+  diagLog('check ' + id + ': ' + msg + ' (' + ms + ' ms)');
+  const p = packOf(id), key = id + '@' + (p ? p.version + '/' + p.size : '');
+  const done = store.get('packChecked', {});
+  if (ok) { done[key] = 1; store.set('packChecked', done); }
+  if (diagCheckUi && $('ck-' + id)) { diagCheckUi(id, ok, msg, ms); return; }
+  if (!ok && msg !== 'not installed') {
+    const items = [{ label: '⬇ إعادة تنزيل خريطة ' + provName(id), fn: () => queuePacks([id]) }];
+    if (id === FULL_ID) { const sug = suggestedProv(); if (sug) items.unshift({ label: '⬇ نزّل خريطة ' + provName(sug) + ' فقط (أصغر وأسرع)', fn: () => { PK.remove(FULL_ID).then(() => { refreshPacks(); queuePacks([sug]); }); } }); }
+    actionSheet('⚠️ ملف خريطة ' + provName(id) + ' على هاتفك تالف — لذلك لا تظهر الخريطة المنزّلة بشكل صحيح.', items);
+  }
+};
+/* maps downloaded by older versions were never checked: check each once, quietly, in the background */
+function checkPacksOnce() {
+  if (!NATIVE || !Android.mapCheck) return;
+  const done = store.get('packChecked', {});
+  packs().forEach((p) => { if (!done[p.id + '@' + p.version + '/' + p.size]) Android.mapCheck(p.id); });
+}
+
 /* ---------------- map diagnostics (Settings) ---------------- */
 function glInfo() {
   try {
@@ -763,7 +789,7 @@ async function diagTest() {
         out.push((r.status === 200 || r.status === 204 ? '✓' : '✗') + ' بلاطة ' + zz + '/' + xx + '/' + yy + ': ' + r.status + (b ? ' · ' + b + ' بايت' : '') + ' · ' + Math.round(performance.now() - t0) + ' م.ث' + (r.status >= 400 ? ' · ' + (await r.text()).slice(0, 160) : ''));
       } catch (e) { out.push('✗ بلاطة ' + zz + '/' + xx + '/' + yy + ': ' + (e && (e.name + ': ' + e.message))); }
     }
-    packs().forEach((p) => { if (p.readErr) out.push('✗ ' + p.id + ': ' + p.readErr); });
+    packs().forEach((p) => { if (p.readErr) out.push('✗ ' + p.id + ': ' + p.readErr); if (p.hdr) out.push('  ' + p.id + ': ' + p.hdr); });
   }
   for (const p of packs()) {
     const pm = new pmtiles.PMTiles(new PackSource(p.id, 'diag-' + p.id + '-' + Date.now()));
@@ -781,12 +807,27 @@ function openDiag() {
     el = document.createElement('div'); el.id = 'diagPanel'; el.className = 'panel hidden';
     el.innerHTML = `<div class="panelHead"><button class="iconBtn" id="diagClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></button><h2>تشخيص الخريطة</h2></div>
       <div class="panelBody"><div class="card"><pre id="diagOut" class="diagOut"></pre></div>
-      <div class="btnRow" style="padding:12px"><button class="chip go" id="diagRun">🔁 اختبار الخرائط المنزّلة</button><button class="chip" id="diagShare">📤 مشاركة مع المصمم</button>${packs().length ? '<button class="chip" id="diagVec">🗺 إعادة تجربة الخريطة المنزّلة</button>' : ''}<button class="chip" id="diagLite"></button></div>
+      <div class="btnRow" style="padding:12px"><button class="chip go" id="diagRun">🔁 اختبار الخرائط المنزّلة</button><button class="chip" id="diagShare">📤 مشاركة مع المصمم</button>${packs().length ? '<button class="chip" id="diagVec">🗺 إعادة تجربة الخريطة المنزّلة</button>' : ''}<button class="chip" id="diagLite"></button>${NATIVE && Android.mapCheck ? '<button class="chip" id="diagCheck">🔍 فحص سلامة الخرائط</button>' : ''}</div><div id="diagCheckOut" class="card hidden"></div>
       <div class="note">إذا ظهرت لك مشكلة في عرض الخريطة، اضغط «اختبار» ثم «مشاركة» وأرسل النتيجة عبر واتساب إلى مصمم البرنامج.</div></div>`;
     document.body.appendChild(el);
     $('diagClose').onclick = () => el.classList.add('hidden');
     $('diagRun').onclick = async () => { $('diagOut').textContent = diagText('جارٍ الاختبار…'); $('diagOut').textContent = diagText(await diagTest()); };
     $('diagShare').onclick = () => { const t = $('diagOut').textContent; if (NATIVE && Android.shareText) Android.shareText(t); else if (navigator.share) navigator.share({ text: t }).catch(() => {}); else { try { navigator.clipboard.writeText(t); toast('تم النسخ'); } catch (e) {} } };
+    const ck = $('diagCheck');
+    if (ck) ck.onclick = () => {
+      const box = $('diagCheckOut'); box.classList.remove('hidden');
+      box.innerHTML = packs().map((p) => `<div class="item" id="ck-${p.id}"><div class="grow"><div class="t">${esc(provName(p.id))}</div><div class="s">جارٍ الفحص… (قد يستغرق حتى دقيقة للعراق كاملًا)</div></div></div>`).join('');
+      packs().forEach((p) => Android.mapCheck(p.id));
+    };
+    diagCheckUi = (id, ok, msg, ms) => {
+      const row = $('ck-' + id);
+      if (!row) return;
+      row.innerHTML = ok
+        ? `<div class="grow"><div class="t">${esc(provName(id))} <span class="ok">✓ سليمة</span></div><div class="s">${(ms / 1000).toFixed(1)} ث</div></div>`
+        : `<div class="grow"><div class="t">${esc(provName(id))} <span class="warnTxt">✗ تالفة</span></div><div class="s">${esc(msg)} — هذا سبب عدم ظهور الخريطة. أعد تنزيلها${id === FULL_ID ? '، أو نزّل خريطة محافظتك فقط (أصغر وأسرع)' : ''}.</div></div><button class="chip go" data-redl="${id}">⬇ إعادة التنزيل</button>`;
+      const b = row.querySelector('[data-redl]'); if (b) b.onclick = () => { el.classList.add('hidden'); $('setPanel').classList.add('hidden'); queuePacks([id]); };
+      $('diagOut').textContent = diagText();
+    };
     const lt = $('diagLite');
     const ltLabel = () => { lt.textContent = liteMode() ? '🎨 رسم بدقة كاملة' : '⚡ رسم أخف وأسرع'; };
     lt.onclick = () => {
@@ -823,6 +864,7 @@ function vecHandleBack() {
     if (want == null) setLayer('vec');                                   // first start with a map: use it
     else if (want === 'vec' || navigator.onLine === false) setLayer('vec', true);
   }
+  setTimeout(checkPacksOnce, 8000);
   // check for map/app updates at most twice a day, a little after start
   if (PK && Date.now() - store.get('updCheckT', 0) > 12 * 3600 * 1000) setTimeout(() => checkUpdates(false), 6000);
 })();
