@@ -25,28 +25,69 @@
   --shadow:0 8px 24px rgba(0,0,0,.35);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:system-ui,"Noto Sans Arabic","Segoe UI",Tahoma,sans-serif;overflow:hidden}
+@font-face{font-family:Plex;font-weight:400;font-display:swap;src:url(fonts/plex-arabic-400.woff2) format("woff2");unicode-range:U+0600-06FF,U+0750-077F,U+0870-08FF,U+FB50-FDFF,U+FE70-FEFF,U+200C-200F}
+@font-face{font-family:Plex;font-weight:600;font-display:swap;src:url(fonts/plex-arabic-600.woff2) format("woff2");unicode-range:U+0600-06FF,U+0750-077F,U+0870-08FF,U+FB50-FDFF,U+FE70-FEFF,U+200C-200F}
+@font-face{font-family:Plex;font-weight:700;font-display:swap;src:url(fonts/plex-arabic-700.woff2) format("woff2");unicode-range:U+0600-06FF,U+0750-077F,U+0870-08FF,U+FB50-FDFF,U+FE70-FEFF,U+200C-200F}
+@font-face{font-family:Plex;font-weight:400;font-display:swap;src:url(fonts/plex-latin-400.woff2) format("woff2");unicode-range:U+0000-00FF,U+2000-206F,U+20AC,U+2212}
+@font-face{font-family:Plex;font-weight:600;font-display:swap;src:url(fonts/plex-latin-600.woff2) format("woff2");unicode-range:U+0000-00FF,U+2000-206F,U+20AC,U+2212}
+@font-face{font-family:Plex;font-weight:700;font-display:swap;src:url(fonts/plex-latin-700.woff2) format("woff2");unicode-range:U+0000-00FF,U+2000-206F,U+20AC,U+2212}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:Plex,system-ui,"Noto Sans Arabic","Segoe UI",Tahoma,sans-serif;overflow:hidden}
+button,input,select{font-family:inherit}
 #map{position:absolute;inset:0;z-index:1;background:#dfe6ee;direction:ltr}
 body.layer-sat #map{background:#5b5a52}
 button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 .hidden{display:none!important}
 
-/* search */
-#searchWrap{position:absolute;top:calc(10px + env(safe-area-inset-top));left:10px;right:10px;z-index:500}
-#searchBar{display:flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:6px 8px;box-shadow:var(--shadow)}
-#searchBar input{flex:1;min-width:0;background:transparent;border:0;outline:0;color:var(--text);font-size:16px;padding:8px 4px}
+/* top bar */
+#topBar{position:absolute;top:calc(10px + env(safe-area-inset-top));left:12px;right:12px;z-index:510;display:flex;justify-content:space-between;pointer-events:none}
+#topBar>*{pointer-events:auto}
+#menuDrop{position:absolute;right:12px;top:calc(70px + env(safe-area-inset-top));background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:6px;box-shadow:var(--shadow);min-width:230px;z-index:520;max-height:calc(100vh - 160px);overflow:auto}
+#menuDrop button{display:flex;align-items:center;gap:10px;width:100%;text-align:right;padding:12px;border-radius:10px;font-size:15px}
+#menuDrop button:active{background:var(--panel2)}
+#menuDrop svg{width:20px;height:20px;color:var(--accent)}
+#layerMenu{left:0!important;top:62px;bottom:auto!important}
+
+/* home sheet */
+#searchWrap{position:absolute;left:0;right:0;bottom:0;z-index:500;background:var(--panel);border-top:1px solid var(--line);border-radius:24px 24px 0 0;padding:8px 14px calc(12px + env(safe-area-inset-bottom));box-shadow:0 -10px 30px rgba(0,0,0,.35);max-height:78vh;overflow:auto;transition:max-height .25s}
+#searchWrap .grab{width:44px;height:5px;border-radius:3px;background:var(--line);margin:2px auto 10px;cursor:pointer}
+#searchBar{display:flex;align-items:center;gap:6px;background:#0b1222;border:1px solid var(--line);border-radius:18px;padding:6px 8px}
+#searchBar input{flex:1;min-width:0;background:transparent;border:0;outline:0;color:var(--text);font-size:17px;padding:10px 4px}
 #searchBar input::placeholder{color:var(--muted)}
 .iconBtn{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none}
 .iconBtn:active{background:var(--panel2)}
 .iconBtn svg{width:22px;height:22px}
-#results{margin-top:8px;background:var(--panel);border:1px solid var(--line);border-radius:16px;max-height:55vh;overflow:auto;box-shadow:var(--shadow)}
-.res{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-bottom:1px solid var(--line)}
+.iconBtn.brand{color:var(--accent)}
+#homeChips{display:flex;gap:8px;margin-top:12px;overflow-x:auto;scrollbar-width:none}
+#homeChips::-webkit-scrollbar{display:none}
+.hchip{flex:none;display:inline-flex;align-items:center;gap:7px;height:40px;padding:0 15px;border-radius:14px;background:#0b1222;border:1px solid var(--line);font-size:14.5px;font-weight:600;white-space:nowrap}
+.hchip .hi{font-size:17px}
+.hchip:active{background:var(--panel2)}
+#results{margin-top:10px;border-top:1px solid var(--line)}
+.res{display:flex;gap:10px;align-items:flex-start;padding:12px 4px;border-bottom:1px solid var(--line)}
 .res:last-child{border-bottom:0}
 .res:active{background:var(--panel2)}
 .res .t{font-weight:600;font-size:15px}
 .res .s{color:var(--muted);font-size:12.5px;margin-top:2px;line-height:1.4}
-.res .ic{flex:none;width:30px;height:30px;border-radius:50%;background:var(--panel2);display:grid;place-items:center;margin-top:2px}
-.secTitle{padding:10px 14px 4px;color:var(--muted);font-size:12px}
+.res .ic{flex:none;width:34px;height:34px;border-radius:50%;background:var(--panel2);display:grid;place-items:center;margin-top:1px}
+.secTitle{padding:10px 4px 4px;color:var(--muted);font-size:12px}
+#homeMore{display:none}
+#searchWrap.expanded #homeMore{display:block}
+#searchWrap.searching #homeMore{display:none}
+.homeH{font-size:17px;margin:18px 2px 12px;font-weight:700}
+#catGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 8px}
+.cat{display:flex;flex-direction:column;align-items:center;gap:7px;font-size:13px;color:var(--text)}
+.cat .ci{width:58px;height:58px;border-radius:18px;display:grid;place-items:center;font-size:26px}
+.cat:active .ci{transform:scale(.94)}
+#homeCards{margin-top:18px;background:#0b1222;border:1px solid var(--line);border-radius:18px;overflow:hidden}
+.hcard{display:flex;align-items:center;gap:12px;width:100%;text-align:right;padding:13px 14px;border-bottom:1px solid var(--line)}
+.hcard:last-child{border-bottom:0}
+.hcard .hc{flex:none;width:42px;height:42px;border-radius:13px;display:grid;place-items:center;font-size:20px;background:#12324a;color:var(--accent)}
+.hcard .t{font-weight:600;font-size:15px}
+.hcard .s{color:var(--muted);font-size:12.5px;margin-top:2px}
+.hcard .chev{margin-right:auto;color:var(--muted);font-size:20px}
+body.ui-dest #searchWrap,body.ui-nav #searchWrap,body.ui-meas #searchWrap{display:none}
+body.ui-nav #topBar,body.ui-meas #topBar{display:none}
+.nearPin{font-size:20px;line-height:30px;width:30px;height:30px;text-align:center;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.4);border:2px solid #0f172a}
 
 /* floating buttons */
 #fabs{position:absolute;left:12px;bottom:calc(24px + env(safe-area-inset-bottom));z-index:450;display:flex;flex-direction:column;gap:10px;transition:bottom .25s}
@@ -110,7 +151,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 #gpsBanner{position:absolute;top:calc(74px + env(safe-area-inset-top));left:10px;right:10px;z-index:480;background:#3b2a07;border:1px solid #7c5a10;color:#fde7b0;border-radius:14px;padding:10px 12px;font-size:13.5px;display:flex;align-items:center;gap:10px;box-shadow:var(--shadow)}
 #gpsBanner span{flex:1;line-height:1.4}
 #gpsBanner button{background:#7c5a10;color:#fff;border-radius:10px;padding:8px 12px;font-size:13px;font-weight:600}
-#toast{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(120px + env(safe-area-inset-bottom));z-index:1000;background:rgba(15,23,42,.95);border:1px solid var(--line);padding:10px 16px;border-radius:14px;font-size:14px;max-width:86vw;text-align:center;box-shadow:var(--shadow);transition:opacity .25s;pointer-events:none}
+#toast{position:absolute;left:50%;transform:translateX(-50%);top:calc(78px + env(safe-area-inset-top));z-index:1000;background:rgba(15,23,42,.95);border:1px solid var(--line);padding:10px 16px;border-radius:14px;font-size:14px;max-width:86vw;text-align:center;box-shadow:var(--shadow);transition:opacity .25s;pointer-events:none}
 #loading{position:absolute;inset:0;z-index:950;display:grid;place-items:center;background:rgba(0,0,0,.25);pointer-events:none}
 .spin{width:44px;height:44px;border-radius:50%;border:4px solid rgba(255,255,255,.25);border-top-color:var(--accent);animation:sp 0.8s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
@@ -141,7 +182,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 .bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .3s}
 .note{color:var(--muted);font-size:12.5px;line-height:1.6;padding:12px 16px}
 .wide{margin:12px;width:calc(100% - 24px)}
-#offBadge{position:absolute;top:calc(68px + env(safe-area-inset-top));right:12px;z-index:470;background:#3b2a07;border:1px solid #7c5a10;color:#fde7b0;font-size:12px;font-weight:600;padding:5px 10px;border-radius:999px}
+#offBadge{position:absolute;top:calc(22px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:470;background:#3b2a07;border:1px solid #7c5a10;color:#fde7b0;font-size:12px;font-weight:600;padding:5px 10px;border-radius:999px}
 #navTop ~ #offBadge{top:auto}
 
 /* destination actions */
@@ -250,13 +291,14 @@ body.vec-on .leaflet-tile-pane{filter:none!important}
 
 /* wide screens (laptop): panels on the right instead of full width */
 @media (min-width: 760px) {
-  #searchWrap{left:auto;width:420px;right:16px}
+  #searchWrap{left:auto;width:420px;right:16px;bottom:16px;border-radius:22px;border:1px solid var(--line);max-height:calc(100vh - 110px)}
+  #menuDrop{right:16px}
   .sheet,#navBottom,#measPanel{left:auto;right:16px;width:420px;bottom:16px;border-radius:22px;border:1px solid var(--line)}
   .panel{left:auto;width:440px;border-left:1px solid var(--line);box-shadow:var(--shadow)}
   #navTop{left:auto;right:16px;width:420px}
   #gpsBanner,#zoneBanner{left:auto;right:16px;width:420px}
   #mHintBar{left:auto;right:16px;width:420px;top:calc(76px + env(safe-area-inset-top))}
-  #toast{bottom:40px}
+  #toast{top:78px}
   #modal{align-items:center;justify-content:center}
   #modal .mbox{width:420px;border-radius:22px}
   #speed{right:452px;bottom:24px}
@@ -274,8 +316,9 @@ body.vec-on .leaflet-tile-pane{filter:none!important}
 .pin svg{width:34px;height:44px;filter:drop-shadow(0 3px 3px rgba(0,0,0,.35))}
 .leaflet-control-attribution{font-size:9px!important;direction:ltr}
 .leaflet-control-attribution{transition:opacity .4s}
+.leaflet-bottom.leaflet-right{bottom:var(--sheetH,0px)}
 body.attr-min .leaflet-control-attribution{opacity:0;pointer-events:none}
-#attrBtn{position:absolute;right:6px;bottom:calc(4px + env(safe-area-inset-bottom));z-index:450;width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.75);color:#334155;font:700 13px/22px Georgia,serif;text-align:center;opacity:0;pointer-events:none;transition:opacity .4s}
+#attrBtn{position:absolute;right:6px;bottom:calc(4px + var(--sheetH,0px) + env(safe-area-inset-bottom));z-index:450;width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.75);color:#334155;font:700 13px/22px Georgia,serif;text-align:center;opacity:0;pointer-events:none;transition:opacity .4s}
 body.attr-min #attrBtn{opacity:.8;pointer-events:auto}
 .leaflet-control-zoom{display:none}
 </style>
@@ -284,15 +327,15 @@ body.attr-min #attrBtn{opacity:.8;pointer-events:auto}
 <div id="map"></div>
 <button id="attrBtn" aria-label="مصادر الخريطة">i</button>
 
-<!-- search -->
-<div id="searchWrap">
-  <form id="searchBar" autocomplete="off">
-    <button type="submit" class="iconBtn" aria-label="بحث"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button>
-    <input id="q" type="search" placeholder="ابحث عن مكان أو عنوان…" enterkeyhint="search">
-    <button type="button" id="clearQ" class="iconBtn hidden" aria-label="مسح"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
-    <button type="button" id="menuBtn" class="iconBtn" aria-label="القائمة"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
-  </form>
-  <div id="menuDrop" class="hidden">
+<!-- top bar: menu and map layers -->
+<div id="topBar">
+  <button class="fab" id="menuBtn" aria-label="القائمة"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <div style="position:relative">
+    <button class="fab" id="layersBtn" aria-label="طبقات الخريطة"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg></button>
+    <div id="layerMenu" class="hidden"></div>
+  </div>
+</div>
+<div id="menuDrop" class="hidden">
     <button id="openMaps"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></svg>الخرائط بدون إنترنت</button>
     <button id="openFavs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>الأماكن المفضلة</button>
     <button id="shareMe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>مشاركة موقعي</button>
@@ -305,17 +348,32 @@ body.attr-min #attrBtn{opacity:.8;pointer-events:auto}
     <button id="openGuide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5M9 7h6M9 11h6"/></svg>دليل الاستخدام</button>
     <button id="openSettings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>الإعدادات</button>
   </div>
+
+<!-- home sheet: where to? + discover around you -->
+<div id="searchWrap">
+  <div class="grab" id="homeGrab"></div>
+  <form id="searchBar" autocomplete="off">
+    <button type="submit" class="iconBtn brand" aria-label="بحث"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button>
+    <input id="q" type="search" placeholder="إلى أين؟" enterkeyhint="search">
+    <button type="button" id="clearQ" class="iconBtn hidden" aria-label="مسح"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </form>
+  <div id="homeChips">
+    <button class="hchip" data-q="home"><span class="hi" style="color:#34d399">⌂</span><span id="chipHome">أضف البيت</span></button>
+    <button class="hchip" data-q="work"><span class="hi" style="color:#34d399">▣</span><span id="chipWork">أضف العمل</span></button>
+    <button class="hchip" id="chipFavs"><span class="hi" style="color:#fbbf24">★</span>المفضلة</button>
+  </div>
   <div id="results" class="hidden"></div>
+  <div id="homeMore">
+    <h4 class="homeH">اكتشف ما حولك</h4>
+    <div id="catGrid"></div>
+    <div id="homeCards"></div>
+  </div>
 </div>
 
 <div id="gpsBanner" class="hidden"><span id="gpsMsg"></span><button id="gpsBtn">الإعدادات</button></div>
 
 <!-- floating buttons -->
 <div id="fabs">
-  <div style="position:relative">
-    <button class="fab" id="layersBtn" aria-label="طبقات الخريطة"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg></button>
-    <div id="layerMenu" class="hidden"></div>
-  </div>
   <button class="fab" id="locBtn" aria-label="موقعي"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
 </div>
 
@@ -519,6 +577,7 @@ body.attr-min #attrBtn{opacity:.8;pointer-events:auto}
 <script src="guide.js"></script>
 <script src="pack-web.js"></script>
 <script src="vector.js"></script>
+<script src="home.js"></script>
 <script src="web.js"></script>
 </body>
 </html>

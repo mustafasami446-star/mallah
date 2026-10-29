@@ -309,14 +309,13 @@ let recents = store.get('recents', []);
 function showRecents() {
   const home = favs.find((f) => f.kind === 'home'), work = favs.find((f) => f.kind === 'work');
   const others = favs.filter((f) => f.kind === 'other');
-  let h = '<div class="quick">'
-    + `<button class="qchip${home ? '' : ' unset'}" data-q="home">🏠 ${home ? 'البيت' : 'تعيين البيت'}</button>`
-    + `<button class="qchip${work ? '' : ' unset'}" data-q="work">💼 ${work ? 'العمل' : 'تعيين العمل'}</button></div>`;
+  let h = '';   // home / work chips live on the home sheet itself
   if (others.length) h += '<div class="secTitle">المفضلة</div>' + others.map((f) =>
     `<div class="res" data-f="${f.id}"><div class="ic">⭐</div><div><div class="t">${esc(f.name)}</div><div class="s">${esc(f.sub || '')}</div></div></div>`).join('');
   if (recents.length) h += '<div class="secTitle">الأماكن الأخيرة</div>' + recents.map((r, i) =>
     `<div class="res" data-r="${i}"><div class="ic">🕘</div><div><div class="t">${esc(r.name)}</div><div class="s">${esc(r.sub || '')}</div></div></div>`).join('');
   resEl.innerHTML = h;
+  if (!h) { resEl.classList.add('hidden'); return; }
   resEl.classList.remove('hidden');
   resEl.querySelectorAll('[data-q]').forEach((el) => {
     el.onclick = () => {
@@ -709,6 +708,7 @@ window.handleBack = function () {
   if (!$('menuDrop').classList.contains('hidden')) { $('menuDrop').classList.add('hidden'); return true; }
   if (!$('stepsPanel').classList.contains('hidden')) { $('stepsPanel').classList.add('hidden'); return true; }
   if (!$('layerMenu').classList.contains('hidden')) { $('layerMenu').classList.add('hidden'); return true; }
+  if (typeof homeHandleBack === 'function' && homeHandleBack()) return true;
   if (!resEl.classList.contains('hidden')) { closeSearch(); return true; }
   if (navState) { endNav(false); return true; }
   if (dest) { clearDestination(); return true; }
