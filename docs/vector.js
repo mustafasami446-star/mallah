@@ -94,6 +94,7 @@ class PackSource {
 /* one archive per installed pack; a tile is taken from the first pack that has it
    (provinces overlap a little at their borders, and all of them hold the whole country at low zoom) */
 let archives = [];
+const NATIVE_TILES = !!(NATIVE && window.Android && Android.mapNativeTiles);
 /* what the offline map is doing — shown in Settings ← «تشخيص الخريطة» */
 const VD = { req: 0, hit: 0, empty: 0, err: 0, lastErr: '', glErr: '', fellBack: '', t: {} };
 const diagLogs = [];
@@ -114,6 +115,17 @@ async function routeTile(params, abort) {
   if (!m) return { data: new Uint8Array(0) };
   const z = +m[1], x = +m[2], y = +m[3], signal = abort && abort.signal;
   VD.req++;
+  if (NATIVE_TILES) {
+    // the Android app reads the tile itself (all packs, directories, gzip) and returns it ready to draw
+    let r;
+    try { r = await fetch(ORIGIN + '/map/tile/' + z + '/' + x + '/' + y, { signal }); }
+    catch (e) { if (signal && signal.aborted) throw e; VD.err++; VD.lastErr = (e && (e.name + ': ' + e.message)) || String(e); if (VD.err <= 3) diagLog('tile ' + z + '/' + x + '/' + y + ': ' + VD.lastErr); return { data: new Uint8Array(0) }; }
+    if (r.status === 200) { const b = await r.arrayBuffer(); VD.hit++; return { data: new Uint8Array(b) }; }
+    if (r.status === 204) { VD.empty++; return { data: new Uint8Array(0) }; }
+    VD.err++; VD.lastErr = 'HTTP ' + r.status + ' ' + (await r.text().catch(() => '')).slice(0, 160);
+    if (VD.err <= 3) diagLog('tile ' + z + '/' + x + '/' + y + ': ' + VD.lastErr);
+    return { data: new Uint8Array(0) };
+  }
   for (const a of archives) {
     try {
       const r = await a.pm.getZxy(z, x, y, signal);
@@ -131,6 +143,7 @@ async function routeTile(params, abort) {
 }
 async function readMaxZoom() {
   let z = 0;
+  if (NATIVE_TILES) { packs().forEach((p) => { if (p.maxzoom) z = Math.max(z, p.maxzoom); }); vecMaxZ = z || 14; return; }
   for (const a of archives) { try { z = Math.max(z, (await a.pm.getHeader()).maxZoom); } catch (e) {} }
   vecMaxZ = z || 14;
 }
@@ -696,6 +709,19 @@ function diagText(extra) {
 async function diagTest() {
   const out = [];
   try { await loadLibs(); } catch (e) { return 'تعذّر تحميل مكتبات الخريطة: ' + e.message; }
+  if (NATIVE_TILES) {
+    const c = map.getCenter(), z = Math.min(14, Math.max(0, Math.round(map.getZoom() - 1))), n = Math.pow(2, z);
+    const tx = Math.floor((c.lng + 180) / 360 * n), ty = Math.floor((1 - Math.log(Math.tan(c.lat * Math.PI / 180) + 1 / Math.cos(c.lat * Math.PI / 180)) / Math.PI) / 2 * n);
+    for (const [zz, xx, yy] of [[0, 0, 0], [z, tx, ty]]) {
+      const t0 = performance.now();
+      try {
+        const r = await fetch(ORIGIN + '/map/tile/' + zz + '/' + xx + '/' + yy);
+        const b = r.status === 200 ? (await r.arrayBuffer()).byteLength : 0;
+        out.push((r.status === 200 || r.status === 204 ? '✓' : '✗') + ' بلاطة ' + zz + '/' + xx + '/' + yy + ': ' + r.status + (b ? ' · ' + b + ' بايت' : '') + ' · ' + Math.round(performance.now() - t0) + ' م.ث' + (r.status >= 400 ? ' · ' + (await r.text()).slice(0, 160) : ''));
+      } catch (e) { out.push('✗ بلاطة ' + zz + '/' + xx + '/' + yy + ': ' + (e && (e.name + ': ' + e.message))); }
+    }
+    packs().forEach((p) => { if (p.readErr) out.push('✗ ' + p.id + ': ' + p.readErr); });
+  }
   for (const p of packs()) {
     const pm = new pmtiles.PMTiles(new PackSource(p.id, 'diag-' + p.id + '-' + Date.now()));
     try {
