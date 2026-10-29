@@ -430,6 +430,7 @@ function selCardHtml(id) {
   let btns = '';
   if (st === 'busy') return busyRow();
   if (st === 'queued') btns = '<button class="chip" disabled>⏳ في الانتظار</button>';
+  else if (st === 'none' && hasPack(FULL_ID)) { bits.push('<span class="ok">✓ مشمولة في خريطة العراق الكاملة</span>'); btns = `<button class="chip" data-pk="show" data-id="${id}">عرض</button>`; }
   else if (st === 'none') btns = `<button class="chip go" data-pk="get" data-id="${id}">⬇ تنزيل</button>`;
   else btns = (st === 'old' ? `<button class="chip go" data-pk="upd" data-id="${id}">⬇ تحديث</button>` : `<button class="chip" data-pk="show" data-id="${id}">عرض</button>`) + `<button class="chip del" data-pk="del" data-id="${id}">حذف</button>`;
   const offline = st === 'none' && !remoteMap ? `<div class="s">${navigator.onLine === false ? 'لا يوجد اتصال بالإنترنت الآن' : 'جارٍ جلب قائمة الخرائط…'}</div>` : '';
