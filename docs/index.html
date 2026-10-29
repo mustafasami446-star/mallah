@@ -444,6 +444,14 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
 .arSafe{position:absolute;inset:0;z-index:3;background:rgba(2,6,23,.9);display:grid;place-items:center;text-align:center;color:#fff;padding:24px}
 .arSafe div{display:flex;flex-direction:column;gap:10px;align-items:center;font-size:40px}
 .arSafe b{font-size:20px}.arSafe span{font-size:15px;color:#cbd5e1;max-width:300px;line-height:1.6}
+
+.arPoi{position:absolute;left:0;top:0;width:150px;display:flex;align-items:center;gap:6px;background:rgba(2,6,23,.78);border:1px solid rgba(148,163,184,.35);border-radius:14px;padding:5px 8px;color:#fff;text-align:right;will-change:transform;z-index:1}
+.arPoi .pi{flex:none;font-size:18px}.arPoi .pt{min-width:0;display:flex;flex-direction:column}
+.arPoi b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.arPoi small{font-size:11.5px;color:#93c5fd}
+.arPoi.g-sites{border-color:#f59e0b}.arPoi.g-favs{border-color:#facc15}.arPoi.sel{background:#0369a1;border-color:#7dd3fc}
+.arChips{position:absolute;left:0;right:0;bottom:calc(64px + env(safe-area-inset-bottom));display:flex;gap:8px;justify-content:center;flex-wrap:wrap;padding:0 10px;z-index:2}
+.arChip{height:34px;padding:0 12px;border-radius:17px;background:rgba(2,6,23,.6);color:#94a3b8;border:1px solid rgba(148,163,184,.3);font-size:13px;font-weight:600}
+.arChip.on{color:#fff;background:rgba(3,105,161,.8);border-color:#7dd3fc}
 </style>
 </head>
 <body>

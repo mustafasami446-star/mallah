@@ -50,13 +50,15 @@ const CachedLayer = L.TileLayer.extend({
     const have = (zz, xx, yy) => TILE_BASE && zz <= OFFLINE_MAX_Z && downloadedAreas().some((a) =>
       (a.layer || 'esri') === key && zz >= a.minZ && zz <= a.maxZ && xx >= lon2x(a.w, zz) && xx <= lon2x(a.e, zz) && yy >= lat2y(a.n, zz) && yy <= lat2y(a.s, zz));
     if (have(z, x, y)) c.push({ src: local(z, x, y) });
-    if (navigator.onLine !== false) c.push({ src: this.getTileUrl(coords) });
+    // Android: tiles go through the phone's tile store (saved copy first, then the internet) and stay saved
+    const NET = NATIVE && window.Android && Android.netTiles, viaNet = (u, zz, xx, yy) => NET ? 'https://appassets.androidplatform.net/net/tile/' + key + '/' + zz + '/' + xx + '/' + yy + '?u=' + encodeURIComponent(u) : u;
+    if (NET || navigator.onLine !== false) c.push({ src: viaNet(this.getTileUrl(coords), z, x, y) });
     // when a zoom level has no data, show an enlarged part of a lower-zoom tile instead of a placeholder
     for (let dz = 1; dz <= 6; dz++) {
       const pz = z - dz; if (pz < 0) break;
       const qx = x >> dz, qy = y >> dz, size = 256 >> dz, crop = { sx: (x - (qx << dz)) * size, sy: (y - (qy << dz)) * size, size };
       if (have(pz, qx, qy)) c.push(Object.assign({ src: local(pz, qx, qy) }, crop));
-      if (navigator.onLine !== false) c.push(Object.assign({ src: L.Util.template(this._url, L.extend({ r: '', s: this._getSubdomain({ x: qx, y: qy }), x: qx, y: qy, z: pz }, this.options)) }, crop));
+      if (NET || navigator.onLine !== false) c.push(Object.assign({ src: viaNet(L.Util.template(this._url, L.extend({ r: '', s: this._getSubdomain({ x: qx, y: qy }), x: qx, y: qy, z: pz }, this.options)), pz, qx, qy) }, crop));
     }
     let i = 0, finished = false;
     const finish = (err) => { if (!finished) { finished = true; done(err, tile); } };
@@ -762,7 +764,9 @@ document.querySelectorAll('[data-close]').forEach((b) => { b.onclick = () => $(b
 function onConn() {
   const off = navigator.onLine === false;
   $('offBadge').classList.toggle('hidden', !off);
-  if (off && layerKey !== OFFLINE_LAYER) { setLayer(OFFLINE_LAYER, true); toast('بدون اتصال: تم التحويل إلى الخريطة المنزّلة'); }
+  // Android keeps every tile already viewed, so a raster layer keeps working offline; only the offline vector map is worth switching to
+  const keepsTiles = NATIVE && window.Android && Android.netTiles && OFFLINE_LAYER !== 'vec';
+  if (off && layerKey !== OFFLINE_LAYER && !keepsTiles) { setLayer(OFFLINE_LAYER, true); toast('بدون اتصال: تم التحويل إلى الخريطة المنزّلة'); }
   else if (!off && store.get('layer', 'osm') !== layerKey) setLayer(store.get('layer', 'osm'));
   else if (baseLayer && baseLayer.redraw) baseLayer.redraw();
 }

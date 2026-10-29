@@ -1,7 +1,7 @@
 {
-  "versionCode": 29,
-  "versionName": "3.3",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v3.3/Mallah-Navigator.apk",
-  "size": 1789045,
-  "notes": "جديد: الملاحة بالكاميرا 📷 (سهم الاتجاه والمسافة فوق صورة الطريق)، وشعار الملاح الجديد: المشحوف."
+  "versionCode": 30,
+  "versionName": "3.4",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v3.4/Mallah-Navigator.apk",
+  "size": 1797237,
+  "notes": "الكاميرا تعرض مواقع العمل والأماكن القريبة فوق أماكنها، وكل ما تتصفحه من الخرائط يُحفظ فيظهر فورًا ويعمل بدون إنترنت."
 }

@@ -767,6 +767,7 @@ function diagText(extra) {
     'طريقة قراءة البلاط: ' + (directTiles == null ? '—' : directTiles ? 'مباشرة من معالِجات الخريطة' : 'عبر الصفحة'),
     'الرسم: ' + (liteMode() ? 'أخف' : 'عادي') + ' · دقة ' + glPixelRatio() + ' · معالجات ' + (navigator.hardwareConcurrency || '?') + ' · ذاكرة ' + (navigator.deviceMemory || '?') + ' ج.ب',
     'البلاط: طلبات ' + VD.req + ' · نجح ' + VD.hit + ' · فارغ ' + VD.empty + ' · أخطاء ' + VD.err,
+    'الخرائط المحفوظة تلقائيًا (من التصفح): ' + (NATIVE && Android.netCacheSize ? fmtMB(Android.netCacheSize()) : '—'),
     'الإنترنت: ' + (navigator.onLine === false ? 'غير متصل' : 'متصل') + ' · الموقع: ' + (me ? me.lat.toFixed(4) + ', ' + me.lng.toFixed(4) + ' ±' + Math.round(me.acc) + 'م' : '—'),
   ];
   if (VD.lastErr) L.push('آخر خطأ في القراءة: ' + VD.lastErr);
@@ -807,12 +808,14 @@ function openDiag() {
     el = document.createElement('div'); el.id = 'diagPanel'; el.className = 'panel hidden';
     el.innerHTML = `<div class="panelHead"><button class="iconBtn" id="diagClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></button><h2>تشخيص الخريطة</h2></div>
       <div class="panelBody"><div class="card"><pre id="diagOut" class="diagOut"></pre></div>
-      <div class="btnRow" style="padding:12px"><button class="chip go" id="diagRun">🔁 اختبار الخرائط المنزّلة</button><button class="chip" id="diagShare">📤 مشاركة مع المصمم</button>${packs().length ? '<button class="chip" id="diagVec">🗺 إعادة تجربة الخريطة المنزّلة</button>' : ''}<button class="chip" id="diagLite"></button>${NATIVE && Android.mapCheck ? '<button class="chip" id="diagCheck">🔍 فحص سلامة الخرائط</button>' : ''}</div><div id="diagCheckOut" class="card hidden"></div>
+      <div class="btnRow" style="padding:12px"><button class="chip go" id="diagRun">🔁 اختبار الخرائط المنزّلة</button><button class="chip" id="diagShare">📤 مشاركة مع المصمم</button>${packs().length ? '<button class="chip" id="diagVec">🗺 إعادة تجربة الخريطة المنزّلة</button>' : ''}<button class="chip" id="diagLite"></button>${NATIVE && Android.mapCheck ? '<button class="chip" id="diagCheck">🔍 فحص سلامة الخرائط</button>' : ''}${NATIVE && Android.netCacheClear ? '<button class="chip del" id="diagNetClear">🧹 مسح الخرائط المحفوظة من التصفح</button>' : ''}</div><div id="diagCheckOut" class="card hidden"></div>
       <div class="note">إذا ظهرت لك مشكلة في عرض الخريطة، اضغط «اختبار» ثم «مشاركة» وأرسل النتيجة عبر واتساب إلى مصمم البرنامج.</div></div>`;
     document.body.appendChild(el);
     $('diagClose').onclick = () => el.classList.add('hidden');
     $('diagRun').onclick = async () => { $('diagOut').textContent = diagText('جارٍ الاختبار…'); $('diagOut').textContent = diagText(await diagTest()); };
     $('diagShare').onclick = () => { const t = $('diagOut').textContent; if (NATIVE && Android.shareText) Android.shareText(t); else if (navigator.share) navigator.share({ text: t }).catch(() => {}); else { try { navigator.clipboard.writeText(t); toast('تم النسخ'); } catch (e) {} } };
+    const nc = $('diagNetClear');
+    if (nc) nc.onclick = () => { if (!confirm('مسح كل أجزاء الخرائط التي حُفظت أثناء التصفح؟ (لا يمسّ الخرائط المنزّلة)')) return; Android.netCacheClear(); toast('تم المسح'); setTimeout(() => { $('diagOut').textContent = diagText(); }, 1500); };
     const ck = $('diagCheck');
     if (ck) ck.onclick = () => {
       const box = $('diagCheckOut'); box.classList.remove('hidden');
