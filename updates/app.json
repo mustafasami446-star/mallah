@@ -1,7 +1,7 @@
 {
-  "versionCode": 22,
-  "versionName": "2.6",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v2.6/Mallah-Navigator.apk",
+  "versionCode": 23,
+  "versionName": "2.7",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v2.7/Mallah-Navigator.apk",
   "size": 1625073,
-  "notes": "«اكتشف ما حولك» بشكل جديد: قائمة أو «عرض على الخريطة» مع شريط صغير لا يغطي الخريطة، وتبديل سريع بين الفئات. يتضمن إصلاح الخريطة الفارغة."
+  "notes": "إصلاح الوضع الليلي: لم تعد تظهر أجزاء فاتحة وأخرى داكنة من الخريطة عند التكبير والتصغير."
 }
