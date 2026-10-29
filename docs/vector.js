@@ -95,7 +95,7 @@ class PackSource {
    (provinces overlap a little at their borders, and all of them hold the whole country at low zoom) */
 let archives = [];
 /* what the offline map is doing — shown in Settings ← «تشخيص الخريطة» */
-const VD = { req: 0, hit: 0, empty: 0, err: 0, lastErr: '', glErr: '', fellBack: '' };
+const VD = { req: 0, hit: 0, empty: 0, err: 0, lastErr: '', glErr: '', fellBack: '', t: {} };
 const diagLogs = [];
 function diagLog(s) { diagLogs.push(new Date().toTimeString().slice(0, 8) + ' ' + String(s).slice(0, 200)); if (diagLogs.length > 15) diagLogs.shift(); }
 window.addEventListener('error', (e) => diagLog('js: ' + e.message + ' @' + String(e.filename || '').split('/').pop() + ':' + e.lineno));
@@ -151,27 +151,59 @@ function vecStyle(dark) {
    so there are no blank strips or flashes. */
 const ZOOM_MS = 250;                                                  // Leaflet's zoom transition
 const leafletEase = (t) => 1 - Math.pow(1 - t, 3);                   // close to cubic-bezier(0,0,.25,1)
+/* One MapLibre map is kept for the whole session: switching to another layer only hides it, and
+   switching back shows it again instantly with its tiles still in memory (creating it is the heavy part). */
+let glKeep = null;              // {div, gl, stale}
+function liteMode() {
+  const s = store.get('mapLite', null);
+  if (s != null) return !!s;
+  return (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 3;   // weaker phones
+}
+function glPixelRatio() { return Math.min(window.devicePixelRatio || 1, liteMode() ? 1.25 : 2); }
+function dropGl() {
+  if (!glKeep) return;
+  try { glKeep.gl.remove(); } catch (e) {}
+  glKeep.div.remove(); glKeep = null;
+}
 const VecLayer = L.Layer.extend({
   options: { maxZoom: 21, minZoom: 3 },
   onAdd(m) {
     this._m = m; this._alive = true;
     document.body.classList.add('vec-on');
+    const t0 = performance.now(), mark = (k) => { if (!VD.t[k]) VD.t[k] = Math.round(performance.now() - t0); };
     loadLibs().then(async () => {
       if (!this._alive) return;
-      syncArchives(); await readMaxZoom();
-      if (!this._alive) return;
-      vecDark = document.body.classList.contains('night');
-      this._div = document.createElement('div');
-      this._div.id = 'glmap';
-      document.body.insertBefore(this._div, $('map'));
-      const c = m.getCenter();
-      this._gl = new maplibregl.Map({
-        container: this._div, style: vecStyle(vecDark), interactive: false, attributionControl: false,
-        center: [c.lng, c.lat], zoom: m.getZoom() - 1, bearing: -mapBearing(), maxZoom: 21, fadeDuration: 0,
-        renderWorldCopies: false, pixelRatio: Math.min(2, window.devicePixelRatio || 1)
-      });
-      this._gl.on('error', (e) => { const m = (e && e.error && e.error.message) || 'error'; VD.glErr = m; diagLog('maplibre: ' + m); console.warn('vec', m); });
+      mark('libs');
+      const night = document.body.classList.contains('night');
+      if (!glKeep) {
+        syncArchives(); await readMaxZoom();
+        if (!this._alive) return;
+        mark('header');
+        vecDark = night;
+        const div = document.createElement('div');
+        div.id = 'glmap';
+        document.body.insertBefore(div, $('map'));
+        const c = m.getCenter();
+        const gl = new maplibregl.Map({
+          container: div, style: vecStyle(vecDark), interactive: false, attributionControl: false,
+          center: [c.lng, c.lat], zoom: m.getZoom() - 1, bearing: -mapBearing(), maxZoom: 21, fadeDuration: 0,
+          renderWorldCopies: false, pixelRatio: glPixelRatio()
+        });
+        mark('created');
+        gl.on('error', (e) => { const msg = (e && e.error && e.error.message) || 'error'; VD.glErr = msg; diagLog('maplibre: ' + msg); console.warn('vec', msg); });
+        gl.once('load', () => mark('style'));
+        gl.once('idle', () => mark('shown'));
+        glKeep = { div, gl, stale: false };
+      } else {
+        glKeep.div.style.display = '';
+        mark('reused');
+      }
+      this._div = glKeep.div; this._gl = glKeep.gl;
       vecLayer = this;
+      this._gl.resize();
+      if (glKeep.stale) { glKeep.stale = false; await this.reload(); }
+      else if (vecDark !== night) this.setDark(night);
+      this._sync();
       checkCoverage();
       // if the offline map can't read a single tile on this phone, don't leave the user with an empty screen
       const me0 = this;
@@ -182,13 +214,13 @@ const VecLayer = L.Layer.extend({
         setLayer(navigator.onLine === false ? 'esri' : 'osm', true);
         toast('تعذّر عرض الخريطة المنزّلة على هذا الهاتف، فتم التحويل إلى خريطة الشوارع. للمساعدة: الإعدادات ← «تشخيص الخريطة» ← مشاركة.', 8000);
       }, 9000);
-    }).catch((e) => { console.error(e); toast('تعذّر تشغيل الخريطة المتجهة على هذا الهاتف — تم التحويل إلى الخريطة العادية', 5000); setLayer('esri'); });
+    }).catch((e) => { console.error(e); diagLog('vec start: ' + (e && e.message)); toast('تعذّر تشغيل الخريطة المتجهة على هذا الهاتف — تم التحويل إلى الخريطة العادية', 5000); setLayer('esri'); });
   },
   onRemove() {
     this._alive = false;
     document.body.classList.remove('vec-on');
-    if (this._gl) { this._gl.remove(); this._gl = null; }
-    if (this._div) { this._div.remove(); this._div = null; }
+    if (this._div) this._div.style.display = 'none';          // kept for the next time
+    this._gl = null; this._div = null;
     if (vecLayer === this) vecLayer = null;
     checkCoverage();
   },
@@ -237,8 +269,9 @@ function refreshPacks() {
   const had = !!LAYERS.vec;
   enableVecLayer();
   places = null; loadPlaces();
-  if (!packs().length && layerKey === 'vec') setLayer('osm');
+  if (!packs().length) { if (layerKey === 'vec') setLayer('osm'); dropGl(); }
   else if (vecLayer) vecLayer.reload();
+  else if (glKeep) glKeep.stale = true;
   else if (!had && packs().length) { store.set('layer', 'vec'); setLayer('vec'); }
   renderPacks();
 }
@@ -649,6 +682,8 @@ function diagText(extra) {
     'الرسوميات: ' + glInfo(),
     'الخرائط المنزّلة: ' + (packs().length ? packs().map((p) => p.id + ' ' + fmtVer(p.version) + ' ' + fmtMB(p.size || 0)).join('، ') : 'لا يوجد'),
     'الطبقة الحالية: ' + layerKey + (vecBroken ? ' (تعطّلت المتجهة ' + VD.fellBack + ')' : ''),
+    'زمن فتح الخريطة (م.ث): ' + (Object.keys(VD.t).length ? Object.entries(VD.t).map(([k, v]) => k + ' ' + v).join(' · ') : '—'),
+    'الرسم: ' + (liteMode() ? 'أخف' : 'عادي') + ' · دقة ' + glPixelRatio() + ' · معالجات ' + (navigator.hardwareConcurrency || '?') + ' · ذاكرة ' + (navigator.deviceMemory || '?') + ' ج.ب',
     'البلاط: طلبات ' + VD.req + ' · نجح ' + VD.hit + ' · فارغ ' + VD.empty + ' · أخطاء ' + VD.err,
     'الإنترنت: ' + (navigator.onLine === false ? 'غير متصل' : 'متصل') + ' · الموقع: ' + (me ? me.lat.toFixed(4) + ', ' + me.lng.toFixed(4) + ' ±' + Math.round(me.acc) + 'م' : '—'),
   ];
@@ -677,13 +712,21 @@ function openDiag() {
     el = document.createElement('div'); el.id = 'diagPanel'; el.className = 'panel hidden';
     el.innerHTML = `<div class="panelHead"><button class="iconBtn" id="diagClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></button><h2>تشخيص الخريطة</h2></div>
       <div class="panelBody"><div class="card"><pre id="diagOut" class="diagOut"></pre></div>
-      <div class="btnRow" style="padding:12px"><button class="chip go" id="diagRun">🔁 اختبار الخرائط المنزّلة</button><button class="chip" id="diagShare">📤 مشاركة مع المصمم</button>${packs().length ? '<button class="chip" id="diagVec">🗺 إعادة تجربة الخريطة المنزّلة</button>' : ''}</div>
+      <div class="btnRow" style="padding:12px"><button class="chip go" id="diagRun">🔁 اختبار الخرائط المنزّلة</button><button class="chip" id="diagShare">📤 مشاركة مع المصمم</button>${packs().length ? '<button class="chip" id="diagVec">🗺 إعادة تجربة الخريطة المنزّلة</button>' : ''}<button class="chip" id="diagLite"></button></div>
       <div class="note">إذا ظهرت لك مشكلة في عرض الخريطة، اضغط «اختبار» ثم «مشاركة» وأرسل النتيجة عبر واتساب إلى مصمم البرنامج.</div></div>`;
     document.body.appendChild(el);
     $('diagClose').onclick = () => el.classList.add('hidden');
     $('diagRun').onclick = async () => { $('diagOut').textContent = diagText('جارٍ الاختبار…'); $('diagOut').textContent = diagText(await diagTest()); };
     $('diagShare').onclick = () => { const t = $('diagOut').textContent; if (NATIVE && Android.shareText) Android.shareText(t); else if (navigator.share) navigator.share({ text: t }).catch(() => {}); else { try { navigator.clipboard.writeText(t); toast('تم النسخ'); } catch (e) {} } };
-    const v = $('diagVec'); if (v) v.onclick = () => { vecBroken = false; VD.req = VD.hit = VD.empty = VD.err = 0; VD.lastErr = VD.glErr = ''; enableVecLayer(); el.classList.add('hidden'); $('setPanel').classList.add('hidden'); setLayer('vec'); toast('جارٍ تجربة الخريطة المنزّلة…'); };
+    const lt = $('diagLite');
+    const ltLabel = () => { lt.textContent = liteMode() ? '🎨 رسم بدقة كاملة' : '⚡ رسم أخف وأسرع'; };
+    lt.onclick = () => {
+      store.set('mapLite', !liteMode()); ltLabel();
+      const was = layerKey === 'vec'; if (was) setLayer('osm', true); dropGl(); if (was) setLayer('vec', true);
+      $('diagOut').textContent = diagText(); toast(liteMode() ? 'تم تفعيل الرسم الأخف' : 'تم تفعيل الدقة الكاملة');
+    };
+    ltLabel();
+    const v = $('diagVec'); if (v) v.onclick = () => { vecBroken = false; dropGl(); VD.req = VD.hit = VD.empty = VD.err = 0; VD.lastErr = VD.glErr = ''; enableVecLayer(); el.classList.add('hidden'); $('setPanel').classList.add('hidden'); setLayer('vec'); toast('جارٍ تجربة الخريطة المنزّلة…'); };
   }
   $('diagOut').textContent = diagText();
   el.classList.remove('hidden');
