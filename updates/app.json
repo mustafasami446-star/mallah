@@ -1,7 +1,7 @@
 {
-  "versionCode": 13,
-  "versionName": "2.0.2",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v2.0.2/Mallah-Navigator.apk",
+  "versionCode": 14,
+  "versionName": "2.0.3",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v2.0.3/Mallah-Navigator.apk",
   "size": 870214,
-  "notes": "تكبير وتصغير أنعم للخريطة بدون مربعات بيضاء أو وميض"
+  "notes": "إزالة البهتان عند تصغير صور القمر الصناعي"
 }
