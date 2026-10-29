@@ -98,6 +98,18 @@ jobs:
           python3 tools/places.py places.geojsonseq pack/places.tsv
           wc -l pack/places.tsv
 
+      - name: Province boundaries
+        run: |
+          osmium tags-filter iraq.osm.pbf r/boundary=administrative -o admin.osm.pbf --overwrite
+          osmium export admin.osm.pbf -f geojsonseq -o admin.geojsonseq --overwrite --geometry-types=polygon
+          wc -l admin.geojsonseq
+
+      - name: One map pack per province
+        run: |
+          pip install -q pmtiles shapely
+          python3 tools/split_provinces.py pack admin.geojsonseq provinces "$BUILD" "$MAXZOOM"
+          ls -la provinces
+
       - name: Assemble the map pack
         run: |
           python3 tools/make_pack.py pack "mallah-iraq-map.zip" "$BUILD" "$MAXZOOM" "$BBOX"
@@ -119,7 +131,8 @@ jobs:
           rep = {"zip_bytes": os.path.getsize("mallah-iraq-map.zip"), "tiles_bytes": t.file_size,
                  "maxzoom": int(os.environ["MAXZOOM"]), "build": os.environ["BUILD"], "entries": len(names),
                  "font_files": sum(1 for n in names if n.startswith("fonts/")), "sprites": sum(1 for n in names if n.startswith("sprites/")),
-                 "places": places}
+                 "places": places,
+                 "provinces": [{k: p[k] for k in ("id", "name_en", "size", "tiles", "places")} for p in json.load(open("provinces/packs.json"))]}
           print(rep)
           os.makedirs("updates", exist_ok=True)
           json.dump(rep, open(f"updates/report-z{rep['maxzoom']}.json", "w"), indent=1)
@@ -130,7 +143,8 @@ jobs:
         run: |
           git config user.name "mallah-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add updates/report-*.json
+          cp provinces/provinces.json updates/provinces.json
+          git add updates/report-*.json updates/provinces.json
           git commit -m "Map size report (maxzoom $MAXZOOM)" || true
           git pull --rebase -q origin "${GITHUB_REF_NAME}"
           git push origin "HEAD:${GITHUB_REF_NAME}"
@@ -142,20 +156,25 @@ jobs:
           SIZE=$(stat -c %s mallah-iraq-map.zip)
           V="${BUILD:0:4}-${BUILD:4:2}-${BUILD:6:2}"
           gh release delete "$TAG" -y --cleanup-tag 2>/dev/null || true
-          gh release create "$TAG" mallah-iraq-map.zip \
+          gh release create "$TAG" mallah-iraq-map.zip provinces/mallah-*.zip \
             --title "خريطة العراق $V" \
-            --notes "خريطة العراق للعمل بدون إنترنت في تطبيق الملاح. البيانات © مساهمو OpenStreetMap (ODbL)، الخريطة من Protomaps. أقصى تكبير: $MAXZOOM."
+            --notes "خريطة العراق (كاملة ولكل محافظة) للعمل بدون إنترنت في تطبيق الملاح. البيانات © مساهمو OpenStreetMap (ODbL)، الخريطة من Protomaps. أقصى تكبير: $MAXZOOM."
           URL="https://github.com/${{ github.repository }}/releases/download/$TAG/mallah-iraq-map.zip"
           python3 - "$V" "$URL" "$SIZE" "$MAXZOOM" <<'PY'
           import json, sys, datetime
           v, url, size, mz = sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4])
+          base = url.rsplit("/", 1)[0] + "/"
+          provs = json.load(open("provinces/packs.json", encoding="utf-8"))
+          for p in provs: p["url"] = base + p.pop("file"); p.pop("tiles", None)
           json.dump({"version": v, "url": url, "size": size, "maxzoom": mz,
-                     "built": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%MZ")},
+                     "built": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%MZ"),
+                     "packs": [{"id": "iraq", "name": "العراق كاملًا", "name_en": "Iraq", "url": url, "size": size}] + provs},
                     open("updates/map.json", "w"), ensure_ascii=False, indent=2)
           PY
           git config user.name "mallah-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add updates/map.json updates/report-*.json
+          cp provinces/provinces.json updates/provinces.json
+          git add updates/map.json updates/report-*.json updates/provinces.json
           git commit -m "Map pack $V" || echo "manifest unchanged"
           git pull --rebase -q origin "${GITHUB_REF_NAME}"
           git push origin "HEAD:${GITHUB_REF_NAME}"

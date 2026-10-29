@@ -4,7 +4,7 @@ the ZIP without unpacking), everything else is compressed."""
 import zipfile, json, os, sys, datetime
 src, out, build, maxzoom, bbox = sys.argv[1:6]
 version = f'{build[:4]}-{build[4:6]}-{build[6:8]}'
-manifest = {"version": version, "tiles": "iraq.pmtiles", "name": "العراق", "maxzoom": int(maxzoom),
+manifest = {"id": "iraq", "version": version, "tiles": "iraq.pmtiles", "name": "العراق كاملًا", "name_en": "Iraq", "maxzoom": int(maxzoom),
             "bbox": [float(x) for x in bbox.split(',')], "source": f"Protomaps build {build}",
             "attribution": "© OpenStreetMap contributors (ODbL) · Protomaps",
             "built": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%MZ")}
