@@ -1,8 +1,8 @@
 {
-  "versionCode": 48,
-  "versionName": "5.2",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.2/Mallah-Navigator.apk",
-  "size": 2219768,
-  "notes": "الفريق يعمل والشاشة مطفأة: مشاركة الموقع في الخلفية، إشعارات الرسائل والاستغاثة، ورسائل SMS احتياطية عند انقطاع الإنترنت.",
-  "sha256": "e9cd8aabe68de6fbb9a51c3c9cc188378343aa5b8bf48168d7ae56bb78fbb15a"
+  "versionCode": 49,
+  "versionName": "5.3",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.3/Mallah-Navigator.apk",
+  "size": 2223864,
+  "notes": "دليل الاستخدام محدّث بكل الميزات الجديدة: الفريق والمحادثة والاستغاثة والمشاركة في الخلفية ورسائل SMS، والتحديث من داخل البرنامج، ودقة الموقع.",
+  "sha256": "a2b68bcea3c158d367e34bb9bd1762f742f901b70f1e12ca2b62eb2124ea9184"
 }

@@ -84,7 +84,7 @@ const WHATS_NEW = [
     { art: 'update', t: 'التحديثات تصلك بسهولة', d: 'من الإعدادات ← «🔄 البحث عن تحديث للبرنامج» في أي وقت. ونسخة الآيفون واللابتوب تتحدّث الآن وحدها.' }
   ] }
 ];
-const MAX_SLIDES = 7;
+const MAX_SLIDES = 9;
 const verNum = (v) => String(v || '0').split('.').map((n) => +n || 0).reduce((a, n, i) => a + n / Math.pow(1000, i), 0);
 
 function whatsNewSlides(since) {
