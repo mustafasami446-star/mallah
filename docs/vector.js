@@ -838,6 +838,7 @@ function diagText(extra) {
     'الملاح ' + av + (NATIVE ? ' — Android' : ''),
     'محرّك العرض: Chrome ' + cv + ((/; wv\)/).test(ua) ? ' (WebView)' : ''),
     'Android: ' + ((ua.match(/Android ([\d.]+)/) || [])[1] || '—') + ' · ' + ((ua.match(/; ([^;)]+) Build/) || [])[1] || ''),
+    'الموقع: ' + (me ? (me.prov === 'gps' ? 'GPS' : me.prov === 'net' ? 'شبكة الهاتف' : '—') + ' ± ' + Math.round(me.acc) + ' م' : 'لا يوجد') + (typeof locStats !== 'undefined' ? ' · GPS ' + locStats.gps + ' / شبكة ' + locStats.net + ' / مُهمَل ' + locStats.skipped : ''),
     'الرسوميات: ' + glInfo(),
     'الخرائط المنزّلة: ' + (packs().length ? packs().map((p) => p.id + ' ' + fmtVer(p.version) + ' ' + fmtMB(p.size || 0)).join('، ') : 'لا يوجد'),
     'الطبقة الحالية: ' + layerKey + (vecBroken ? ' (تعطّلت المتجهة ' + VD.fellBack + ')' : ''),

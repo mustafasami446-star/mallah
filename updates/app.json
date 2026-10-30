@@ -1,7 +1,7 @@
 {
-  "versionCode": 38,
-  "versionName": "4.2",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v4.2/Mallah-Navigator.apk",
+  "versionCode": 39,
+  "versionName": "4.3",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v4.3/Mallah-Navigator.apk",
   "size": 2178418,
-  "notes": "خريطة الشوارع: حيث توجد خريطة منزّلة تُعرض هي بدل صور الإنترنت، فلا تظهر بقع ومربعات مختلفة الألوان عند ضعف الإنترنت."
+  "notes": "إصلاح دقة الموقع: كان الموقع التقريبي من شبكة الهاتف (قد يبعد مئات الأمتار) يحلّ محل موقع الأقمار الصناعية الدقيق. الآن يُعتمد GPS دائمًا ما دام يعمل."
 }

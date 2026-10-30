@@ -306,14 +306,29 @@ function updateMeMarker() {
     }
   }
 }
-window.onNativeLocation = function (lat, lng, acc, head, speed) {
+/* The phone reports two kinds of position: from satellites (GPS, a few metres) and from the mobile
+   network / Wi-Fi (often hundreds of metres off). A network position must not replace a recent
+   GPS one, and an old saved position is only used until a fresh one arrives. */
+let locLast = { gpsT: 0 }, locStats = { gps: 0, net: 0, skipped: 0 };
+function locAccept(acc, prov, age) {
+  const now = Date.now(), prev = me;
+  if (prov === 'gps') { locLast.gpsT = now; return true; }
+  if (age > 120000 && prev) return false;                                         // stale
+  if (prov === 'net' && now - locLast.gpsT < 20000) return false;                  // GPS is working: ignore the network
+  if (prev && now - prev.t < 20000 && acc > Math.max(prev.acc * 2, 40)) return false;   // much worse than what we have
+  return true;
+}
+window.onNativeLocation = function (lat, lng, acc, head, speed, prov, age) {
+  if (!locAccept(acc || 9999, prov || '', age || 0)) { locStats.skipped++; return; }
+  if (prov) locStats[prov === 'gps' ? 'gps' : 'net']++;
   const prev = me;
   let h = head;
-  if (h == null && prev) {
+  if (prov === 'net') h = prev ? prev.heading : null;                               // a network jump says nothing about direction
+  else if (h == null && prev && prev.prov !== 'net') {
     const d = hav([prev.lat, prev.lng], [lat, lng]);
     if (d > 4) h = bearing([prev.lat, prev.lng], [lat, lng]); else h = prev.heading;
   }
-  me = { lat, lng, acc: acc || 0, heading: h, speed: speed, t: Date.now() };
+  me = { lat, lng, acc: acc || 0, heading: h, speed: speed, t: Date.now(), prov: prov || '' };
   $('gpsBanner').classList.add('hidden');
   updateMeMarker();
   if (!gotFirstFix) {
@@ -351,6 +366,7 @@ function setFollow(on) {
 map.on('dragstart', () => setFollow(false));
 $('locBtn').onclick = () => {
   if (!me) { toast('جارٍ تحديد موقعك…'); startLocation(); return; }
+  if (me.prov === 'net' || me.acc > 60) toast('📡 موقع تقريبي (± ' + Math.round(me.acc) + ' م) من شبكة الهاتف — انتظر إشارة الأقمار الصناعية (GPS)، ويُفضَّل أن تكون في مكان مكشوف', 5000);
   setFollow(true);
   map.setView([me.lat, me.lng], navState ? 17 : Math.max(map.getZoom(), 16));
 };
