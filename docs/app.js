@@ -367,6 +367,7 @@ map.on('dragstart', () => setFollow(false));
 $('locBtn').onclick = () => {
   if (!me) { toast('جارٍ تحديد موقعك…'); startLocation(); return; }
   if (me.prov === 'net' || me.acc > 60) toast('📡 موقع تقريبي (± ' + Math.round(me.acc) + ' م) من شبكة الهاتف — انتظر إشارة الأقمار الصناعية (GPS)، ويُفضَّل أن تكون في مكان مكشوف', 5000);
+  else toast('📍 موقعك دقيق: ± ' + Math.round(me.acc) + ' م' + (me.prov === 'gps' ? ' من الأقمار الصناعية (GPS)' : ''), 2500);
   setFollow(true);
   map.setView([me.lat, me.lng], navState ? 17 : Math.max(map.getZoom(), 16));
 };

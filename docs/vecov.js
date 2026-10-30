@@ -34,56 +34,61 @@ function ovCircle(lat, lng, m) {
 /* sources and layers; added again whenever the style is replaced (night mode, new maps) */
 function ovInstall(gl) {
   try {
-    if (!gl.style || !gl.style._loaded || gl.getSource('ov_route')) return;
+    if (!gl.style || !gl.style._loaded || OV.installing || gl.getLayer('ov_p_pt')) return;
+    OV.installing = true;
+    // each piece is added only if missing, so a second call (style events arrive in bursts) is harmless
+    const addS = (id, o) => { if (!gl.getSource(id)) gl.addSource(id, o); };
+    const addL = (o, before) => { if (!gl.getLayer(o.id)) gl.addLayer(o, before && gl.getLayer(before) ? before : undefined); };
     ['nav', 'cone'].forEach((k) => { if (!gl.hasImage('ov_' + k)) gl.addImage('ov_' + k, ovImg(k), { pixelRatio: 2 }); });
-    gl.addSource('ov_route', { type: 'geojson', data: OV_EMPTY });
-    gl.addSource('ov_acc', { type: 'geojson', data: OV_EMPTY });
-    gl.addSource('ov_me', { type: 'geojson', data: OV_EMPTY });
+    addS('ov_route', { type: 'geojson', data: OV_EMPTY });
+    addS('ov_acc', { type: 'geojson', data: OV_EMPTY });
+    addS('ov_me', { type: 'geojson', data: OV_EMPTY });
     // the route goes above the streets but under the place names
     const firstLabel = (gl.getStyle().layers.find((l) => l.type === 'symbol') || {}).id;
-    gl.addLayer({ id: 'ov_route_casing', type: 'line', source: 'ov_route', layout: { 'line-join': 'round', 'line-cap': 'round' },
+    addL({ id: 'ov_route_casing', type: 'line', source: 'ov_route', layout: { 'line-join': 'round', 'line-cap': 'round' },
       paint: { 'line-color': '#0b3a8a', 'line-opacity': 0.55, 'line-width': 11 } }, firstLabel);
-    gl.addLayer({ id: 'ov_route', type: 'line', source: 'ov_route', layout: { 'line-join': 'round', 'line-cap': 'round' },
+    addL({ id: 'ov_route', type: 'line', source: 'ov_route', layout: { 'line-join': 'round', 'line-cap': 'round' },
       paint: { 'line-color': ['get', 'color'], 'line-opacity': 0.95, 'line-width': 7 } }, firstLabel);
-    gl.addLayer({ id: 'ov_route_foot', type: 'line', source: 'ov_route', filter: ['==', ['get', 'foot'], true], layout: { 'line-join': 'round', 'line-cap': 'round' },
+    addL({ id: 'ov_route_foot', type: 'line', source: 'ov_route', filter: ['==', ['get', 'foot'], true], layout: { 'line-join': 'round', 'line-cap': 'round' },
       paint: { 'line-color': ['get', 'color'], 'line-width': 7, 'line-dasharray': [0.3, 1.6] } }, firstLabel);
-    gl.addLayer({ id: 'ov_acc', type: 'fill', source: 'ov_acc', paint: { 'fill-color': '#2563eb', 'fill-opacity': 0.08, 'fill-outline-color': 'rgba(37,99,235,.4)' } });
-    gl.addLayer({ id: 'ov_cone', type: 'symbol', source: 'ov_me', filter: ['all', ['==', ['get', 'nav'], false], ['==', ['get', 'hasHd'], true]],
+    addL({ id: 'ov_acc', type: 'fill', source: 'ov_acc', paint: { 'fill-color': '#2563eb', 'fill-opacity': 0.08, 'fill-outline-color': 'rgba(37,99,235,.4)' } });
+    addL({ id: 'ov_cone', type: 'symbol', source: 'ov_me', filter: ['all', ['==', ['get', 'nav'], false], ['==', ['get', 'hasHd'], true]],
       layout: { 'icon-image': 'ov_cone', 'icon-rotate': ['get', 'hd'], 'icon-rotation-alignment': 'map', 'icon-allow-overlap': true, 'icon-ignore-placement': true } });
-    gl.addLayer({ id: 'ov_me_halo', type: 'circle', source: 'ov_me', filter: ['==', ['get', 'nav'], false],
+    addL({ id: 'ov_me_halo', type: 'circle', source: 'ov_me', filter: ['==', ['get', 'nav'], false],
       paint: { 'circle-radius': 11, 'circle-color': 'rgba(37,99,235,.35)', 'circle-blur': 0.3 } });
-    gl.addLayer({ id: 'ov_me', type: 'circle', source: 'ov_me', filter: ['==', ['get', 'nav'], false],
+    addL({ id: 'ov_me', type: 'circle', source: 'ov_me', filter: ['==', ['get', 'nav'], false],
       paint: { 'circle-radius': 7.5, 'circle-color': '#2563eb', 'circle-stroke-color': '#fff', 'circle-stroke-width': 3 } });
-    gl.addLayer({ id: 'ov_nav', type: 'symbol', source: 'ov_me', filter: ['==', ['get', 'nav'], true],
+    addL({ id: 'ov_nav', type: 'symbol', source: 'ov_me', filter: ['==', ['get', 'nav'], true],
       layout: { 'icon-image': 'ov_nav', 'icon-rotate': ['get', 'hd'], 'icon-rotation-alignment': 'map', 'icon-allow-overlap': true, 'icon-ignore-placement': true } });
     // stage 2: work sites, discover pins, the destination pin (under "you are here")
-    gl.addSource('ov_pts', { type: 'geojson', data: OV_EMPTY });
-    gl.addLayer({ id: 'ov_site', type: 'circle', source: 'ov_pts', filter: ['==', ['get', 't'], 'site'],
+    addS('ov_pts', { type: 'geojson', data: OV_EMPTY });
+    addL({ id: 'ov_site', type: 'circle', source: 'ov_pts', filter: ['==', ['get', 't'], 'site'],
       paint: { 'circle-radius': 7, 'circle-color': '#f97316', 'circle-stroke-color': '#fff', 'circle-stroke-width': 2 } }, 'ov_acc');
-    gl.addLayer({ id: 'ov_site_lbl', type: 'symbol', source: 'ov_pts', minzoom: 14, filter: ['==', ['get', 't'], 'site'],
+    addL({ id: 'ov_site_lbl', type: 'symbol', source: 'ov_pts', minzoom: 14, filter: ['==', ['get', 't'], 'site'],
       layout: { 'text-field': ['get', 'n'], 'text-font': ['Noto Sans Medium'], 'text-size': 12.5, 'text-anchor': 'top', 'text-offset': [0, 0.9], 'text-max-width': 9 },
       paint: { 'text-color': '#fed7aa', 'text-halo-color': 'rgba(15,23,42,.92)', 'text-halo-width': 2.2 } }, 'ov_acc');
-    gl.addLayer({ id: 'ov_near', type: 'symbol', source: 'ov_pts', filter: ['==', ['get', 't'], 'near'],
+    addL({ id: 'ov_near', type: 'symbol', source: 'ov_pts', filter: ['==', ['get', 't'], 'near'],
       layout: { 'icon-image': ['get', 'img'], 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'symbol-sort-key': ['get', 'z'] } }, 'ov_acc');
-    gl.addLayer({ id: 'ov_dest', type: 'symbol', source: 'ov_pts', filter: ['==', ['get', 't'], 'dest'],
+    addL({ id: 'ov_dest', type: 'symbol', source: 'ov_pts', filter: ['==', ['get', 't'], 'dest'],
       layout: { 'icon-image': 'ov_pin', 'icon-anchor': 'bottom', 'icon-allow-overlap': true, 'icon-ignore-placement': true } }, 'ov_acc');
     if (!gl.hasImage('ov_pin')) gl.addImage('ov_pin', ovPinImg(), { pixelRatio: 2 });
     // stage 3: every other line and shape (measuring, recorded tracks, alert zones, area outline, compass line)
-    gl.addSource('ov_paths', { type: 'geojson', data: OV_EMPTY });
+    addS('ov_paths', { type: 'geojson', data: OV_EMPTY });
     const notPt = ['!=', ['geometry-type'], 'Point'];
-    gl.addLayer({ id: 'ov_p_fill', type: 'fill', source: 'ov_paths', filter: ['all', notPt, ['>', ['get', 'fo'], 0]],
+    addL({ id: 'ov_p_fill', type: 'fill', source: 'ov_paths', filter: ['all', notPt, ['>', ['get', 'fo'], 0]],
       paint: { 'fill-color': ['get', 'f'], 'fill-opacity': ['get', 'fo'] } }, 'ov_site');
-    gl.addLayer({ id: 'ov_p_line', type: 'line', source: 'ov_paths', filter: ['all', notPt, ['==', ['get', 's'], true], ['==', ['get', 'd'], false]],
+    addL({ id: 'ov_p_line', type: 'line', source: 'ov_paths', filter: ['all', notPt, ['==', ['get', 's'], true], ['==', ['get', 'd'], false]],
       layout: { 'line-join': 'round', 'line-cap': 'round' },
       paint: { 'line-color': ['get', 'c'], 'line-width': ['get', 'w'], 'line-opacity': ['get', 'op'] } }, 'ov_site');
-    gl.addLayer({ id: 'ov_p_dash', type: 'line', source: 'ov_paths', filter: ['all', notPt, ['==', ['get', 's'], true], ['==', ['get', 'd'], true]],
+    addL({ id: 'ov_p_dash', type: 'line', source: 'ov_paths', filter: ['all', notPt, ['==', ['get', 's'], true], ['==', ['get', 'd'], true]],
       layout: { 'line-join': 'round', 'line-cap': 'round' },
       paint: { 'line-color': ['get', 'c'], 'line-width': ['get', 'w'], 'line-opacity': ['get', 'op'], 'line-dasharray': [0.6, 2.2] } }, 'ov_site');
-    gl.addLayer({ id: 'ov_p_pt', type: 'circle', source: 'ov_paths', filter: ['==', ['geometry-type'], 'Point'],
+    addL({ id: 'ov_p_pt', type: 'circle', source: 'ov_paths', filter: ['==', ['geometry-type'], 'Point'],
       paint: { 'circle-radius': ['get', 'r'], 'circle-color': ['get', 'f'], 'circle-opacity': ['get', 'fo'],
         'circle-stroke-color': ['get', 'c'], 'circle-stroke-width': ['get', 'w'], 'circle-stroke-opacity': ['get', 'op'] } }, 'ov_site');
     ovPushRoute(); ovPushMe(); ovPushPts(); ovPushPaths();
   } catch (e) { console.warn('overlay', e); diagLog && diagLog('overlay: ' + (e && e.message)); }
+  OV.installing = false;
 }
 function ovPushRoute() {
   const gl = OV.gl; if (!gl || !gl.getSource('ov_route')) return;

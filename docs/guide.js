@@ -1,7 +1,7 @@
 'use strict';
 /* الملاح — دليل الاستخدام وعن البرنامج */
 
-const APP_VERSION = '4.3';
+const APP_VERSION = '4.4';
 const DESIGNER = { name: 'الأستاذ مصطفى سامي', phones: ['+9647861666400', '+9647755962400'] };
 
 const GUIDE = [

@@ -223,6 +223,23 @@ function showRedraw(on) {
   if (!el) { el = document.createElement('div'); el.id = 'redrawTag'; el.textContent = 'جارٍ إعادة رسم الخريطة…'; document.body.appendChild(el); }
   el.classList.toggle('hidden', !on);
 }
+/* The phone can take the graphics memory away (another app, the screen off). Usually it is given
+   back; if not, the map would stay empty, so after a few seconds it is built again from scratch. */
+let glLostAt = 0, glRecT = 0;
+function glRecoverSoon() {
+  clearTimeout(glRecT);
+  glRecT = setTimeout(() => {
+    if (!glLostAt) return;
+    if (document.hidden) return;                    // try again when the app is back on screen
+    glLostAt = 0; VD.ctxRebuilt = (VD.ctxRebuilt || 0) + 1; diagLog('webgl: rebuilt the map');
+    const wasVec = layerKey === 'vec';
+    if (vecUnder) { map.removeLayer(vecUnder); vecUnder = null; document.body.classList.remove('vec-under'); }
+    if (vecLayer) map.removeLayer(vecLayer);
+    dropGl(); showRedraw(false);
+    if (wasVec) setLayer('vec', true); else syncUnder();
+  }, 3500);
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden && glLostAt) glRecoverSoon(); });
 function dropGl() {
   if (!glKeep) return;
   try { glKeep.gl.remove(); } catch (e) {}
@@ -266,8 +283,8 @@ const VecLayer = L.Layer.extend({
         gl.on('sourcedata', (e) => { if (directTiles && e && e.tile && e.sourceId === 'protomaps' && e.isSourceLoaded !== undefined) VD.hit++; });
         gl.once('load', () => mark('style'));
         const cv = gl.getCanvas();
-        cv.addEventListener('webglcontextlost', () => { VD.ctxLost++; diagLog('webgl: context lost'); showRedraw(true); });
-        cv.addEventListener('webglcontextrestored', () => { VD.ctxBack++; diagLog('webgl: context restored'); gl.once('idle', () => showRedraw(false)); });
+        cv.addEventListener('webglcontextlost', () => { VD.ctxLost++; diagLog('webgl: context lost'); showRedraw(true); glLostAt = Date.now(); glRecoverSoon(); });
+        cv.addEventListener('webglcontextrestored', () => { VD.ctxBack++; glLostAt = 0; diagLog('webgl: context restored'); gl.once('idle', () => showRedraw(false)); });
         gl.once('idle', () => mark('shown'));
         glKeep = { div, gl, stale: false };
       } else {
@@ -843,7 +860,7 @@ function diagText(extra) {
     'الخرائط المنزّلة: ' + (packs().length ? packs().map((p) => p.id + ' ' + fmtVer(p.version) + ' ' + fmtMB(p.size || 0)).join('، ') : 'لا يوجد'),
     'الطبقة الحالية: ' + layerKey + (vecBroken ? ' (تعطّلت المتجهة ' + VD.fellBack + ')' : ''),
     'زمن فتح الخريطة (م.ث): ' + (Object.keys(VD.t).length ? Object.entries(VD.t).map(([k, v]) => k + ' ' + v).join(' · ') : '—'),
-    'بعد التكبير حتى الظهور (م.ث): ' + (VD.zoomMs.join('، ') || '—') + ' · قراءة البلاطة: متوسط ' + (VD.tileN ? Math.round(VD.tileMs / VD.tileN) : '—') + '، أبطأ ' + Math.round(VD.slowTile) + ' · فقدان الرسوميات: ' + VD.ctxLost + ' (عاد ' + VD.ctxBack + ')',
+    'بعد التكبير حتى الظهور (م.ث): ' + (VD.zoomMs.join('، ') || '—') + ' · قراءة البلاطة: متوسط ' + (VD.tileN ? Math.round(VD.tileMs / VD.tileN) : '—') + '، أبطأ ' + Math.round(VD.slowTile) + ' · فقدان الرسوميات: ' + VD.ctxLost + ' (عاد ' + VD.ctxBack + '، أُعيد بناؤها ' + (VD.ctxRebuilt || 0) + ')',
     'طريقة قراءة البلاط: ' + (directTiles == null ? '—' : directTiles ? 'مباشرة من معالِجات الخريطة' : 'عبر الصفحة'),
     'الرسم: ' + (liteMode() ? 'أخف' : 'عادي') + ' · دقة ' + glPixelRatio() + ' · معالجات ' + (navigator.hardwareConcurrency || '?') + ' · ذاكرة ' + (navigator.deviceMemory || '?') + ' ج.ب',
     'البلاط: طلبات ' + VD.req + ' · نجح ' + VD.hit + ' · فارغ ' + VD.empty + ' · أخطاء ' + VD.err,

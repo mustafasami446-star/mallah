@@ -1,7 +1,7 @@
 {
-  "versionCode": 39,
-  "versionName": "4.3",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v4.3/Mallah-Navigator.apk",
+  "versionCode": 40,
+  "versionName": "4.4",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v4.4/Mallah-Navigator.apk",
   "size": 2178418,
-  "notes": "إصلاح دقة الموقع: كان الموقع التقريبي من شبكة الهاتف (قد يبعد مئات الأمتار) يحلّ محل موقع الأقمار الصناعية الدقيق. الآن يُعتمد GPS دائمًا ما دام يعمل."
+  "notes": "الخريطة المنزّلة تعود تلقائيًا إذا سحب الهاتف ذاكرة الرسوميات (كانت تبقى فارغة). زر «موقعي» يبيّن دقة موقعك. إصلاحات في رسم المسار."
 }
