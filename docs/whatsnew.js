@@ -49,6 +49,11 @@ const WN_ART = {
     <path d="M200 0 L140 320" stroke="#e2e8f0" stroke-width="3" stroke-dasharray="8 8"/>
     <g font-size="14" font-weight="700" text-anchor="middle" paint-order="stroke" stroke="#0b1220" stroke-width="5">
       <text x="80" y="40" fill="#fef9c3">صور القمر الصناعي</text><text x="250" y="290" fill="#bae6fd">خريطتك المنزّلة</text></g></svg>`,
+  team: () => wnSvg(`
+    <path d="M70 300 L74 222 L170 205 L176 64" fill="none" stroke="#22c55e" stroke-width="5" stroke-dasharray="2 10" stroke-linecap="round"/>
+    ${[[74, 236, '#ef4444', 'م'], [170, 150, '#06b6d4', 'ع'], [210, 210, '#a855f7', 'ح']].map(([x, y, c, t]) => `<g transform="translate(${x} ${y})"><circle r="17" fill="${c}" stroke="#fff" stroke-width="3"/><text y="6" fill="#fff" font-size="16" font-weight="700" text-anchor="middle">${t}</text></g>`).join('')}
+    <g transform="translate(176 58)"><text font-size="34" text-anchor="middle">🚩</text></g>
+    <g transform="translate(18 26)"><rect width="150" height="34" rx="17" fill="#0f172a" stroke="#22c55e" stroke-width="1.5"/><text x="75" y="22" fill="#bbf7d0" font-size="14" font-weight="700" text-anchor="middle">👥 3 متصلين</text></g>`),
   update: () => wnSvg(`
     <g transform="translate(160 150)">
       <circle r="78" fill="#0f172a" stroke="#38bdf8" stroke-width="2"/>
@@ -59,6 +64,9 @@ const WN_ART = {
 
 /* ---------------- what's new, newest version first ---------------- */
 const WHATS_NEW = [
+  { v: '5.0', slides: [
+    { art: 'team', t: 'رحلة الفريق', d: 'أنشئ مجموعة لفريقك من ☰ ← «الفريق»: ترون مواقع بعضكم مباشرة على الخريطة، وتذهبون إلى أي زميل أو إلى نقطة تجمّع يحددها أحدكم. كل المواقع مشفّرة.', act: ['👥 افتح الفريق', () => { if (typeof openTeam === 'function') openTeam(); }] }
+  ] },
   { v: '4.8', slides: [
     { art: 'update', t: 'التحديث من داخل البرنامج', d: 'من الآن تُنزَّل التحديثات داخل الملاح نفسه مع شريط تقدّم، ثم تضغط «تحديث» فقط — دون متصفح ودون البحث عن الملف. أول مرة يطلب أندرويد السماح للملاح بتثبيت التحديثات.' }
   ] },

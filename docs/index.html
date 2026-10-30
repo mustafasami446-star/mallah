@@ -378,6 +378,24 @@ body.attr-min #attrBtn{opacity:.8;pointer-events:auto}
 #updBar .ub1 button{color:var(--muted);font-size:15px;padding:2px 6px}
 #updBar .bar{height:6px;border-radius:3px;background:#1e293b;overflow:hidden}
 #updBar .bar i{display:block;height:100%;background:linear-gradient(90deg,#38bdf8,#22c55e);transition:width .3s}
+#teamBtn{position:relative}
+#teamBtn.on{color:#22c55e;border-color:#22c55e}
+#teamBtn em{position:absolute;top:-6px;left:-6px;min-width:20px;height:20px;border-radius:10px;background:#22c55e;color:#04111f;font:700 12px/20px Plex,system-ui;font-style:normal;text-align:center;padding:0 5px}
+.tmPin{position:relative;width:36px;height:36px}
+.tmPin b{position:absolute;inset:4px;border-radius:50%;background:var(--c);border:3px solid #fff;color:#fff;font:700 14px/22px Plex,system-ui;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,.45);z-index:1}
+.tmPin i{position:absolute;left:50%;top:-5px;width:0;height:0;margin-left:-6px;border:6px solid transparent;border-bottom:9px solid var(--c);transform-origin:6px 23px}
+.tmPin span{position:absolute;top:36px;left:50%;transform:translateX(-50%);white-space:nowrap;background:rgba(15,23,42,.88);color:#fff;font-size:11.5px;font-weight:700;padding:1px 7px;border-radius:7px}
+.tmPin.stale b{filter:grayscale(.85);opacity:.75}
+.tmFlag{font-size:30px;line-height:1;position:relative}
+.tmFlag span{position:absolute;top:34px;left:0;white-space:nowrap;background:rgba(127,29,29,.92);color:#fff;font-size:11.5px;font-weight:700;padding:1px 7px;border-radius:7px}
+.tmDot{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--c);color:#fff;font-weight:700;border:2px solid #fff}
+.tmDot.stale{filter:grayscale(.85);opacity:.7}
+.tmHead{display:flex;align-items:center;gap:10px;padding:12px 14px 4px}
+.tmHead .t{font-weight:700;font-size:17px}
+.tmCode{padding:0 14px 12px;font:600 14px/1.4 monospace;letter-spacing:1px;color:#93c5fd;user-select:all;-webkit-user-select:all}
+.tmIntro{padding:14px}
+.tmIntro .t{font-weight:700;font-size:17px;margin-bottom:6px}
+.tmIntro .s{color:var(--muted);font-size:13.5px;line-height:1.7}
 #areaChip{position:absolute;top:calc(74px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:790;display:flex;align-items:center;background:rgba(15,23,42,.94);border:1px solid #38bdf8;border-radius:999px;box-shadow:var(--shadow);max-width:84vw}
 #areaChip button{color:#e0f2fe;font-size:13.5px;font-weight:600;padding:8px 6px 8px 14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:68vw}
 #areaChip #areaChipX{padding:8px 14px 8px 8px;color:#94a3b8}
@@ -509,6 +527,7 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
 <div id="menuDrop" class="hidden">
     <div class="brandRow"><img src="logo.svg" alt=""><div><b>الملاح</b><small id="brandVer">ملاحتك بالعربي</small></div></div>
     <button id="openMaps"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></svg>الخرائط بدون إنترنت</button>
+    <button id="openTeam"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c.6-3.4 3-5.4 6-5.4s5.4 2 6 5.4"/><circle cx="17" cy="9" r="2.6"/><path d="M16.5 14.2c2.4.2 4.1 2 4.5 4.8"/></svg>الفريق</button>
     <button id="openFavs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>الأماكن المفضلة</button>
     <button id="shareMe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>مشاركة موقعي</button>
     <button id="openSites" class="hidden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>مواقع العمل</button>
@@ -549,6 +568,7 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
 <div id="fabs">
     <button class="fab hidden" id="arBtn" aria-label="الملاحة بالكاميرا" title="الملاحة بالكاميرا"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
     <button class="fab hidden" id="northBtn" aria-label="اتجاه الشمال للأعلى" title="الشمال للأعلى"><svg class="nd" viewBox="0 0 24 24" width="26" height="26"><path d="M12 2l4.5 10h-9z" fill="#ef4444"/><path d="M12 22l-4.5-10h9z" fill="#cbd5e1"/><circle cx="12" cy="12" r="1.6" fill="#0f172a"/></svg></button>
+  <button class="fab hidden" id="teamBtn" aria-label="الفريق" title="الفريق"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c.6-3.4 3-5.4 6-5.4s5.4 2 6 5.4"/><circle cx="17" cy="9" r="2.6"/><path d="M16.5 14.2c2.4.2 4.1 2 4.5 4.8"/></svg><em class="hidden"></em></button>
   <button class="fab" id="locBtn" aria-label="موقعي"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
 </div>
 
@@ -611,6 +631,10 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
   <div class="note">لحفظ مسار: اختر وجهة، ثم اضغط زر الحفظ بجانب «ابدأ الملاحة». المسار المحفوظ يعمل بالكامل بدون إنترنت مع الإرشاد الصوتي.</div></div>
 </div>
 
+<div id="teamPanel" class="panel hidden">
+  <div class="panelHead"><button class="iconBtn" id="teamClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></button><h2>الفريق</h2></div>
+  <div class="panelBody" id="teamBody"></div>
+</div>
 <div id="favPanel" class="panel hidden">
   <div class="panelHead"><button class="iconBtn" data-close="favPanel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></button><h2>الأماكن المفضلة</h2></div>
   <div class="panelBody"><div class="card"><div id="favList"></div></div>
@@ -760,6 +784,7 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
 <script src="appupdate.js"></script>
 <script src="home.js"></script>
 <script src="areas.js"></script>
+<script src="team.js"></script>
 <script src="ar.js"></script>
 <script src="onboard.js"></script>
 <script src="whatsnew.js"></script>
