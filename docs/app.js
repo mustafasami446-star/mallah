@@ -279,7 +279,7 @@ function redrawLinesNow() {
   map.eachLayer((l) => { if (l instanceof L.Renderer && l._map) try { l._reset(); } catch (e) {} });
 }
 map.on('zoom rotate', () => {
-  if (!mapBearing() || vecRedrawPending) return;
+  if (!mapBearing() || vecRedrawPending || (typeof OV !== 'undefined' && OV.on)) return;
   vecRedrawPending = true; requestAnimationFrame(redrawLinesNow);
 });
 /* after turning the map, redraw lines and shapes for the new view (turning alone doesn't trigger it) */

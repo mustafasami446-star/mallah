@@ -1,5 +1,5 @@
 'use strict';
-/* الملاح — المحرّك الواحد، المرحلتان 1 و2.
+/* الملاح — المحرّك الواحد، المراحل 1 و2 و3.
    On the downloaded (vector) map, the route line and "you are here" (dot, accuracy circle, heading /
    navigation arrow) are drawn by MapLibre itself, in the same frame as the streets, so they can never
    slide off the road while zooming or turning. The Leaflet copies stay (hidden) so every other map
@@ -68,7 +68,21 @@ function ovInstall(gl) {
     gl.addLayer({ id: 'ov_dest', type: 'symbol', source: 'ov_pts', filter: ['==', ['get', 't'], 'dest'],
       layout: { 'icon-image': 'ov_pin', 'icon-anchor': 'bottom', 'icon-allow-overlap': true, 'icon-ignore-placement': true } }, 'ov_acc');
     if (!gl.hasImage('ov_pin')) gl.addImage('ov_pin', ovPinImg(), { pixelRatio: 2 });
-    ovPushRoute(); ovPushMe(); ovPushPts();
+    // stage 3: every other line and shape (measuring, recorded tracks, alert zones, area outline, compass line)
+    gl.addSource('ov_paths', { type: 'geojson', data: OV_EMPTY });
+    const notPt = ['!=', ['geometry-type'], 'Point'];
+    gl.addLayer({ id: 'ov_p_fill', type: 'fill', source: 'ov_paths', filter: ['all', notPt, ['>', ['get', 'fo'], 0]],
+      paint: { 'fill-color': ['get', 'f'], 'fill-opacity': ['get', 'fo'] } }, 'ov_site');
+    gl.addLayer({ id: 'ov_p_line', type: 'line', source: 'ov_paths', filter: ['all', notPt, ['==', ['get', 's'], true], ['==', ['get', 'd'], false]],
+      layout: { 'line-join': 'round', 'line-cap': 'round' },
+      paint: { 'line-color': ['get', 'c'], 'line-width': ['get', 'w'], 'line-opacity': ['get', 'op'] } }, 'ov_site');
+    gl.addLayer({ id: 'ov_p_dash', type: 'line', source: 'ov_paths', filter: ['all', notPt, ['==', ['get', 's'], true], ['==', ['get', 'd'], true]],
+      layout: { 'line-join': 'round', 'line-cap': 'round' },
+      paint: { 'line-color': ['get', 'c'], 'line-width': ['get', 'w'], 'line-opacity': ['get', 'op'], 'line-dasharray': [0.6, 2.2] } }, 'ov_site');
+    gl.addLayer({ id: 'ov_p_pt', type: 'circle', source: 'ov_paths', filter: ['==', ['geometry-type'], 'Point'],
+      paint: { 'circle-radius': ['get', 'r'], 'circle-color': ['get', 'f'], 'circle-opacity': ['get', 'fo'],
+        'circle-stroke-color': ['get', 'c'], 'circle-stroke-width': ['get', 'w'], 'circle-stroke-opacity': ['get', 'op'] } }, 'ov_site');
+    ovPushRoute(); ovPushMe(); ovPushPts(); ovPushPaths();
   } catch (e) { console.warn('overlay', e); diagLog && diagLog('overlay: ' + (e && e.message)); }
 }
 function ovPushRoute() {
@@ -125,6 +139,50 @@ function ovPushPts() {
 let ovPtsSoon = false;
 function ovPtsLater() { if (ovPtsSoon) return; ovPtsSoon = true; requestAnimationFrame(() => { ovPtsSoon = false; ovPushPts(); }); }
 
+/* all other Leaflet lines and shapes, copied with their own colours and widths */
+function ovSkip(l) {
+  return l === routeLayer || l === routeCasing || l === accCircle
+    || (typeof siteRenderer !== 'undefined' && l.options.renderer === siteRenderer);
+}
+function ovLL(a) { return a.map((p) => Array.isArray(p) ? ovLL(p) : [p.lng, p.lat]); }
+function ovPushPaths() {
+  const gl = OV.gl; if (!gl || !gl.getSource('ov_paths')) return;
+  const f = [];
+  map.eachLayer((l) => {
+    if (!(l instanceof L.Path) || ovSkip(l)) return;
+    try {
+      const o = l.options, fill = o.fill !== false && (l instanceof L.Polygon || l instanceof L.CircleMarker);
+      const props = { c: o.color || '#3388ff', w: o.weight != null ? o.weight : 3, op: o.opacity != null ? o.opacity : 1, s: o.stroke !== false,
+        d: !!o.dashArray, f: o.fillColor || o.color || '#3388ff', fo: fill ? (o.fillOpacity != null ? o.fillOpacity : 0.2) : 0 };
+      let g;
+      if (l instanceof L.Circle) { const c = l.getLatLng(); g = ovCircle(c.lat, c.lng, l.getRadius()).geometry; }
+      else if (l instanceof L.CircleMarker) { const c = l.getLatLng(); g = { type: 'Point', coordinates: [c.lng, c.lat] }; props.r = o.radius || 10; }
+      else if (l instanceof L.Polygon) {
+        let r = ovLL(l.getLatLngs());
+        if (typeof r[0][0] === 'number') r = [r];                     // a flat ring
+        const polys = typeof r[0][0][0] === 'number' ? [r] : r;           // one polygon or several
+        polys.forEach((p) => p.forEach((ring) => { if (ring.length && (ring[0][0] !== ring[ring.length - 1][0] || ring[0][1] !== ring[ring.length - 1][1])) ring.push(ring[0]); }));
+        if (!polys[0][0] || polys[0][0].length < 4) return;
+        g = polys.length === 1 ? { type: 'Polygon', coordinates: polys[0] } : { type: 'MultiPolygon', coordinates: polys };
+      } else if (l instanceof L.Polyline) {
+        const r = ovLL(l.getLatLngs());
+        if (!r.length) return;
+        g = typeof r[0][0] === 'number' ? { type: 'LineString', coordinates: r } : { type: 'MultiLineString', coordinates: r };
+        if (g.type === 'LineString' && r.length < 2) return;
+      } else return;
+      f.push({ type: 'Feature', geometry: g, properties: props });
+    } catch (e) {}
+  });
+  gl.getSource('ov_paths').setData({ type: 'FeatureCollection', features: f });
+}
+let ovPathsSoon = false;
+function ovPathsLater() { if (!OV.on || ovPathsSoon) return; ovPathsSoon = true; requestAnimationFrame(() => { ovPathsSoon = false; ovPushPaths(); }); }
+// lines and shapes that change in place (dragging a measured corner, a growing recorded track, a zone switched off)
+['redraw', 'setStyle'].forEach((fn) => {
+  const orig = L.Path.prototype[fn];
+  L.Path.prototype[fn] = function () { const r = orig.apply(this, arguments); if (this._map && !ovSkip(this)) ovPathsLater(); return r; };
+});
+
 /* the Leaflet copies: hidden while MapLibre draws them, shown again on the other maps */
 function ovLeaflet(show) {
   [routeLayer, routeCasing].forEach((l) => {
@@ -145,7 +203,7 @@ function ovRefresh() {
     if (!OV.gl._ovHooked) { OV.gl._ovHooked = true; OV.gl.on('styledata', () => ovInstall(OV.gl)); }
   }
   OV.on = on;
-  if (on) ovInstall(OV.gl);
+  if (on) { ovInstall(OV.gl); ovPushPaths(); }
   ovLeaflet(!on);
 }
 
@@ -159,6 +217,7 @@ updateMeMarker = function () { _meOv(); ovPushMe(); if (OV.on) ovLeaflet(false);
 map.on('layeradd layerremove', (e) => {
   if (e.layer instanceof VecLayer || e.layer === vecLayer) setTimeout(ovRefresh, 0);
   else if (e.layer instanceof L.Marker || e.layer instanceof L.CircleMarker) ovPtsLater();
+  if (e.layer instanceof L.Path) ovPathsLater();
 });
 // MapLibre is created asynchronously: look again once it exists
 setInterval(() => { if (ovActive() !== OV.on || (OV.on && OV.gl !== vecLayer._gl)) ovRefresh(); }, 700);
