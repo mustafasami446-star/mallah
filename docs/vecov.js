@@ -1,5 +1,5 @@
 'use strict';
-/* الملاح — المحرّك الواحد، المرحلة 1.
+/* الملاح — المحرّك الواحد، المرحلتان 1 و2.
    On the downloaded (vector) map, the route line and "you are here" (dot, accuracy circle, heading /
    navigation arrow) are drawn by MapLibre itself, in the same frame as the streets, so they can never
    slide off the road while zooming or turning. The Leaflet copies stay (hidden) so every other map
@@ -56,7 +56,19 @@ function ovInstall(gl) {
       paint: { 'circle-radius': 7.5, 'circle-color': '#2563eb', 'circle-stroke-color': '#fff', 'circle-stroke-width': 3 } });
     gl.addLayer({ id: 'ov_nav', type: 'symbol', source: 'ov_me', filter: ['==', ['get', 'nav'], true],
       layout: { 'icon-image': 'ov_nav', 'icon-rotate': ['get', 'hd'], 'icon-rotation-alignment': 'map', 'icon-allow-overlap': true, 'icon-ignore-placement': true } });
-    ovPushRoute(); ovPushMe();
+    // stage 2: work sites, discover pins, the destination pin (under "you are here")
+    gl.addSource('ov_pts', { type: 'geojson', data: OV_EMPTY });
+    gl.addLayer({ id: 'ov_site', type: 'circle', source: 'ov_pts', filter: ['==', ['get', 't'], 'site'],
+      paint: { 'circle-radius': 7, 'circle-color': '#f97316', 'circle-stroke-color': '#fff', 'circle-stroke-width': 2 } }, 'ov_acc');
+    gl.addLayer({ id: 'ov_site_lbl', type: 'symbol', source: 'ov_pts', minzoom: 14, filter: ['==', ['get', 't'], 'site'],
+      layout: { 'text-field': ['get', 'n'], 'text-font': ['Noto Sans Medium'], 'text-size': 12.5, 'text-anchor': 'top', 'text-offset': [0, 0.9], 'text-max-width': 9 },
+      paint: { 'text-color': '#fed7aa', 'text-halo-color': 'rgba(15,23,42,.92)', 'text-halo-width': 2.2 } }, 'ov_acc');
+    gl.addLayer({ id: 'ov_near', type: 'symbol', source: 'ov_pts', filter: ['==', ['get', 't'], 'near'],
+      layout: { 'icon-image': ['get', 'img'], 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'symbol-sort-key': ['get', 'z'] } }, 'ov_acc');
+    gl.addLayer({ id: 'ov_dest', type: 'symbol', source: 'ov_pts', filter: ['==', ['get', 't'], 'dest'],
+      layout: { 'icon-image': 'ov_pin', 'icon-anchor': 'bottom', 'icon-allow-overlap': true, 'icon-ignore-placement': true } }, 'ov_acc');
+    if (!gl.hasImage('ov_pin')) gl.addImage('ov_pin', ovPinImg(), { pixelRatio: 2 });
+    ovPushRoute(); ovPushMe(); ovPushPts();
   } catch (e) { console.warn('overlay', e); diagLog && diagLog('overlay: ' + (e && e.message)); }
 }
 function ovPushRoute() {
@@ -76,6 +88,43 @@ function ovPushMe() {
   gl.getSource('ov_acc').setData(!nav && me.acc > 3 ? ovCircle(me.lat, me.lng, me.acc) : OV_EMPTY);
 }
 
+function ovPinImg() {
+  const r = 2, c = document.createElement('canvas'); c.width = 34 * r; c.height = 44 * r;
+  const x = c.getContext('2d'); x.scale(r, r);
+  const p = new Path2D('M17 1C8.2 1 1 8 1 16.7 1 28.5 17 43 17 43s16-14.5 16-26.3C33 8 25.8 1 17 1z');
+  x.fillStyle = '#ef4444'; x.fill(p); x.lineWidth = 2; x.strokeStyle = '#fff'; x.stroke(p);
+  x.beginPath(); x.arc(17, 16.5, 6, 0, Math.PI * 2); x.fillStyle = '#fff'; x.fill();
+  return { width: c.width, height: c.height, data: x.getImageData(0, 0, c.width, c.height).data };
+}
+/* a discover pin: the category's emoji on its colour, larger when selected */
+function ovNearImg(gl, cat, on) {
+  const name = 'ov_near_' + cat.id + (on ? '_on' : '');
+  if (gl.hasImage(name)) return name;
+  const r = 2, s = on ? 36 : 28, c = document.createElement('canvas'); c.width = c.height = (s + 4) * r;
+  const x = c.getContext('2d'); x.scale(r, r);
+  x.beginPath(); x.arc(s / 2 + 2, s / 2 + 2, s / 2, 0, Math.PI * 2); x.fillStyle = cat.c; x.fill();
+  x.lineWidth = on ? 3 : 2; x.strokeStyle = on ? '#38bdf8' : '#fff'; x.stroke();
+  x.font = Math.round(s * 0.55) + 'px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.fillText(cat.i, s / 2 + 2, s / 2 + 3);
+  gl.addImage(name, { width: c.width, height: c.height, data: x.getImageData(0, 0, c.width, c.height).data }, { pixelRatio: r });
+  return name;
+}
+function ovPushPts() {
+  const gl = OV.gl; if (!gl || !gl.getSource('ov_pts')) return;
+  const f = [], pt = (lng, lat, props) => f.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [lng, lat] }, properties: props });
+  try {
+    if (typeof allSites === 'function') allSites().forEach((s) => pt(s.lng, s.lat, { t: 'site', n: s.n }));
+    if (typeof nearHits !== 'undefined' && nearHits.length && typeof CATS !== 'undefined') {
+      const cat = CATS.find((c) => c.id === nearCat);
+      if (cat) nearHits.forEach((h, i) => pt(h.lng, h.lat, { t: 'near', img: ovNearImg(gl, cat, i === nearSel), z: i === nearSel ? 1 : 0 }));
+    }
+    if (destMarker && map.hasLayer(destMarker)) { const ll = destMarker.getLatLng(); pt(ll.lng, ll.lat, { t: 'dest' }); }
+  } catch (e) { console.warn('overlay pts', e); }
+  gl.getSource('ov_pts').setData({ type: 'FeatureCollection', features: f });
+}
+let ovPtsSoon = false;
+function ovPtsLater() { if (ovPtsSoon) return; ovPtsSoon = true; requestAnimationFrame(() => { ovPtsSoon = false; ovPushPts(); }); }
+
 /* the Leaflet copies: hidden while MapLibre draws them, shown again on the other maps */
 function ovLeaflet(show) {
   [routeLayer, routeCasing].forEach((l) => {
@@ -85,6 +134,9 @@ function ovLeaflet(show) {
   });
   if (meMarker) meMarker.setOpacity(show ? 1 : 0);
   if (accCircle) accCircle.setStyle(show ? { opacity: .4, fillOpacity: .08 } : { opacity: 0, fillOpacity: 0 });
+  // markers and sites stay where they are (they still answer taps) but are not seen
+  document.body.classList.toggle('ov-on', !show);
+  if (typeof siteRenderer !== 'undefined' && siteRenderer._container) siteRenderer._container.style.opacity = show ? '' : '0';
 }
 function ovRefresh() {
   const on = ovActive();
@@ -104,6 +156,9 @@ const _clearRouteOv = clearRouteLayer;
 clearRouteLayer = function () { _clearRouteOv(); OV.route = null; ovPushRoute(); };
 const _meOv = updateMeMarker;
 updateMeMarker = function () { _meOv(); ovPushMe(); if (OV.on) ovLeaflet(false); };
-map.on('layeradd layerremove', (e) => { if (e.layer instanceof VecLayer || e.layer === vecLayer) setTimeout(ovRefresh, 0); });
+map.on('layeradd layerremove', (e) => {
+  if (e.layer instanceof VecLayer || e.layer === vecLayer) setTimeout(ovRefresh, 0);
+  else if (e.layer instanceof L.Marker || e.layer instanceof L.CircleMarker) ovPtsLater();
+});
 // MapLibre is created asynchronously: look again once it exists
 setInterval(() => { if (ovActive() !== OV.on || (OV.on && OV.gl !== vecLayer._gl)) ovRefresh(); }, 700);
