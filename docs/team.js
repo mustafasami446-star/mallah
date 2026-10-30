@@ -15,6 +15,7 @@ const TEAM_COLORS = ['#ef4444', '#f59e0b', '#22c55e', '#06b6d4', '#a855f7', '#ec
 let team = store.get('team', null);        // {code, gid, name, me:{n,c}, owner}
 let teamTree = { meta: null, members: {}, rally: null };
 let teamView = { members: {}, rally: null, name: '' };   // decrypted
+let teamSos = store.get('teamSos', null);
 let teamKey = null, teamES = null, teamPaused = store.get('teamPaused', false);
 let teamLast = { t: 0, lat: 0, lng: 0 }, teamFollow = null, teamRallySeen = store.get('teamRallySeen', 0);
 const teamLayer = L.layerGroup().addTo(map);
@@ -118,10 +119,10 @@ async function teamConnect() {
   const onData = (patch) => (ev) => {
     let d; try { d = JSON.parse(ev.data); } catch (e) { return; }
     if (!d) return;
-    let tree = { meta: teamTree.meta, members: teamTree.members, rally: teamTree.rally };
+    let tree = Object.assign({}, teamTree);
     if (patch) Object.keys(d.data || {}).forEach((k) => { tree = setAt(tree, (d.path === '/' ? '' : d.path) + '/' + k, d.data[k]); });
     else tree = setAt(tree, d.path, d.data);
-    teamTree = { meta: tree.meta || null, members: tree.members || {}, rally: tree.rally || null };
+    teamTree = Object.assign({}, tree || {}); teamTree.members = teamTree.members || {};
     teamLive = true; teamRetry = 0;
     teamDecode();
   };
@@ -146,14 +147,16 @@ async function teamDecode() {
   }
   const rally = teamTree.rally && teamTree.rally.e ? await dec(teamTree.rally.e) : null;
   const meta = teamTree.meta && teamTree.meta.e ? await dec(teamTree.meta.e) : null;
+  const extra = typeof teamDecodeMore === 'function' ? await teamDecodeMore() : {};
   if (seq !== decodeSeq) return;
-  teamView = { members: out, rally, name: (meta && meta.n) || team.name || 'الفريق', owner: teamTree.meta && teamTree.meta.owner };
+  teamView = { members: out, rally, chat: extra.chat || [], marks: extra.marks || [], cfg: extra.cfg || null, name: (meta && meta.n) || team.name || 'الفريق', owner: teamTree.meta && teamTree.meta.owner };
   if (rally && rally.t > teamRallySeen) {
     teamRallySeen = rally.t; store.set('teamRallySeen', rally.t);
     if (rally.by !== (fbAuth && fbAuth.uid)) actionSheet('📍 نقطة تجمّع جديدة: ' + rally.n + (me ? ' — على بُعد ' + fmtDist(hav([me.lat, me.lng], [rally.lat, rally.lng])) : ''), [
       { label: '🧭 اذهب إليها', fn: () => teamGo({ lat: rally.lat, lng: rally.lng, n: rally.n }) }]);
   }
   followUpdate();
+  if (typeof teamAfterDecode === 'function') teamAfterDecode();
   renderTeam();
 }
 
@@ -167,7 +170,7 @@ async function teamPublish(force) {
   if (!force && now - teamLast.t < every && moved < 50) return;
   teamLast = { t: now, lat: me.lat, lng: me.lng };
   try {
-    const e = await enc({ n: team.me.n, c: team.me.c, lat: +me.lat.toFixed(6), lng: +me.lng.toFixed(6), a: Math.round(me.acc || 0), h: me.heading == null ? null : Math.round(me.heading), s: me.speed == null ? null : +(+me.speed).toFixed(1), b: await battery(), t: now });
+    const e = await enc({ n: team.me.n, c: team.me.c, lat: +me.lat.toFixed(6), lng: +me.lng.toFixed(6), a: Math.round(me.acc || 0), h: me.heading == null ? null : Math.round(me.heading), s: me.speed == null ? null : +(+me.speed).toFixed(1), b: await battery(), sos: teamSos || null, t: now });
     await fbReq('PUT', '/groups/' + team.gid + '/members/' + fbAuth.uid, { e, t: { '.sv': 'timestamp' } });
   } catch (err) { teamLast.t = 0; }
 }

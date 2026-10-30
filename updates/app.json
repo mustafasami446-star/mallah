@@ -1,8 +1,8 @@
 {
-  "versionCode": 46,
-  "versionName": "5.0",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.0/Mallah-Navigator.apk",
-  "size": 2203183,
-  "notes": "جديد: «الفريق» — مجموعة رحلة ترون فيها مواقع بعضكم على الخريطة مباشرة، مع «اذهب إليه» ونقطة تجمّع. المواقع مشفّرة.",
-  "sha256": "9e56b6655c6312450c0e9443ff45a8318c7e8416fa57867341192ddae8c6a731"
+  "versionCode": 47,
+  "versionName": "5.1",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.1/Mallah-Navigator.apk",
+  "size": 2207343,
+  "notes": "الفريق: محادثة ورسائل سريعة، زر استغاثة 🆘، تنبيهات الابتعاد والتوقف وانقطاع الاتصال، وعلامات مشتركة على الخريطة.",
+  "sha256": "5402d10253a9fb7fcccc6fdcc1e58a53d085d966ca5797df3e6b6d094cf80dff"
 }

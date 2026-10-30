@@ -396,6 +396,30 @@ body.attr-min #attrBtn{opacity:.8;pointer-events:auto}
 .tmIntro{padding:14px}
 .tmIntro .t{font-weight:700;font-size:17px;margin-bottom:6px}
 .tmIntro .s{color:var(--muted);font-size:13.5px;line-height:1.7}
+#teamBtn em.msg{background:#38bdf8}
+.tmTabs{box-sizing:border-box;width:100%;display:flex;gap:6px;padding:10px 12px 0;position:sticky;top:0;background:var(--bg);z-index:2}
+.tmTabs button{flex:1;height:40px;border-radius:12px;background:var(--panel2);font-weight:700;font-size:14px;color:var(--muted)}
+.tmTabs button.on{background:#0c4a6e;color:#e0f2fe}
+.tmTabs button b{background:#38bdf8;color:#04111f;border-radius:9px;padding:0 6px;font-size:12px}
+.tmTabs .sosBtn{flex:none;padding:0 12px;background:#7f1d1d;color:#fecaca}
+.tmTabs .sosBtn.on{background:#14532d;color:#bbf7d0}
+.tmChat{box-sizing:border-box;width:100%;padding:10px 12px;height:calc(100vh - 330px - env(safe-area-inset-top) - env(safe-area-inset-bottom));min-height:200px;overflow-y:auto;overflow-x:hidden}
+.tmMsg{box-sizing:border-box;width:fit-content;min-width:90px;max-width:82%;margin:0 0 8px auto;background:var(--panel2);border-radius:14px 14px 14px 4px;padding:7px 11px}
+.tmMsg.mine{margin:0 auto 8px 0;background:#0c4a6e;border-radius:14px 14px 4px 14px}
+.tmMsg.sos{background:#7f1d1d;border:1px solid #f87171}
+.tmWho{font-size:11.5px;font-weight:700;margin-bottom:2px}
+.tmTxt{font-size:15px;line-height:1.55;white-space:pre-wrap;word-break:break-word}
+.tmMsg .tmLoc{margin-top:6px;height:30px}
+.tmEmpty{text-align:center;color:var(--muted);font-size:13px;padding:14px}
+.tmQuick{box-sizing:border-box;width:100%;display:flex;gap:6px;overflow-x:auto;padding:4px 12px;scrollbar-width:none}
+.tmQuick::-webkit-scrollbar{display:none}
+.tmSend{box-sizing:border-box;width:100%;display:flex;gap:6px;align-items:center;padding:8px 12px calc(10px + env(safe-area-inset-bottom))}
+.tmSend input{flex:1;min-width:0;height:44px;border-radius:14px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font:inherit;font-size:15px;padding:0 12px}
+.tmSend .iconBtn{font-size:20px}
+.tmMark{font-size:22px;line-height:30px;width:30px;height:30px;text-align:center;background:#fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,.4);position:relative}
+.tmMark span{position:absolute;top:31px;left:50%;transform:translateX(-50%);white-space:nowrap;background:rgba(15,23,42,.88);color:#fff;font-size:11px;font-weight:700;padding:1px 6px;border-radius:7px;line-height:1.5}
+#sosBar{position:absolute;left:12px;right:12px;top:calc(70px + env(safe-area-inset-top));z-index:1250;background:#b91c1c;color:#fff;font-weight:800;font-size:15px;border-radius:16px;padding:12px;box-shadow:0 0 0 3px rgba(248,113,113,.5),var(--shadow);animation:sosPulse 1.2s ease-in-out infinite;max-width:480px;margin:auto}
+@keyframes sosPulse{50%{box-shadow:0 0 0 9px rgba(248,113,113,.15),var(--shadow)}}
 #areaChip{position:absolute;top:calc(74px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:790;display:flex;align-items:center;background:rgba(15,23,42,.94);border:1px solid #38bdf8;border-radius:999px;box-shadow:var(--shadow);max-width:84vw}
 #areaChip button{color:#e0f2fe;font-size:13.5px;font-weight:600;padding:8px 6px 8px 14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:68vw}
 #areaChip #areaChipX{padding:8px 14px 8px 8px;color:#94a3b8}
@@ -785,6 +809,7 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
 <script src="home.js"></script>
 <script src="areas.js"></script>
 <script src="team.js"></script>
+<script src="teamchat.js"></script>
 <script src="ar.js"></script>
 <script src="onboard.js"></script>
 <script src="whatsnew.js"></script>
