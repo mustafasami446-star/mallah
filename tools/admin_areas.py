@@ -68,7 +68,11 @@ def main(src, out):
     print('areas per admin_level:', dict(sorted(cnt.items())))
     # the district level is the coarser level with most areas; sub-districts the next one down
     dl = max((l for l in cnt if l <= 6), key=lambda l: cnt[l], default=None)
-    sl = max((l for l in cnt if dl and l > dl), key=lambda l: cnt[l], default=None)
+    # sub-districts (nahiya) are admin_level 7 or 8; 9 and below are city neighbourhoods
+    sl = max((l for l in cnt if dl and dl < l <= 8), key=lambda l: cnt[l], default=None)
+    stats = collections.defaultdict(lambda: collections.Counter())
+    for a in raw:
+        stats[a['p']][a['l']] += 1
     print('district level', dl, 'sub-district level', sl)
 
     areas = [a for a in raw if a['l'] in (dl, sl)]
@@ -96,7 +100,8 @@ def main(src, out):
         if a['l'] == sl and not a['up']:
             per[a['p']][2] += 1
     res.sort(key=lambda r: (r['p'], r['k'], r['ar']))
-    doc = {'source': 'OpenStreetMap contributors (ODbL)', 'levels': {'district': dl, 'subdistrict': sl}, 'areas': res}
+    doc = {'source': 'OpenStreetMap contributors (ODbL)', 'levels': {'district': dl, 'subdistrict': sl},
+           'stats': {p: dict(c) for p, c in stats.items()}, 'areas': res}
     with open(out, 'w', encoding='utf-8') as f:
         json.dump(doc, f, ensure_ascii=False, separators=(',', ':'))
     print('written', out, os.path.getsize(out), 'bytes,', len(res), 'areas')
