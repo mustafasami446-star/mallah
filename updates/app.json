@@ -1,8 +1,8 @@
 {
-  "versionCode": 47,
-  "versionName": "5.1",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.1/Mallah-Navigator.apk",
-  "size": 2207343,
-  "notes": "الفريق: محادثة ورسائل سريعة، زر استغاثة 🆘، تنبيهات الابتعاد والتوقف وانقطاع الاتصال، وعلامات مشتركة على الخريطة.",
-  "sha256": "5402d10253a9fb7fcccc6fdcc1e58a53d085d966ca5797df3e6b6d094cf80dff"
+  "versionCode": 48,
+  "versionName": "5.2",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.2/Mallah-Navigator.apk",
+  "size": 2219768,
+  "notes": "الفريق يعمل والشاشة مطفأة: مشاركة الموقع في الخلفية، إشعارات الرسائل والاستغاثة، ورسائل SMS احتياطية عند انقطاع الإنترنت.",
+  "sha256": "e9cd8aabe68de6fbb9a51c3c9cc188378343aa5b8bf48168d7ae56bb78fbb15a"
 }

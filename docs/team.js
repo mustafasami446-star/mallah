@@ -336,7 +336,7 @@ function renderTeam() {
       <div class="btnRow"><button class="chip" id="tmRallySet">${r ? '✏️ تغيير' : '➕ تحديد نقطة تجمّع'}</button></div></div>
     <div class="card"><h3>الأعضاء</h3>${rows}</div>
     <div class="card"><div class="btnRow"><button class="chip" id="tmPause">${teamPaused ? '▶ استئناف مشاركة موقعي' : '✋ إيقاف مشاركة موقعي'}</button><button class="chip del" id="tmLeave">🚪 مغادرة المجموعة</button></div>
-      <div class="s" style="margin-top:8px;color:var(--muted)">يُشارَك موقعك والبرنامج مفتوح فقط (كل 10 ثوانٍ أثناء الحركة، وكل دقيقة عند التوقف). المشاركة في الخلفية تأتي في مرحلة لاحقة.</div></div>`;
+      <div class="s" style="margin-top:8px;color:var(--muted)">يُشارَك موقعك كل 10 ثوانٍ أثناء الحركة وكل دقيقة عند التوقف، ويمكنك إيقاف المشاركة في أي وقت.</div></div>`;
   $('tmInvite').onclick = teamInvite;
   $('tmRallySet').onclick = teamRallyMenu;
   if ($('tmRallyGo')) $('tmRallyGo').onclick = () => teamGo({ lat: r.lat, lng: r.lng, n: r.n });
