@@ -771,6 +771,7 @@ function onNavLocation() {
 /* ---------------- back button ---------------- */
 window.handleBack = function () {
   if (typeof onbHandleBack === 'function' && onbHandleBack()) return true;
+  if (typeof wnHandleBack === 'function' && wnHandleBack()) return true;
   if (typeof arHandleBack === 'function' && arHandleBack()) return true;
   if (!$('modal').classList.contains('hidden')) { closeModal(); return true; }
   if (typeof guideHandleBack === 'function' && guideHandleBack()) return true;
@@ -1151,4 +1152,4 @@ window.ONB_FIRST = !store.get('onbDone', false) && !store.get('guideSeen', false
 if (window.ONB_FIRST) store.set('guideSeen', true);
 else if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startLocation);   // after every script has loaded
 else startLocation();
-setTimeout(() => { if (!window.ONB_FIRST && !dest && !navState && !window.measActive && !document.querySelector('.panel:not(.hidden)') && $('modal').classList.contains('hidden')) toast('ابحث عن مكان أو اضغط مطولًا على الخريطة لاختيار وجهة', 4500); }, 1200);
+setTimeout(() => { if (!window.ONB_FIRST && !$('wn') && !dest && !navState && !window.measActive && !document.querySelector('.panel:not(.hidden)') && $('modal').classList.contains('hidden')) toast('ابحث عن مكان أو اضغط مطولًا على الخريطة لاختيار وجهة', 4500); }, 1200);

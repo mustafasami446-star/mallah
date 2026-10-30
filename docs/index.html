@@ -390,9 +390,21 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
 .brandRow b{display:block;font-size:17px;letter-spacing:.2px}
 .brandRow small{color:var(--muted);font-size:12px}
 /* welcome screens */
-#onb{position:fixed;inset:0;z-index:1400;overflow:hidden;display:flex;flex-direction:column;color:var(--text);
+#onb,#wn{position:fixed;inset:0;z-index:1400;overflow:hidden;display:flex;flex-direction:column;color:var(--text);
   background:radial-gradient(120% 70% at 50% 0%,#12305a 0%,#0b1730 55%,#070f20 100%);transition:opacity .3s}
-#onb.out{opacity:0;pointer-events:none}
+#onb.out,#wn.out{opacity:0;pointer-events:none}
+#wn{background:#0b1220}
+#wn .onbView{flex-direction:column}
+.wnHead{display:flex;align-items:center;gap:10px;padding:calc(12px + env(safe-area-inset-top)) 18px 4px;flex:none}
+.wnBrand{display:flex;align-items:center;gap:7px;font-weight:700;font-size:15px;color:#7dd3fc}
+.wnBrand img{width:30px;height:30px;border-radius:9px}
+.wnVer{flex:1;text-align:center;font-size:13px;color:var(--muted)}
+.wnSkip{color:var(--text);font-size:15px;font-weight:600;padding:8px 10px}
+#wn .wnSlide{justify-content:flex-start;padding-top:min(5vh,40px)}
+.wnArt{width:min(340px,84vw,46vh);aspect-ratio:1;border-radius:28px;overflow:hidden;flex:none;box-shadow:0 18px 40px rgba(0,0,0,.45)}
+.wnArt svg{width:100%;height:100%;display:block}
+#wn .wnSlide h2{font-size:27px;margin:22px 0 8px}
+#wn .wnSlide p{color:#9fb0cc}
 .onbSkip{position:absolute;top:calc(14px + env(safe-area-inset-top));left:16px;z-index:2;color:var(--muted);font-size:14px;padding:8px 12px;border-radius:12px;background:rgba(255,255,255,.05)}
 .onbView{flex:1;position:relative;overflow:hidden;display:flex;min-height:0}
 .onbTrack{flex:1 1 auto;width:100%;min-width:0;display:flex;transition:transform .35s cubic-bezier(.2,.8,.2,1);min-height:0}
@@ -434,7 +446,9 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
 .onbBtn.primary{background:linear-gradient(180deg,#38bdf8,#0ea5e9);color:#04111f;box-shadow:0 8px 22px rgba(14,165,233,.35)}
 .onbBtn.ghost{background:transparent;color:var(--muted);height:42px;font-weight:600}
 @media (min-width:760px){
-  #onb{background:rgba(3,8,20,.72);align-items:center;justify-content:center}
+  #onb,#wn{background:rgba(3,8,20,.72);align-items:center;justify-content:center}
+  #wn>.onbView{flex:none;width:440px;height:min(640px,78vh);border-radius:24px 24px 0 0;border:1px solid var(--line);border-bottom:0;background:#0b1220}
+  #wn>.onbFoot{width:440px;background:#0b1220;border-radius:0 0 24px 24px;border:1px solid var(--line);border-top:0}
   #onb>.onbView{flex:none;width:440px;height:min(600px,74vh);border-radius:24px 24px 0 0;border:1px solid var(--line);border-bottom:0;background:radial-gradient(120% 70% at 50% 0%,#12305a 0%,#0b1730 60%,#070f20 100%)}
   #onb>.onbFoot{width:440px;background:#070f20;border-radius:0 0 24px 24px;border:1px solid var(--line);border-top:0}
   .onbSlide{padding-top:56px}
@@ -678,7 +692,7 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
       <div class="card"><h3>رمز القفل لمواقع العمل</h3><div class="item"><div class="grow s" id="pinState"></div></div>
         <div class="btnRow"><button class="chip go" id="pinSet">تعيين رمز</button><button class="chip" id="pinLock">قفل الآن</button><button class="chip del" id="pinOff">إزالة الرمز</button></div></div>
     </div>
-    <div class="card"><h3>البرنامج</h3><div class="item" id="appUpd" style="cursor:pointer"><div class="grow"><div class="t">🔄 البحث عن تحديث للبرنامج</div><div class="s" id="appUpdS" style="color:var(--muted);font-size:12.5px"></div></div><span style="color:var(--muted)">‹</span></div></div>
+    <div class="card"><h3>البرنامج</h3><div class="item" id="openWn" style="cursor:pointer"><div class="grow"><div class="t">🆕 ما الجديد</div><div class="s" style="color:var(--muted);font-size:12.5px">التعديلات في آخر إصدار</div></div><span style="color:var(--muted)">‹</span></div><div class="item" id="appUpd" style="cursor:pointer"><div class="grow"><div class="t">🔄 البحث عن تحديث للبرنامج</div><div class="s" id="appUpdS" style="color:var(--muted);font-size:12.5px"></div></div><span style="color:var(--muted)">‹</span></div></div>
     <div class="card"><h3>الخريطة</h3><div class="item" id="openDiag" style="cursor:pointer"><div class="grow"><div class="t">🩺 تشخيص الخريطة</div><div class="s" style="color:var(--muted);font-size:12.5px">إذا لم تظهر الخريطة أو كانت بطيئة: اختبرها وشارك النتيجة مع المصمم</div></div><span style="color:var(--muted)">‹</span></div></div>
     <div class="card"><h3>الإحداثيات</h3><div class="frm">
       <label>صيغة عرض الإحداثيات</label><select id="setFmt"><option value="dec">عشرية (30.508500, 47.780400)</option><option value="dms">درجات ودقائق وثوانٍ</option><option value="utm">UTM</option></select>
@@ -741,6 +755,7 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
 <script src="areas.js"></script>
 <script src="ar.js"></script>
 <script src="onboard.js"></script>
+<script src="whatsnew.js"></script>
 <script src="web.js"></script>
 </body>
 </html>
