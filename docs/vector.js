@@ -721,13 +721,40 @@ async function checkUpdates(manual, quiet) {
   if (manual && remoteMap && packs().length && !packs().some(isNewer)) toast('خرائطك هي الأحدث ✓');
   offerUpdates(manual);
 }
+/* a new version is offered once; if the user closes it without updating, again after two days
+   (up to three reminders), and any time from Settings ← «البحث عن تحديث للبرنامج» */
+function appOfferState() { const o = store.get('appOffered', 0); return typeof o === 'number' ? { c: o, t: 0, n: 1 } : (o || { c: 0, t: 0, n: 0 }); }
+function appOfferDue(code) {
+  const o = appOfferState();
+  if (o.c !== code) return true;
+  return o.n < 4 && Date.now() - o.t > 48 * 3600 * 1000;
+}
+async function checkAppUpdate() {
+  const s = $('appUpdS');
+  if (!NATIVE) { toast('نسخة الويب تتحدّث وحدها عند فتحها مع وجود إنترنت ✓'); return; }
+  if (navigator.onLine === false) { toast('لا يوجد اتصال بالإنترنت'); return; }
+  if (s) s.textContent = 'جارٍ البحث…';
+  try { remoteApp = await fetchJson(UPDATE_BASE + 'app.json'); } catch (e) { remoteApp = null; }
+  const av = appVersion();
+  if (!remoteApp) { if (s) s.textContent = 'تعذّر الوصول إلى خادم التحديثات، حاول لاحقًا'; toast('تعذّر التحقق من التحديثات'); return; }
+  if (remoteApp.versionCode > av.code) {
+    if (s) s.textContent = 'يتوفر الإصدار ' + remoteApp.versionName;
+    document.querySelectorAll('.panel:not(.hidden)').forEach((p) => p.classList.add('hidden'));
+    offerUpdates(true);
+  } else { if (s) s.textContent = 'لديك أحدث إصدار: ' + av.name + ' ✓'; toast('لديك أحدث إصدار من الملاح (' + av.name + ') ✓'); }
+}
+{
+  const b = $('appUpd'), s = $('appUpdS');
+  if (b) b.onclick = checkAppUpdate;
+  if (s) { const av = appVersion(); s.textContent = NATIVE ? 'الإصدار الحالي: ' + (av.name || APP_VERSION) : 'نسخة الويب: تتحدّث تلقائيًا'; }
+}
 function offerUpdates(manual) {
   if (document.body.classList.contains('onb-on')) return;
   if (navState || directState || window.measActive) return;
   if (!$('modal').classList.contains('hidden') || document.querySelector('.panel:not(.hidden)')) { if (!manual) return; }
   const av = appVersion();
-  if (NATIVE && remoteApp && remoteApp.versionCode > av.code && store.get('appOffered', 0) !== remoteApp.versionCode) {
-    store.set('appOffered', remoteApp.versionCode);
+  if (NATIVE && remoteApp && remoteApp.versionCode > av.code && (manual || appOfferDue(remoteApp.versionCode))) {
+    const o = appOfferState(); store.set('appOffered', { c: remoteApp.versionCode, t: Date.now(), n: o.c === remoteApp.versionCode ? o.n + 1 : 1 });
     actionSheet('🆕 إصدار جديد من الملاح: ' + remoteApp.versionName + (remoteApp.notes ? ' — ' + remoteApp.notes : ''), [
       { label: '⬇ تنزيل التحديث (' + fmtMB(remoteApp.size || 0) + ')', fn: () => openExt(remoteApp.url) }
     ]);

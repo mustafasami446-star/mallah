@@ -1,7 +1,7 @@
 {
-  "versionCode": 40,
-  "versionName": "4.4",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v4.4/Mallah-Navigator.apk",
+  "versionCode": 41,
+  "versionName": "4.5",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v4.5/Mallah-Navigator.apk",
   "size": 2178418,
-  "notes": "الخريطة المنزّلة تعود تلقائيًا إذا سحب الهاتف ذاكرة الرسوميات (كانت تبقى فارغة). زر «موقعي» يبيّن دقة موقعك. إصلاحات في رسم المسار."
+  "notes": "جديد: الإعدادات ← «🔄 البحث عن تحديث للبرنامج». ومن يؤجّل التحديث يُذكَّر به بعد يومين. (يتضمن كل تحسينات الخرائط والموقع الأخيرة)"
 }
