@@ -1,8 +1,8 @@
 {
-  "versionCode": 49,
-  "versionName": "5.3",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.3/Mallah-Navigator.apk",
-  "size": 2223864,
-  "notes": "دليل الاستخدام محدّث بكل الميزات الجديدة: الفريق والمحادثة والاستغاثة والمشاركة في الخلفية ورسائل SMS، والتحديث من داخل البرنامج، ودقة الموقع.",
-  "sha256": "a2b68bcea3c158d367e34bb9bd1762f742f901b70f1e12ca2b62eb2124ea9184"
+  "versionCode": 50,
+  "versionName": "5.4",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.4/Mallah-Navigator.apk",
+  "size": 2281408,
+  "notes": "جديد: دعوة الفريق برمز QR — اعرضه أو شاركه كصورة في واتساب، ويمسحه زملاؤك بالكاميرا للانضمام مباشرة.",
+  "sha256": "8a888ecbe066d07d59c1a3a00b791972b6d81d2fd63f3efb44c18be59a41e932"
 }

@@ -420,6 +420,16 @@ body.attr-min #attrBtn{opacity:.8;pointer-events:auto}
 .tmMark span{position:absolute;top:31px;left:50%;transform:translateX(-50%);white-space:nowrap;background:rgba(15,23,42,.88);color:#fff;font-size:11px;font-weight:700;padding:1px 6px;border-radius:7px;line-height:1.5}
 #sosBar{position:absolute;left:12px;right:12px;top:calc(70px + env(safe-area-inset-top));z-index:1250;background:#b91c1c;color:#fff;font-weight:800;font-size:15px;border-radius:16px;padding:12px;box-shadow:0 0 0 3px rgba(248,113,113,.5),var(--shadow);animation:sosPulse 1.2s ease-in-out infinite;max-width:480px;margin:auto}
 @keyframes sosPulse{50%{box-shadow:0 0 0 9px rgba(248,113,113,.15),var(--shadow)}}
+#qrBox{position:fixed;inset:0;z-index:1500;background:rgba(3,8,20,.86);display:flex;align-items:center;justify-content:center;padding:16px}
+.qrCard{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:14px;max-width:420px;width:100%;text-align:center}
+.qrCard img{width:100%;height:auto;border-radius:14px;display:block}
+.qrCard .qrBtns{display:flex;gap:8px;justify-content:center;margin:12px 0 8px}
+.qrCard .s{color:var(--muted);font-size:12.5px;line-height:1.7}
+#qrScan{position:fixed;inset:0;z-index:1500;background:#000}
+#qrScan video{width:100%;height:100%;object-fit:cover}
+#qrScan .qrFrame{position:absolute;left:50%;top:45%;width:min(70vw,300px);aspect-ratio:1;transform:translate(-50%,-50%);border:3px solid #38bdf8;border-radius:24px;box-shadow:0 0 0 2000px rgba(0,0,0,.45)}
+#qrScan .qrHint{position:absolute;left:16px;right:16px;top:calc(45% + min(35vw,150px) + 24px);text-align:center;color:#fff;font-weight:700;font-size:15px}
+#qrScan #qrStop{position:absolute;left:50%;bottom:calc(30px + env(safe-area-inset-bottom));transform:translateX(-50%);height:46px;padding:0 28px}
 #areaChip{position:absolute;top:calc(74px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:790;display:flex;align-items:center;background:rgba(15,23,42,.94);border:1px solid #38bdf8;border-radius:999px;box-shadow:var(--shadow);max-width:84vw}
 #areaChip button{color:#e0f2fe;font-size:13.5px;font-weight:600;padding:8px 6px 8px 14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:68vw}
 #areaChip #areaChipX{padding:8px 14px 8px 8px;color:#94a3b8}
@@ -811,6 +821,7 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
 <script src="team.js"></script>
 <script src="teamchat.js"></script>
 <script src="teambg.js"></script>
+<script src="teamqr.js"></script>
 <script src="ar.js"></script>
 <script src="onboard.js"></script>
 <script src="whatsnew.js"></script>
