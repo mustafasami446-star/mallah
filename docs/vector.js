@@ -358,8 +358,21 @@ function wantVecUnder() {
   const c = map.getCenter(), id = provinceAt(c.lat, c.lng);
   return !!id && (hasPack(FULL_ID) || hasPack(id));
 }
+/* a street map from the internet arrives picture by picture and, mixed with the downloaded streets
+   underneath, looks patchy. Where a downloaded map covers the area it simply takes over (it is a street
+   map too, sharper and instant); the satellite pictures stay on top since they show something else. */
+let baseYield = false, yieldTold = false;
+function setYield(on) {
+  if (on === baseYield || !baseLayer) return;
+  baseYield = on;
+  if (on) {
+    map.removeLayer(baseLayer);
+    if (!yieldTold) { yieldTold = true; toast('هنا تُعرض خريطة الشوارع من خرائطك المنزّلة: أوضح وأسرع وبدون إنترنت', 4000); }
+  } else baseLayer.addTo(map);
+}
 function syncUnder() {
   const want = wantVecUnder();
+  setYield(want && (layerKey === 'esri' || layerKey === 'osm'));
   if (want && !vecUnder) {
     vecUnder = new VecLayer({ under: true }); vecUnder.addTo(map);
     document.body.classList.add('vec-under');
@@ -374,6 +387,7 @@ function syncUnder() {
   const _setLayerU = setLayer;
   setLayer = function (k, temp) {
     if (vecUnder) { map.removeLayer(vecUnder); vecUnder = null; document.body.classList.remove('vec-under'); }
+    baseYield = false;
     _setLayerU(k, temp);
     syncUnder();
   };

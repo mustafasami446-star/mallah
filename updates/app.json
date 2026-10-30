@@ -1,7 +1,7 @@
 {
-  "versionCode": 37,
-  "versionName": "4.1",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v4.1/Mallah-Navigator.apk",
+  "versionCode": 38,
+  "versionName": "4.2",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v4.2/Mallah-Navigator.apk",
   "size": 2178418,
-  "notes": "الخرائط المنزّلة: أشكال القياس والمسارات المسجّلة ومناطق التنبيه وحدود المناطق وخط الاتجاه المباشر تُرسم الآن مع الخريطة نفسها، فتبقى ثابتة عند التكبير والتدوير."
+  "notes": "خريطة الشوارع: حيث توجد خريطة منزّلة تُعرض هي بدل صور الإنترنت، فلا تظهر بقع ومربعات مختلفة الألوان عند ضعف الإنترنت."
 }
