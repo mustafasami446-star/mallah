@@ -5,14 +5,27 @@
 
   /* install as an app + work offline (the app's own files are kept by a service worker) */
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
-    navigator.serviceWorker.register('sw.js').then((reg) => {
+    /* Updates apply by themselves: a new version is fetched in the background, takes over, and the page
+       reloads into it — at once if nothing is going on, otherwise when navigation / measuring ends. */
+    const hadController = !!navigator.serviceWorker.controller;
+    let reloading = false;
+    const busy = () => !!(navState || (typeof directState !== 'undefined' && directState) || window.measActive || (typeof rec !== 'undefined' && rec));
+    function reloadWhenFree() {
+      if (reloading) return;
+      if (busy()) { setTimeout(reloadWhenFree, 15000); return; }
+      reloading = true; toast('🆕 جارٍ تحديث الملاح…', 1500); setTimeout(() => location.reload(), 700);
+    }
+    navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController) reloadWhenFree(); });
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {
+      const nudge = (w) => { if (w) w.postMessage('skip'); };
+      nudge(reg.waiting);                                               // downloaded last time but never switched on
       reg.addEventListener('updatefound', () => {
         const w = reg.installing;
-        if (w) w.addEventListener('statechange', () => {
-          if (w.state === 'installed' && navigator.serviceWorker.controller)
-            actionSheet('🆕 يتوفر إصدار جديد من الملاح', [{ label: '🔄 تحديث الآن', fn: () => { navigator.serviceWorker.addEventListener('controllerchange', () => location.reload()); w.postMessage('skip'); } }]);
-        });
+        if (w) w.addEventListener('statechange', () => { if (w.state === 'installed') nudge(w); });
       });
+      const check = () => { try { reg.update(); } catch (e) {} };
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); });
+      setInterval(check, 30 * 60 * 1000);
     }).catch(() => {});
   }
 
