@@ -1,7 +1,7 @@
 {
-  "versionCode": 32,
-  "versionName": "3.6",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v3.6/Mallah-Navigator.apk",
-  "size": 1797237,
-  "notes": "إصلاح خط المسار الأزرق: كان ينزاح عن الطريق أثناء التكبير والتدوير بإصبعين."
+  "versionCode": 33,
+  "versionName": "3.7",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v3.7/Mallah-Navigator.apk",
+  "size": 2174261,
+  "notes": "جديد: «◈ المناطق» لاستكشاف المحافظات والأقضية والنواحي على خريطة تفاعلية، مع البحث داخل المنطقة. الخرائط المنزّلة: لا مساحات رمادية عند التصغير، وتكبير وتصغير أكثر تماسكًا."
 }

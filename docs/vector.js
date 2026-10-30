@@ -71,6 +71,7 @@ function loadLibs() {
     await loadScript('lib/maplibre-gl.js');
     await loadScript('lib/pmtiles.js');
     await loadScript('lib/basemaps.js');
+    try { await loadScript('lib/world.js'); } catch (e) { console.warn('world', e); }
     // Arabic shaping: hand the plugin to the map's workers as a blob so it never needs the network
     try {
       const txt = await (await fetch('lib/mapbox-gl-rtl-text.js')).text();
@@ -170,9 +171,29 @@ function vecStyle(dark) {
     version: 8,
     glyphs: base + 'fonts/{fontstack}/{range}.pbf',
     sprite: base + 'sprites/' + (dark ? 'dark' : 'light'),
-    sources: { protomaps: { type: 'vector', tiles: [directTiles ? ORIGIN + '/map/tile/{z}/{x}/{y}' : 'mallahv://{z}/{x}/{y}'], minzoom: 0, maxzoom: vecMaxZ, attribution: VEC_ATTR } },
-    layers: basemaps.layers('protomaps', flavor, { lang: 'ar' })
+    sources: worldSources({ protomaps: { type: 'vector', tiles: [directTiles ? ORIGIN + '/map/tile/{z}/{x}/{y}' : 'mallahv://{z}/{x}/{y}'], minzoom: 0, maxzoom: vecMaxZ, attribution: VEC_ATTR } }),
+    layers: worldUnder(basemaps.layers('protomaps', flavor, { lang: 'ar' }), flavor)
   };
+}
+/* Outside the downloaded area there are no tiles. Instead of a grey void, a light world map
+   (land, sea and borders) is drawn underneath, in the same colours. */
+function worldSources(src) {
+  if (window.WORLD_LAND) {
+    src.world_land = { type: 'geojson', data: window.WORLD_LAND, tolerance: 0.6, buffer: 16 };
+    src.world_borders = { type: 'geojson', data: window.WORLD_BORDERS, tolerance: 0.6 };
+  }
+  return src;
+}
+function worldUnder(layers, flavor) {
+  const i = layers.findIndex((l) => l.type === 'background');
+  if (i >= 0) layers[i] = Object.assign({}, layers[i], { paint: { 'background-color': flavor.water } });
+  if (!window.WORLD_LAND) return layers;
+  const extra = [
+    { id: 'world_land', type: 'fill', source: 'world_land', paint: { 'fill-color': document.body.classList.contains('night') ? flavor.earth : ['interpolate', ['linear'], ['zoom'], 4, '#f7eed6', 7, flavor.earth] } },
+    { id: 'world_borders', type: 'line', source: 'world_borders', paint: { 'line-color': flavor.boundaries || '#9e9e9e', 'line-width': 0.8, 'line-dasharray': [3, 2] } }
+  ];
+  layers.splice(i + 1, 0, ...extra);
+  return layers;
 }
 /* The vector map is drawn by MapLibre in its own full-screen canvas *behind* the Leaflet map,
    and follows Leaflet's camera: every pan/pinch frame jumps, and Leaflet's zoom animation is
@@ -283,6 +304,16 @@ const VecLayer = L.Layer.extend({
     if (!this._gl || this._animating) return;
     const c = this._m.getCenter();
     this._gl.jumpTo({ center: [c.lng, c.lat], zoom: this._m.getZoom() - 1, bearing: -mapBearing() });
+    /* Leaflet moves its own layers (route line, markers) in this very frame; MapLibre would only
+       draw on the next one, so the two slid apart while pinching. Draw now, once per frame. */
+    if (!this._drawSoon) {
+      this._drawSoon = true;
+      queueMicrotask(() => {
+        this._drawSoon = false;
+        const g = this._gl;
+        if (g && !this._animating) try { if (g.isStyleLoaded() !== false) g.redraw(); } catch (e) {}
+      });
+    }
   },
   _anim(e) {
     if (!this._gl) return;
@@ -692,7 +723,9 @@ function searchPlaces(q) {
   const k = normName(q), ke = q.toLowerCase().replace(/[\s\-_.]+/g, '');
   if (k.length < 2 && ke.length < 2) return [];
   const hits = [];
+  const only = window.placeFilter;
   for (const p of places) {
+    if (only && !only(p)) continue;
     const [ar, en] = p.key.split('|');
     let s = -1;
     if (ar === k || en === ke) s = 0;
@@ -708,7 +741,7 @@ function searchPlaces(q) {
 function localPlacesHtml(q) {
   lastPlaceHits = searchPlaces(q);
   if (!lastPlaceHits.length) return '';
-  return '<div class="secTitle">أماكن من خرائطك المنزّلة (بدون إنترنت)</div>' + lastPlaceHits.map((p, i) => {
+  return '<div class="secTitle">' + (typeof areaScope !== 'undefined' && areaScope ? 'أماكن في ' + esc(arTitle(areaScope)) : 'أماكن من خرائطك المنزّلة (بدون إنترنت)') + '</div>' + lastPlaceHits.map((p, i) => {
     const d = me ? fmtDist(hav([me.lat, me.lng], [p.lat, p.lng])) : '';
     return `<div class="res" data-place="${i}"><div class="ic">${PLACE_ICON[p.k] || '📍'}</div><div style="flex:1;min-width:0"><div class="t">${esc(p.n)}</div><div class="s">${esc([p.a, p.e].filter(Boolean).join(' · '))}</div></div><div class="s" style="flex:none">${d}</div></div>`;
   }).join('');

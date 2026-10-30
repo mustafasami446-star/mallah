@@ -59,8 +59,9 @@ function nearOffline(cat, ref) {
   const want = new Set(cat.k), out = [];
   for (const p of places) {
     if (!want.has(p.k)) continue;
+    if (window.placeFilter && !window.placeFilter(p)) continue;
     const d = hav(ref, [p.lat, p.lng]);
-    if (d < 40000) out.push({ n: p.n, sub: [p.a, p.e].filter(Boolean).join(' · '), lat: p.lat, lng: p.lng, d });
+    if (d < 40000 || window.placeFilter) out.push({ n: p.n, sub: [p.a, p.e].filter(Boolean).join(' · '), lat: p.lat, lng: p.lng, d });
   }
   return out.sort((a, b) => a.d - b.d).slice(0, 30);
 }

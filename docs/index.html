@@ -357,6 +357,24 @@ body.attr-min #attrBtn{opacity:.8;pointer-events:auto}
 .pvl.sm{font-size:16px}
 .pvMe{fill:#3b82f6;stroke:#fff;stroke-width:3}
 .hereTag{font-size:12px;color:#93c5fd;font-weight:600}
+#areaCrumbs{display:flex;flex-wrap:wrap;align-items:center;gap:4px;padding:12px 14px 2px;font-size:14.5px}
+#areaCrumbs button{color:var(--accent);font-weight:600;padding:4px 2px}
+#areaCrumbs b{padding:4px 2px}
+#areaCrumbs .sep{color:var(--muted)}
+#areaMapWrap{padding:6px 10px 0}
+#areaSvg{width:100%;height:auto;max-height:52vh;display:block;margin:auto;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+#areaSvg .pv{fill:#1e293b}
+#areaSvg .pv.here{fill:#1e3a5f}
+#areaSvg .pv.sel{fill:#0c4a6e;stroke:#38bdf8;stroke-width:4}
+.areaCard{padding:12px 14px}
+.areaCard .t{font-weight:700;font-size:16.5px}
+.areaCard .s{color:var(--muted);font-size:13px;margin-top:3px}
+.areaBtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+#areaChip{position:absolute;top:calc(74px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:790;display:flex;align-items:center;background:rgba(15,23,42,.94);border:1px solid #38bdf8;border-radius:999px;box-shadow:var(--shadow);max-width:84vw}
+#areaChip button{color:#e0f2fe;font-size:13.5px;font-weight:600;padding:8px 6px 8px 14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:68vw}
+#areaChip #areaChipX{padding:8px 14px 8px 8px;color:#94a3b8}
+body.cov-hint #areaChip{top:calc(118px + env(safe-area-inset-top))}
+body.ui-nav #areaChip,body.ui-meas #areaChip{display:none}
 .provRow{cursor:pointer}
 .provRow.on{background:rgba(56,189,248,.10)}
 #covHint{position:absolute;top:calc(74px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:800;background:rgba(15,23,42,.94);border:1px solid #f59e0b;color:#fde68a;border-radius:999px;padding:8px 14px;font-size:13px;white-space:nowrap;box-shadow:var(--shadow);max-width:92vw;overflow:hidden;text-overflow:ellipsis}
@@ -493,6 +511,7 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
     <button class="hchip" data-q="home"><span class="hi" style="color:#34d399">⌂</span><span id="chipHome">أضف البيت</span></button>
     <button class="hchip" data-q="work"><span class="hi" style="color:#34d399">▣</span><span id="chipWork">أضف العمل</span></button>
     <button class="hchip" id="chipFavs"><span class="hi" style="color:#fbbf24">★</span>المفضلة</button>
+    <button class="hchip" id="chipAreas"><span class="hi" style="color:#38bdf8">◈</span>المناطق</button>
   </div>
   <div id="results" class="hidden"></div>
   <div id="homeMore">
@@ -715,6 +734,7 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
 <script src="provinces.js"></script>
 <script src="vector.js"></script>
 <script src="home.js"></script>
+<script src="areas.js"></script>
 <script src="ar.js"></script>
 <script src="onboard.js"></script>
 <script src="web.js"></script>
