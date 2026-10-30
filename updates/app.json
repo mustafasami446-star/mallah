@@ -1,8 +1,8 @@
 {
-  "versionCode": 51,
-  "versionName": "5.5",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.5/Mallah-Navigator.apk",
-  "size": 2428931,
-  "notes": "جديد: «شارك الملاح» — بطاقة فيها رمز QR تفتح صفحة تثبيت تتعرّف على جهاز الشخص (أندرويد، آيفون، لابتوب) وتشرح له الخطوات.",
-  "sha256": "b366954fa4d36a9f21da66ed6dc02ae1454f70103927e145ef90f00ef2c74a11"
+  "versionCode": 52,
+  "versionName": "5.6",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.6/Mallah-Navigator.apk",
+  "size": 2490561,
+  "notes": "الملاح يعمل كاملًا 14 يومًا تجريبية على كل جهاز، ثم يُفعَّل مرة واحدة (15,000 دينار) عبر سوبر كي وواتساب — الإعدادات ← «🔑 التفعيل».",
+  "sha256": "3c5ff6f9b57f533cdec6f0ca0da6f9208741144cf676bd2066c316e10a780aa8"
 }

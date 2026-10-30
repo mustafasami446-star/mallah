@@ -770,6 +770,7 @@ function onNavLocation() {
 
 /* ---------------- back button ---------------- */
 window.handleBack = function () {
+  if (typeof licHandleBack === 'function' && licHandleBack()) return true;
   if (typeof onbHandleBack === 'function' && onbHandleBack()) return true;
   if (typeof wnHandleBack === 'function' && wnHandleBack()) return true;
   if (typeof arHandleBack === 'function' && arHandleBack()) return true;

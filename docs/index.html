@@ -431,6 +431,27 @@ body.attr-min #attrBtn{opacity:.8;pointer-events:auto}
 #qrScan .qrHint{position:absolute;left:16px;right:16px;top:calc(45% + min(35vw,150px) + 24px);text-align:center;color:#fff;font-weight:700;font-size:15px}
 #qrScan #qrStop{position:absolute;left:50%;bottom:calc(30px + env(safe-area-inset-bottom));transform:translateX(-50%);height:46px;padding:0 28px}
 .cCopy{margin-top:14px;font-size:12px;line-height:1.8;color:var(--muted)}
+#lockScr{position:fixed;inset:0;z-index:3000;background:radial-gradient(120% 60% at 80% 0%,#0f4f63 0%,#0a2033 40%,#07111f 100%);background-color:#07111f;overflow-y:auto;color:var(--text)}
+.lkIn{max-width:480px;margin:0 auto;padding:calc(20px + env(safe-area-inset-top)) 18px calc(28px + env(safe-area-inset-bottom))}
+.lkHead{display:flex;align-items:center;gap:12px}
+.lkHead img{width:58px;height:58px;border-radius:16px}
+.lkHead div{flex:1}.lkHead b{display:block;font-size:26px}.lkHead small{color:#fbbf24;font-weight:600}
+.lkX{width:40px;height:40px;border-radius:12px;background:var(--panel2);color:var(--muted);font-size:16px}
+.lkLead{margin:16px 0 6px;font-size:16px;line-height:1.7}
+.lkPrice{font-size:40px;font-weight:700;color:#4ade80;margin:4px 0 12px}.lkPrice small{font-size:16px;color:var(--muted)}
+.lkDev{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px 14px}
+.lkDev small{color:var(--muted);font-size:12.5px}.lkDev b{flex:1;font:700 19px/1.2 monospace;letter-spacing:.5px;color:#7dd3fc;text-align:center;white-space:nowrap}
+.lkSteps{margin:14px 0 8px;padding-inline-start:22px;line-height:1.8;font-size:15px}
+.lkSteps li{margin-bottom:10px}
+.lkQi{display:block;width:min(240px,70%);margin:10px auto 4px;border-radius:16px;box-shadow:0 8px 20px rgba(0,0,0,.4)}
+.lkWa{display:flex;margin-top:8px}
+#lkCode{width:100%;border-radius:14px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font:600 13px/1.5 monospace;padding:10px;resize:vertical;box-sizing:border-box}
+.lkGo{width:100%;height:54px;margin-top:10px;border-radius:16px;background:linear-gradient(180deg,#4ade80,#16a34a);color:#04150a;font-weight:700;font-size:18px}
+.lkNote{color:var(--muted);font-size:12.5px;line-height:1.7;margin-top:10px}
+.lkSig{text-align:center;color:var(--muted);font-size:13px;margin-top:22px}.lkSig b{display:block;color:#f5c45e;font-size:17px}.lkSig span{display:block;color:var(--text)}
+#trialBar{position:absolute;left:12px;right:12px;top:calc(70px + env(safe-area-inset-top));z-index:1200;background:#78350f;color:#fde68a;border:1px solid #f59e0b;border-radius:14px;padding:10px 12px;font-weight:700;font-size:13.5px;max-width:480px;margin:auto}
+body.ui-nav #trialBar{display:none}
+.laCode{margin:10px 14px;padding:10px;border-radius:12px;background:var(--panel2);font:600 12.5px/1.5 monospace;word-break:break-all;user-select:all;-webkit-user-select:all}
 #areaChip{position:absolute;top:calc(74px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:790;display:flex;align-items:center;background:rgba(15,23,42,.94);border:1px solid #38bdf8;border-radius:999px;box-shadow:var(--shadow);max-width:84vw}
 #areaChip button{color:#e0f2fe;font-size:13.5px;font-weight:600;padding:8px 6px 8px 14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:68vw}
 #areaChip #areaChipX{padding:8px 14px 8px 8px;color:#94a3b8}
@@ -667,6 +688,10 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
   <div class="note">لحفظ مسار: اختر وجهة، ثم اضغط زر الحفظ بجانب «ابدأ الملاحة». المسار المحفوظ يعمل بالكامل بدون إنترنت مع الإرشاد الصوتي.</div></div>
 </div>
 
+<div id="adminPanel" class="panel hidden">
+  <div class="panelHead"><button class="iconBtn" id="adminClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></button><h2>وضع المصمم</h2></div>
+  <div class="panelBody" id="adminBody"></div>
+</div>
 <div id="teamPanel" class="panel hidden">
   <div class="panelHead"><button class="iconBtn" id="teamClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></button><h2>الفريق</h2></div>
   <div class="panelBody" id="teamBody"></div>
@@ -758,7 +783,7 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
       <div class="card"><h3>رمز القفل لمواقع العمل</h3><div class="item"><div class="grow s" id="pinState"></div></div>
         <div class="btnRow"><button class="chip go" id="pinSet">تعيين رمز</button><button class="chip" id="pinLock">قفل الآن</button><button class="chip del" id="pinOff">إزالة الرمز</button></div></div>
     </div>
-    <div class="card"><h3>البرنامج</h3><div class="item" id="openWn" style="cursor:pointer"><div class="grow"><div class="t">🆕 ما الجديد</div><div class="s" style="color:var(--muted);font-size:12.5px">التعديلات في آخر إصدار</div></div><span style="color:var(--muted)">‹</span></div><div class="item" id="appUpd" style="cursor:pointer"><div class="grow"><div class="t">🔄 البحث عن تحديث للبرنامج</div><div class="s" id="appUpdS" style="color:var(--muted);font-size:12.5px"></div></div><span style="color:var(--muted)">‹</span></div></div>
+    <div class="card"><h3>البرنامج</h3><div class="item" id="openLic" style="cursor:pointer"><div class="grow"><div class="t">🔑 التفعيل</div><div class="s" id="licStatus" style="color:var(--muted);font-size:12.5px"></div></div><span style="color:var(--muted)">‹</span></div><div class="item hidden" id="openAdmin" style="cursor:pointer"><div class="grow"><div class="t">🛠 وضع المصمم — توليد رموز التفعيل</div></div><span style="color:var(--muted)">‹</span></div><div class="item" id="openWn" style="cursor:pointer"><div class="grow"><div class="t">🆕 ما الجديد</div><div class="s" style="color:var(--muted);font-size:12.5px">التعديلات في آخر إصدار</div></div><span style="color:var(--muted)">‹</span></div><div class="item" id="appUpd" style="cursor:pointer"><div class="grow"><div class="t">🔄 البحث عن تحديث للبرنامج</div><div class="s" id="appUpdS" style="color:var(--muted);font-size:12.5px"></div></div><span style="color:var(--muted)">‹</span></div></div>
     <div class="card"><h3>الخريطة</h3><div class="item" id="openDiag" style="cursor:pointer"><div class="grow"><div class="t">🩺 تشخيص الخريطة</div><div class="s" style="color:var(--muted);font-size:12.5px">إذا لم تظهر الخريطة أو كانت بطيئة: اختبرها وشارك النتيجة مع المصمم</div></div><span style="color:var(--muted)">‹</span></div></div>
     <div class="card"><h3>الإحداثيات</h3><div class="frm">
       <label>صيغة عرض الإحداثيات</label><select id="setFmt"><option value="dec">عشرية (30.508500, 47.780400)</option><option value="dms">درجات ودقائق وثوانٍ</option><option value="utm">UTM</option></select>
@@ -824,6 +849,8 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
 <script src="teamchat.js"></script>
 <script src="teambg.js"></script>
 <script src="teamqr.js"></script>
+<script src="licadmin.js"></script>
+<script src="license.js"></script>
 <script src="ar.js"></script>
 <script src="onboard.js"></script>
 <script src="whatsnew.js"></script>
