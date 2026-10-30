@@ -1,8 +1,8 @@
 {
-  "versionCode": 44,
-  "versionName": "4.8",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v4.8/Mallah-Navigator.apk",
+  "versionCode": 45,
+  "versionName": "4.9",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v4.9/Mallah-Navigator.apk",
   "size": 2190835,
-  "notes": "جديد: التحديثات القادمة تُنزَّل وتُثبَّت من داخل البرنامج مباشرة، دون الذهاب إلى المتصفح.",
-  "sha256": "76dbe86a75df456f01522e2716632bfecb0515206dfeffb443013eddca71d8ce"
+  "notes": "رسالة التحديث تظهر الآن تلقائيًا عند كل تشغيل للبرنامج.",
+  "sha256": "57ed86294993f9f736f637338781da316ebb37e3fa11c6ff43f0e1d60cd8c625"
 }

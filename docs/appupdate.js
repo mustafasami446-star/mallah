@@ -66,3 +66,29 @@ window.onAppUpdInstall = (ok, msg) => {
     { label: 'لاحقًا', fn: () => { updState = null; updBar(); } }
   ]);
 };
+
+/* Every start (and when the app comes back to the screen after an hour or more), look for a new
+   version: app.json is tiny. The offer waits until the screen is free — the what's-new slides,
+   an open panel or message, navigation or measuring — and is then shown. */
+let appCheckT = 0, offerTries = 0;
+async function autoAppCheck() {
+  if (!NATIVE || navigator.onLine === false) return;
+  appCheckT = Date.now();
+  try { remoteApp = await fetchJson(UPDATE_BASE + 'app.json'); } catch (e) { return; }
+  const av = appVersion();
+  if (!remoteApp || !(remoteApp.versionCode > av.code) || !appOfferDue(remoteApp.versionCode)) return;
+  offerTries = 0; offerAppWhenFree();
+}
+function screenBusy() {
+  return document.body.classList.contains('onb-on') || !$('modal').classList.contains('hidden') || !!document.querySelector('.panel:not(.hidden)')
+    || !!(navState || (typeof directState !== 'undefined' && directState) || window.measActive) || !!updState;
+}
+function offerAppWhenFree() {
+  if (!remoteApp || !appOfferDue(remoteApp.versionCode)) return;
+  if (screenBusy()) { if (++offerTries < 120) setTimeout(offerAppWhenFree, 5000); return; }
+  offerUpdates(false);
+}
+setTimeout(autoAppCheck, 3500);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && Date.now() - appCheckT > 3600 * 1000) autoAppCheck();
+});
