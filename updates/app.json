@@ -1,7 +1,8 @@
 {
-  "versionCode": 43,
-  "versionName": "4.7",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v4.7/Mallah-Navigator.apk",
-  "size": 2186674,
-  "notes": "جديد: بعد كل تحديث تظهر لوحات «ما الجديد» تعرّفك بالتعديلات. ويتضمن: استكشاف المناطق، خريطة متماسكة عند التكبير والتدوير، موقع GPS دقيق، وتحديثات أسهل."
+  "versionCode": 44,
+  "versionName": "4.8",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v4.8/Mallah-Navigator.apk",
+  "size": 2190835,
+  "notes": "جديد: التحديثات القادمة تُنزَّل وتُثبَّت من داخل البرنامج مباشرة، دون الذهاب إلى المتصفح.",
+  "sha256": "76dbe86a75df456f01522e2716632bfecb0515206dfeffb443013eddca71d8ce"
 }

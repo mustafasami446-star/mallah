@@ -372,6 +372,12 @@ body.attr-min #attrBtn{opacity:.8;pointer-events:auto}
 .areaCard .t{font-weight:700;font-size:16.5px}
 .areaCard .s{color:var(--muted);font-size:13px;margin-top:3px}
 .areaBtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+#updBar{position:absolute;left:12px;right:12px;top:calc(70px + env(safe-area-inset-top));z-index:1300;background:rgba(15,23,42,.97);border:1px solid #38bdf8;border-radius:16px;padding:10px 12px;box-shadow:var(--shadow);max-width:480px;margin:auto}
+#updBar .ub1{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;margin-bottom:8px}
+#updBar .ub1 span{flex:1}
+#updBar .ub1 button{color:var(--muted);font-size:15px;padding:2px 6px}
+#updBar .bar{height:6px;border-radius:3px;background:#1e293b;overflow:hidden}
+#updBar .bar i{display:block;height:100%;background:linear-gradient(90deg,#38bdf8,#22c55e);transition:width .3s}
 #areaChip{position:absolute;top:calc(74px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:790;display:flex;align-items:center;background:rgba(15,23,42,.94);border:1px solid #38bdf8;border-radius:999px;box-shadow:var(--shadow);max-width:84vw}
 #areaChip button{color:#e0f2fe;font-size:13.5px;font-weight:600;padding:8px 6px 8px 14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:68vw}
 #areaChip #areaChipX{padding:8px 14px 8px 8px;color:#94a3b8}
@@ -751,6 +757,7 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
 <script src="provinces.js"></script>
 <script src="vector.js"></script>
 <script src="vecov.js"></script>
+<script src="appupdate.js"></script>
 <script src="home.js"></script>
 <script src="areas.js"></script>
 <script src="ar.js"></script>

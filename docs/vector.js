@@ -755,8 +755,8 @@ function offerUpdates(manual) {
   const av = appVersion();
   if (NATIVE && remoteApp && remoteApp.versionCode > av.code && (manual || appOfferDue(remoteApp.versionCode))) {
     const o = appOfferState(); store.set('appOffered', { c: remoteApp.versionCode, t: Date.now(), n: o.c === remoteApp.versionCode ? o.n + 1 : 1 });
-    actionSheet('🆕 إصدار جديد من الملاح: ' + remoteApp.versionName + (remoteApp.notes ? ' — ' + remoteApp.notes : ''), [
-      { label: '⬇ تنزيل التحديث (' + fmtMB(remoteApp.size || 0) + ')', fn: () => openExt(remoteApp.url) }
+    actionSheet('🆕 يتوفر تحديث للملاح: الإصدار ' + remoteApp.versionName + (remoteApp.notes ? ' — ' + remoteApp.notes : ''), [
+      { label: '⬇ تحديث الآن (' + fmtMB(remoteApp.size || 0) + ')', fn: () => startAppUpdate(remoteApp) }
     ]);
     return;
   }
