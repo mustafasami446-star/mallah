@@ -1,0 +1,43 @@
+name: Build districts and sub-districts
+
+# Districts (أقضية) and sub-districts (نواحي) from OpenStreetMap for the app's area picker.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "41 3 2 */3 *"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install tools
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq osmium-tool
+          pip install -q shapely pmtiles
+      - name: Boundaries from OpenStreetMap
+        run: |
+          curl -sfL https://download.geofabrik.de/asia/iraq-latest.osm.pbf -o iraq.osm.pbf
+          osmium tags-filter iraq.osm.pbf r/boundary=administrative -o admin.osm.pbf --overwrite
+          osmium export admin.osm.pbf -f geojsonseq -o admin.geojsonseq --overwrite --geometry-types=polygon
+      - name: Areas
+        run: |
+          python3 tools/admin_areas.py admin.geojsonseq updates/areas.json
+          python3 - <<'PY'
+          import json
+          d = json.load(open('updates/areas.json'))
+          for a in d['areas']:
+              if a['p'] in ('maysan', 'basra'):
+                  print(a['p'], a['k'], a['id'], a['ar'], '|', a['en'], '| up', a['up'])
+          PY
+      - name: Publish
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898599+github-actions[bot]@users.noreply.github.com"
+          git add updates/areas.json
+          git commit -m "Districts and sub-districts from OpenStreetMap" || echo "no change"
+          git pull --rebase -q && git push
