@@ -1,7 +1,7 @@
 {
-  "versionCode": 34,
-  "versionName": "3.8",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v3.8/Mallah-Navigator.apk",
+  "versionCode": 35,
+  "versionName": "3.9",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v3.9/Mallah-Navigator.apk",
   "size": 2174322,
-  "notes": "الخرائط المنزّلة: خط المسار وموقعك واتجاهك تُرسم الآن مع الخريطة نفسها، فلا تنزاح أو تتأخر عند التكبير والتدوير. ومعه «◈ المناطق» لاستكشاف المحافظات والأقضية والنواحي."
+  "notes": "القمر الصناعي وخريطة الشوارع: حيث توجد خريطة منزّلة تظهر الشوارع واضحة تحت الصور التي لم تصل بعد بدل الصورة الضبابية، حتى مع إنترنت ضعيف أو بدونه."
 }

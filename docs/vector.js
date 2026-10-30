@@ -229,10 +229,11 @@ function dropGl() {
   glKeep.div.remove(); glKeep = null;
 }
 const VecLayer = L.Layer.extend({
-  options: { maxZoom: 21, minZoom: 3 },
+  options: { maxZoom: 21, minZoom: 3, under: false },
+  initialize(o) { L.setOptions(this, o); },
   onAdd(m) {
     this._m = m; this._alive = true;
-    document.body.classList.add('vec-on');
+    if (!this.options.under) document.body.classList.add('vec-on');
     const t0 = performance.now(), mark = (k) => { if (!VD.t[k]) VD.t[k] = Math.round(performance.now() - t0); };
     loadLibs().then(async () => {
       if (!this._alive) return;
@@ -274,7 +275,7 @@ const VecLayer = L.Layer.extend({
         mark('reused');
       }
       this._div = glKeep.div; this._gl = glKeep.gl;
-      vecLayer = this;
+      if (!this.options.under) vecLayer = this;
       this._gl.resize();
       if (glKeep.stale) { glKeep.stale = false; await this.reload(); }
       else if (vecDark !== night) this.setDark(night);
@@ -289,11 +290,11 @@ const VecLayer = L.Layer.extend({
         setLayer(navigator.onLine === false ? 'esri' : 'osm', true);
         toast('تعذّر عرض الخريطة المنزّلة على هذا الهاتف، فتم التحويل إلى خريطة الشوارع. للمساعدة: الإعدادات ← «تشخيص الخريطة» ← مشاركة.', 8000);
       }, 9000);
-    }).catch((e) => { console.error(e); diagLog('vec start: ' + (e && e.message)); toast('تعذّر تشغيل الخريطة المتجهة على هذا الهاتف — تم التحويل إلى الخريطة العادية', 5000); setLayer('esri'); });
+    }).catch((e) => { console.error(e); diagLog('vec start: ' + (e && e.message)); if (this.options.under) return; toast('تعذّر تشغيل الخريطة المتجهة على هذا الهاتف — تم التحويل إلى الخريطة العادية', 5000); setLayer('esri'); });
   },
   onRemove() {
     this._alive = false;
-    document.body.classList.remove('vec-on');
+    if (!this.options.under) document.body.classList.remove('vec-on');
     if (this._div) this._div.style.display = 'none';          // kept for the next time
     this._gl = null; this._div = null;
     if (vecLayer === this) vecLayer = null;
@@ -346,7 +347,38 @@ function enableVecLayer() {
   renderLayerMenu();
   return true;
 }
-window.onNightChange = (n) => { if (vecLayer) vecLayer.setDark(n); };
+window.onNightChange = (n) => { if (vecLayer) vecLayer.setDark(n); if (vecUnder) vecUnder.setDark(n); };
+
+/* Street and satellite maps: where a downloaded map covers the area, it is drawn underneath them.
+   Pictures that haven't arrived yet (slow internet, or none) leave the sharp streets visible
+   instead of a blurred enlargement. */
+let vecUnder = null, underT = 0;
+function wantVecUnder() {
+  if (layerKey === 'vec' || !LAYERS.vec || vecBroken || !packs().length || map.getZoom() < 10) return false;
+  const c = map.getCenter(), id = provinceAt(c.lat, c.lng);
+  return !!id && (hasPack(FULL_ID) || hasPack(id));
+}
+function syncUnder() {
+  const want = wantVecUnder();
+  if (want && !vecUnder) {
+    vecUnder = new VecLayer({ under: true }); vecUnder.addTo(map);
+    document.body.classList.add('vec-under');
+    if (underLayer) underLayer.setOpacity(0);
+  } else if (!want && vecUnder) {
+    map.removeLayer(vecUnder); vecUnder = null;
+    document.body.classList.remove('vec-under');
+    if (underLayer) underLayer.setOpacity(1);
+  }
+}
+{
+  const _setLayerU = setLayer;
+  setLayer = function (k, temp) {
+    if (vecUnder) { map.removeLayer(vecUnder); vecUnder = null; document.body.classList.remove('vec-under'); }
+    _setLayerU(k, temp);
+    syncUnder();
+  };
+  map.on('moveend zoomend', () => { clearTimeout(underT); underT = setTimeout(syncUnder, 300); });
+}
 
 /* the set of installed packs changed (download, import, delete) */
 function refreshPacks() {
