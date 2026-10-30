@@ -1,8 +1,8 @@
 {
-  "versionCode": 50,
-  "versionName": "5.4",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.4/Mallah-Navigator.apk",
-  "size": 2281408,
-  "notes": "جديد: دعوة الفريق برمز QR — اعرضه أو شاركه كصورة في واتساب، ويمسحه زملاؤك بالكاميرا للانضمام مباشرة.",
-  "sha256": "8a888ecbe066d07d59c1a3a00b791972b6d81d2fd63f3efb44c18be59a41e932"
+  "versionCode": 51,
+  "versionName": "5.5",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.5/Mallah-Navigator.apk",
+  "size": 2428931,
+  "notes": "جديد: «شارك الملاح» — بطاقة فيها رمز QR تفتح صفحة تثبيت تتعرّف على جهاز الشخص (أندرويد، آيفون، لابتوب) وتشرح له الخطوات.",
+  "sha256": "b366954fa4d36a9f21da66ed6dc02ae1454f70103927e145ef90f00ef2c74a11"
 }

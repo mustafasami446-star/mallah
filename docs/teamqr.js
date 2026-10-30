@@ -128,3 +128,23 @@ renderTeam = function () {
     if (j && !$('tmScan')) { const b = document.createElement('button'); b.className = 'chip'; b.id = 'tmScan'; b.textContent = '📷 مسح رمز QR'; b.onclick = startScan; j.after(b); }
   }
 };
+
+/* ---------------- «شارك الملاح»: the card with the install QR ---------------- */
+async function shareApp() {
+  $('menuDrop').classList.add('hidden');
+  const link = 'https://mustafasami446-star.github.io/mallah/get/';
+  const text = 'جرّب «الملاح» — ملاحة عربية تعمل بدون إنترنت، مع الفريق والمحادثة والاستغاثة ومواقع العمل. امسح الرمز في الصورة أو افتح الرابط وسيشرح لك التثبيت على جهازك:\n' + link;
+  try {
+    const blob = await (await fetch('share-card.jpg')).blob();
+    if (NATIVE && Android.shareImage) {
+      const b64v = await new Promise((r) => { const fr = new FileReader(); fr.onload = () => r(String(fr.result).split(',')[1]); fr.readAsDataURL(blob); });
+      if (Android.shareImage(b64v, 'mallah.jpg', text)) return;
+    } else {
+      const file = new File([blob], 'mallah.jpg', { type: 'image/jpeg' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], text }); return; }
+      if (navigator.share) { await navigator.share({ text }); return; }
+    }
+  } catch (e) { if (e && e.name === 'AbortError') return; }
+  try { await navigator.clipboard.writeText(text); toast('✓ نُسخ الرابط — الصقه في واتساب'); } catch (e) { prompt('انسخ الرابط:', link); }
+}
+{ const b = $('shareApp'); if (b) b.onclick = shareApp; }

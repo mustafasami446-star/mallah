@@ -1,7 +1,7 @@
 'use strict';
 /* الملاح — دليل الاستخدام وعن البرنامج */
 
-const APP_VERSION = '5.4';
+const APP_VERSION = '5.5';
 const DESIGNER = { name: 'الأستاذ مصطفى سامي', phones: ['+9647861666400', '+9647755962400'] };
 
 const GUIDE = [
@@ -195,6 +195,7 @@ const GUIDE = [
 
   { icon: '💻', t: 'على اللابتوب و iPhone (نسخة الويب)', b: `
 <p>نفس الملاح يعمل في المتصفح بدون تثبيت ملف: <span class="ltr">mustafasami446-star.github.io/mallah</span></p>
+<p><b>لدعوة أي شخص لتثبيت الملاح:</b> القائمة ☰ ← <b>«شارك الملاح»</b> يرسل بطاقة فيها رمز QR. من يمسحه تفتح له صفحة <span class="ltr">…/mallah/get</span> التي تتعرّف على جهازه (أندرويد أو آيفون أو لابتوب) وتشرح له خطوات التثبيت.</p>
 <ul>
 <li><b>iPhone:</b> افتح الرابط في <b>Safari</b> ← زر المشاركة <span class="ltr">⬆</span> ← <b>«إضافة إلى الشاشة الرئيسية»</b>. يظهر كأيقونة ويفتح كتطبيق.</li>
 <li><b>اللابتوب:</b> افتح الرابط في <b>Chrome</b> أو <b>Edge</b> ← أيقونة التثبيت في شريط العنوان (أو القائمة ← «تثبيت الملاح»).</li>
@@ -231,6 +232,7 @@ function renderGuide() {
         <div class="cName">${DESIGNER.name}</div>
         ${DESIGNER.phones.map((p) => `<div class="cPhone"><span class="ltr">${fmtPhone(p)}</span>
           <button class="chip" data-call="${p}">📞 اتصال</button><button class="chip go" data-wa="${p}">💬 واتساب</button></div>`).join('')}
+        <div class="cCopy">© 2026 ${DESIGNER.name} — جميع الحقوق محفوظة.<br>يُسمح بمشاركة البرنامج كما هو ودون مقابل. يُمنع تعديله أو إعادة نشره باسم آخر أو بيعه دون إذن المصمم.</div>
       </div>`;
   $('guideBody').querySelectorAll('[data-call]').forEach((b) => { b.onclick = () => openExt('tel:' + b.dataset.call); });
   $('guideBody').querySelectorAll('[data-wa]').forEach((b) => { b.onclick = () => openExt('https://wa.me/' + b.dataset.wa.replace(/\D/g, '')); });
