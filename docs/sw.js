@@ -1,5 +1,5 @@
 /* الملاح — keeps the app's own files on the device so it opens without internet */
-const CACHE = 'mallah-5.6-202610301239';
+const CACHE = 'mallah-5.7-202610301244';
 const FILES = ['./', "app.js","apple-touch-icon.png","appupdate.js","ar.js","areas-data.js","areas.js","field.js","fonts/plex-arabic-400.woff2","fonts/plex-arabic-600.woff2","fonts/plex-arabic-700.woff2","fonts/plex-latin-400.woff2","fonts/plex-latin-600.woff2","fonts/plex-latin-700.woff2","get/index.html","guide.js","home.js","icon-192.png","icon-512.png","icon-maskable.png","index.html","lib/basemaps.js","lib/jsQR.min.js","lib/leaflet-rotate.js","lib/leaflet.css","lib/leaflet.js","lib/mapbox-gl-rtl-text.js","lib/maplibre-gl.css","lib/maplibre-gl.js","lib/pmtiles.js","lib/qrcode.min.js","lib/world.js","lib/xlsx.full.min.js","licadmin.js","license.js","logo.svg","manifest.webmanifest","measure.js","onboard.js","ops.js","pack-web.js","pay-qi.jpg","provinces.js","share-card.jpg","team.js","teambg.js","teamchat.js","teamqr.js","vecov.js","vector.js","web.js","whatsnew.js"];
 self.addEventListener('install', (e) => {
   self.skipWaiting();                                                          // a new version takes over by itself

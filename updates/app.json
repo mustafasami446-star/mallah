@@ -1,8 +1,8 @@
 {
-  "versionCode": 52,
-  "versionName": "5.6",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.6/Mallah-Navigator.apk",
+  "versionCode": 53,
+  "versionName": "5.7",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.7/Mallah-Navigator.apk",
   "size": 2490561,
-  "notes": "الملاح يعمل كاملًا 14 يومًا تجريبية على كل جهاز، ثم يُفعَّل مرة واحدة (15,000 دينار) عبر سوبر كي وواتساب — الإعدادات ← «🔑 التفعيل».",
-  "sha256": "3c5ff6f9b57f533cdec6f0ca0da6f9208741144cf676bd2066c316e10a780aa8"
+  "notes": "تصحيح الاسم في رمز الدفع بشاشة التفعيل. الملاح يعمل كاملًا 14 يومًا تجريبية ثم يُفعَّل مرة واحدة — الإعدادات ← «🔑 التفعيل».",
+  "sha256": "223c80d7699cb29a27a62cc1595ae3a7cad116ab2b88280137de8e2ef109dad0"
 }
