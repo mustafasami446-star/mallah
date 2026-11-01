@@ -25,3 +25,11 @@ for i in range(0, len(titles), 40):
                         desc=(em.get('ImageDescription') or {}).get('value', '')[:300], cats=(em.get('Categories') or {}).get('value', '')[:300]))
 json.dump(out, open('adhan_list.json', 'w'), ensure_ascii=False, indent=1)
 for o in out: print(o['t'], '|', o['mime'], '|', o['size'], '|', o['len'], '|', o['lic'])
+import re
+print('==== candidates')
+for o in out:
+    if not o['len'] or not (20 < float(o['len']) < 600): continue
+    if not re.search(r'adhan|azan|athan|ezan|اذان|أذان|call.to.(prayer|worship)|Fakhry|Azaan|Al-Azzan|muezzin', o['t'] + o['desc'], re.I): continue
+    d = re.sub('<[^>]+>', '', o['desc'] or '')[:260].replace('\n', ' '); a = re.sub('<[^>]+>', '', o['artist'] or '')[:60]
+    c = re.sub('<[^>]+>', '', o['cats'] or '')[:200]
+    print('* ' + o['t'] + ' | ' + str(round(float(o['len']))) + 's | ' + str(o['lic']) + ' | ' + a + ' | ' + d + ' | ' + c)
