@@ -97,6 +97,7 @@ def hourly(ser, start):
 def daily(ser, day0):
     """7 Iraqi days: max/min temperature, rain total, highest chance of rain, strongest wind / gust, the day's weather"""
     days = [dict(tx=None, tn=None, r=0.0, p=None, w=None, g=None, s=-1, sc=-1, _n=0) for _ in range(DAYS)]
+    covered = None                          # rain counted up to here (hourly blocks first, then 6-hour blocks)
     for t, (inst, n1, n6, n12) in sorted(ser.items()):
         loc = t + TZ
         i = (loc.date() - day0).days
@@ -109,11 +110,18 @@ def daily(ser, day0):
         for k, src in (('w', 'wind_speed'), ('g', 'wind_speed_of_gust')):
             v = inst.get(src)
             if v is not None: d[k] = v if d[k] is None else max(d[k], v)
+        if covered is None or t >= covered:
+            if n1 and n1.get('details', {}).get('precipitation_amount') is not None:
+                d['r'] += n1['details']['precipitation_amount']; d['_n'] += 1; covered = t + dt.timedelta(hours=1)
+            elif n6 and n6.get('details', {}).get('precipitation_amount') is not None:
+                d['r'] += n6['details']['precipitation_amount']; d['_n'] += 1; covered = t + dt.timedelta(hours=6)
+        if n1:
+            s1 = sym((n1.get('summary') or {}).get('symbol_code'))
+            if s1 >= 0 and 6 <= loc.hour <= 21 and (d['sc'] < 0 or rank(s1) > rank(d['sc'])): d['sc'] = s1
         if n6 and t.hour % 6 == 0:          # whole 6-hour blocks, counted once
             det = n6.get('details', {})
             if det.get('air_temperature_max') is not None: d['tx'] = max(d['tx'] if d['tx'] is not None else -99, det['air_temperature_max'])
             if det.get('air_temperature_min') is not None: d['tn'] = min(d['tn'] if d['tn'] is not None else 99, det['air_temperature_min'])
-            if det.get('precipitation_amount') is not None: d['r'] += det['precipitation_amount']; d['_n'] += 1
             if det.get('probability_of_precipitation') is not None: d['p'] = max(d['p'] or 0, det['probability_of_precipitation'])
             s = sym((n6.get('summary') or {}).get('symbol_code'))
             # the day's weather: the most significant 6-hour weather (rain beats cloud beats sun)
@@ -146,7 +154,8 @@ def alerts_for(aid, h, d, start, day0):
         r6 = sum((x or 0) for x in h['r'][i:i + 6]) / 10
         if 'rain' not in seen and r6 >= 10: add('rain', i, round(r6), when); seen.add('rain')
         g = h['g'][i] if h['g'][i] is not None else h['w'][i]
-        if 'wind' not in seen and g is not None and g >= 170: add('wind', i, round(g * 0.36), when); seen.add('wind')   # km/h
+        # MET Norway gives gusts only in the Nordic countries; here the mean wind: 12 m/s = 43 km/h is strong enough to lift dust
+        if 'wind' not in seen and g is not None and (g >= 120 if h['g'][i] is None else g >= 170): add('wind', i, round(g * 0.36), when); seen.add('wind')   # km/h
         s = h['s'][i]
         if 'storm' not in seen and s >= 0 and 'thunder' in SYM[s]: add('storm', i, 0, when); seen.add('storm')
     # the next days: heat, frost, a very wet day
