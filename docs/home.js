@@ -65,10 +65,58 @@ function nearOffline(cat, ref) {
   }
   return out.sort((a, b) => a.d - b.d).slice(0, 30);
 }
+/* the places of all Iraq, prepared from OpenStreetMap every month in half-degree squares (tools/pois.py);
+   only the squares around you are downloaded, and kept for later */
+const POI_BASE = 'https://raw.githubusercontent.com/mustafasami446-star/mallah/pois/';
+const poiMem = new Map();
+async function poiTile(key) {
+  if (poiMem.has(key)) return poiMem.get(key);
+  const p = (async () => {
+    const url = POI_BASE + key + '.json';
+    let cache = null; try { cache = await caches.open('mallah-pois'); } catch (e) {}
+    try {
+      const r = await fetch(url, { cache: 'no-cache' });
+      if (r.status === 404) return [];
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const j = await r.clone().json();
+      if (cache) cache.put(url, r).catch(() => {});
+      return j;
+    } catch (e) {
+      const c = cache && await cache.match(url);
+      if (c) return c.json();
+      throw e;
+    }
+  })();
+  poiMem.set(key, p);
+  p.catch(() => poiMem.delete(key));
+  return p;
+}
+const poiKey = (lat, lng) => Math.floor(lat / 0.5) + '_' + Math.floor(lng / 0.5);
+async function poiAround(kinds, ref, radius) {
+  const keys = new Set(), dLat = radius / 111000, dLng = radius / (111000 * Math.cos(ref[0] * Math.PI / 180));
+  for (let la = ref[0] - dLat; la <= ref[0] + dLat + 0.5; la += 0.5) for (let ln = ref[1] - dLng; ln <= ref[1] + dLng + 0.5; ln += 0.5) keys.add(poiKey(Math.min(la, ref[0] + dLat), Math.min(ln, ref[1] + dLng)));
+  const rows = (await Promise.all([...keys].map(poiTile))).flat();
+  const want = new Set(kinds), out = [];
+  for (const r of rows) {
+    if (!want.has(r[0])) continue;
+    const d = hav(ref, [r[2], r[3]]);
+    if (d <= radius) out.push({ n: r[1], sub: r[4] || '', lat: r[2], lng: r[3], d, k: r[0] });
+  }
+  return out.sort((a, b) => a.d - b.d);
+}
 async function nearOnline(cat, ref) {
+  try {
+    const hits = (await poiAround(cat.k, ref, 25000)).slice(0, 30);
+    hits.forEach((h) => { if (!h.n) h.n = cat.n.replace(/ات$|ق$/, ''); });
+    return hits;
+  } catch (e) { /* the squares could not be read: try the public OpenStreetMap servers */ }
   for (const r of [6000, 25000]) {
     const ql = `[out:json][timeout:20];${cat.q}(around:${r},${ref[0].toFixed(5)},${ref[1].toFixed(5)});out center 60;`;
-    const j = await getJSON('https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(ql), 25000);
+    let j = null, err = null;
+    for (const host of ['https://overpass-api.de/api/interpreter', 'https://overpass.private.coffee/api/interpreter', 'https://maps.mail.ru/osm/tools/overpass/api/interpreter']) {
+      try { j = await getJSON(host + '?data=' + encodeURIComponent(ql), 20000); break; } catch (e) { err = e; }
+    }
+    if (!j) throw err || new Error('overpass');
     const out = (j.elements || []).map((e) => {
       const lat = e.lat != null ? e.lat : e.center && e.center.lat, lng = e.lon != null ? e.lon : e.center && e.center.lon;
       const t = e.tags || {};

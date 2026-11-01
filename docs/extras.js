@@ -205,6 +205,15 @@ async function fuelAlong(r) {
   const near = (lat, lng) => pts.some((p) => Math.abs(p[0] - lat) < 0.04 && Math.abs(p[1] - lng) < 0.05 && hav(p, [lat, lng]) < 1500 + step / 2);
   let hits = [];
   if (typeof places !== 'undefined' && places) hits = places.filter((p) => p.k === 'fuel' && near(p.lat, p.lng)).map((p) => ({ n: p.n, lat: p.lat, lng: p.lng }));
+  if (!hits.length && typeof poiTile === 'function') {
+    toast('⛽ جارٍ البحث عن المحطات على الطريق…');
+    try {
+      const keys = [...new Set(pts.map((p) => poiKey(p[0], p[1])))];
+      const rows = (await Promise.all(keys.map(poiTile))).flat();
+      hits = rows.filter((r) => r[0] === 'fuel' && near(r[2], r[3])).map((r) => ({ n: r[1] || 'محطة وقود', lat: r[2], lng: r[3] }));
+      if (!hits.length) { toast('لم أجد محطات وقود مسجّلة على هذا الطريق', 4000); return; }
+    } catch (e) { hits = []; }
+  }
   if (!hits.length) {
     toast('⛽ جارٍ البحث عن المحطات على الطريق…');
     try {

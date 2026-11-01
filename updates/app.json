@@ -1,8 +1,8 @@
 {
-  "versionCode": 61,
-  "versionName": "5.15",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.15/Mallah-Navigator.apk",
+  "versionCode": 62,
+  "versionName": "5.16",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.16/Mallah-Navigator.apk",
   "size": 2610117,
-  "notes": "جديد: شريط «يومك» (الطقس الآن والصلاة القادمة وعدّاد رمضان)، تنبيه الطقس والوقود في الرحلات الطويلة، شريط الأسبوع وصورة الطقس للمشاركة، وتكبير الخط.",
-  "sha256": "cd29ce91944b601cbf40d35b04a91215267da471d6119afc4c190aa19e21f583"
+  "notes": "إصلاح «اكتشف ما حولك»: المستشفيات والصيدليات والوقود وغيرها تظهر دائمًا، حتى عندما تكون خوادم الخرائط العامة مشغولة.",
+  "sha256": "e50df23058a4291a1884990fd34fe88eeed8a036ca7a7e65e88626210a385afe"
 }
