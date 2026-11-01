@@ -312,6 +312,107 @@ function wxpStep(ts) {
   x.strokeStyle = 'rgba(248,250,252,.85)'; x.stroke();
 }
 
+/* ---------------- rain falling on the chosen area ---------------- */
+// The chosen province / district / sub-district gets its outline, and rain falls inside it as heavily as the
+// forecast says: drops and little splashes, thicker and faster for heavy rain, none when it stays dry.
+const WXR = { cv: null, ctx: null, raf: 0, drops: [], path: null, box: null, rate: 0, size: 1, key: '', last: 0, moving: false };
+function wxrRain() {
+  const v = WX.sel && wxValues(WX.sel);
+  if (!v) return { rate: 0, size: 1, txt: '' };
+  if (WX.mode === 'h') {
+    const r = (v.r || 0) / 10;                                  // mm in this hour
+    return { rate: r <= 0 ? 0 : Math.min(1, 0.12 + r / 6), size: r >= 4 ? 1.5 : r >= 1 ? 1.2 : 0.9 };
+  }
+  const p = v.p != null ? v.p : (v.r ? Math.min(100, 30 + v.r / 2) : 0), mmDay = (v.r || 0) / 10;
+  return { rate: p < 15 ? 0 : Math.min(1, p / 100 * (mmDay >= 5 ? 1 : 0.75)), size: mmDay >= 15 ? 1.5 : mmDay >= 3 ? 1.2 : 0.9 };
+}
+function wxrOn() {
+  const n = WX.sel && WX.ar && WX.ar.byId[WX.sel];
+  if (!WX.on || !WX.data || !n || !n.g || !(WX.tab === 'rain' || WX.tab === 'sky')) { wxrOff(); return; }
+  const r = wxrRain();
+  if (!WXR.cv) {
+    const cv = document.createElement('canvas'); cv.id = 'wxRain'; map.getContainer().appendChild(cv);
+    WXR.cv = cv; WXR.ctx = cv.getContext('2d');
+    map.on('movestart zoomstart', wxrHide); map.on('moveend zoomend resize', wxrLayout);
+  }
+  WXR.rate = r.rate; WXR.size = r.size;
+  if (WXR.key !== n.id) { WXR.key = n.id; wxrLayout(); }
+  if (!WXR.raf) WXR.raf = requestAnimationFrame(wxrStep);
+}
+function wxrOff() {
+  if (WXR.raf) cancelAnimationFrame(WXR.raf); WXR.raf = 0;
+  if (WXR.cv) { map.off('movestart zoomstart', wxrHide); map.off('moveend zoomend resize', wxrLayout); WXR.cv.remove(); WXR.cv = null; WXR.ctx = null; WXR.key = ''; }
+}
+function wxrHide() { WXR.moving = true; if (WXR.ctx) WXR.ctx.clearRect(0, 0, WXR.cv.width, WXR.cv.height); }
+/* the outline in screen pixels, redone after every move */
+function wxrLayout() {
+  if (!WXR.cv) return;
+  const n = WX.ar.byId[WXR.key]; if (!n) return;
+  const rc = map.getContainer().getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);
+  WXR.cv.width = Math.round(rc.width * dpr); WXR.cv.height = Math.round(rc.height * dpr); WXR.dpr = dpr;
+  const path = new Path2D(), polys = n.g.type === 'MultiPolygon' ? n.g.coordinates : [n.g.coordinates];
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  polys.forEach((poly) => poly.forEach((ring) => ring.forEach(([lng, lat], i) => {
+    const p = map.latLngToContainerPoint([lat, lng]), X = p.x * dpr, Y = p.y * dpr;
+    if (i) path.lineTo(X, Y); else path.moveTo(X, Y);
+    x0 = Math.min(x0, X); y0 = Math.min(y0, Y); x1 = Math.max(x1, X); y1 = Math.max(y1, Y);
+  })));
+  WXR.path = path;
+  WXR.box = [Math.max(0, x0), Math.max(0, y0), Math.min(WXR.cv.width, x1), Math.min(WXR.cv.height, y1)];
+  WXR.drops = []; WXR.moving = false;
+}
+function wxrStep(ts) {
+  WXR.raf = 0;
+  if (!WXR.cv || !WX.on || document.hidden) return;
+  WXR.raf = requestAnimationFrame(wxrStep);
+  if (WXR.moving || !WXR.path || ts - WXR.last < 33) return;
+  WXR.last = ts;
+  const x = WXR.ctx, dpr = WXR.dpr, [bx0, by0, bx1, by1] = WXR.box, W = bx1 - bx0, H = by1 - by0;
+  x.clearRect(0, 0, WXR.cv.width, WXR.cv.height);
+  // the area itself: a soft blue wash and a bright outline
+  x.save();
+  x.fillStyle = WXR.rate > 0 ? 'rgba(56,189,248,' + (0.10 + WXR.rate * 0.18) + ')' : 'rgba(148,163,184,.10)'; x.fill(WXR.path, 'evenodd');
+  x.setLineDash([7 * dpr, 5 * dpr]); x.lineWidth = 2.4 * dpr; x.strokeStyle = WXR.rate > 0 ? '#38bdf8' : '#cbd5e1'; x.stroke(WXR.path); x.setLineDash([]);
+  if (WXR.rate > 0 && W > 4 && H > 4) {
+    x.clip(WXR.path, 'evenodd');
+    const want = Math.min(420, Math.round(W * H / (dpr * dpr) / 600 * WXR.rate) + 6);
+    while (WXR.drops.length < want) WXR.drops.push(wxrDrop(bx0, by0, W, H, true));
+    if (WXR.drops.length > want) WXR.drops.length = want;
+    const sz = WXR.size * dpr;
+    x.lineCap = 'round';
+    for (const d of WXR.drops) {
+      if (d.splash >= 0) {                                      // a little ring where it lands
+        d.splash += 1;
+        const a = 1 - d.splash / 9;
+        x.strokeStyle = 'rgba(186,230,253,' + (a * 0.8) + ')'; x.lineWidth = 1.1 * dpr;
+        x.beginPath(); x.ellipse(d.x, d.land, (2 + d.splash * 1.4) * sz, (0.8 + d.splash * 0.5) * sz, 0, 0, Math.PI * 2); x.stroke();
+        if (d.splash > 8) Object.assign(d, wxrDrop(bx0, by0, W, H, false));
+        continue;
+      }
+      d.y += d.v * sz;
+      const len = (7 + d.v * 1.3) * sz;
+      const g = x.createLinearGradient(d.x, d.y - len, d.x - len * 0.18, d.y);
+      g.addColorStop(0, 'rgba(186,230,253,0)'); g.addColorStop(1, 'rgba(224,242,254,.95)');
+      x.strokeStyle = g; x.lineWidth = 1.6 * sz;
+      x.beginPath(); x.moveTo(d.x + len * 0.18, d.y - len); x.lineTo(d.x, d.y); x.stroke();
+      if (d.y >= d.land) { d.splash = 0; d.y = d.land; }
+    }
+  }
+  x.restore();
+}
+function wxrDrop(bx0, by0, W, H, scatter) {
+  const land = by0 + Math.random() * H;
+  return { x: bx0 + Math.random() * W, land, y: scatter ? land - Math.random() * H * 0.6 : land - 40 - Math.random() * Math.min(H, 260), v: 5 + Math.random() * 4, splash: -1 };
+}
+/* tapping inside an area on the map chooses it (provinces when far out, then districts, then sub-districts) */
+map.on('click', (e) => {
+  if (!WX.on || !WX.ar) return;
+  const z = map.getZoom(), lat = e.latlng.lat, lng = e.latlng.lng;
+  const want = z < 7.5 ? 1 : z < 9.3 ? 2 : 3;
+  const chain = arHere(lat, lng); if (!chain.length) return;
+  wxSelect(chain[Math.min(want, chain.length) - 1]);
+});
+
 /* ---------------- numbers on the map ---------------- */
 function wxLabelText(v) {
   if (!v) return null;
@@ -406,7 +507,7 @@ async function openWeather(areaId) {
   wxLoad(true).then(() => { if (WX.on) wxRender(); }).catch(() => {});
 }
 function closeWeather() {
-  WX.on = false; wxStop(); wxpOff();
+  WX.on = false; wxStop(); wxpOff(); wxrOff();
   document.body.classList.remove('ui-wx');
   if ($('wxSheet')) $('wxSheet').classList.add('hidden');
   if (WX.overlay) { map.removeLayer(WX.overlay); WX.overlay = null; }
@@ -443,7 +544,7 @@ function wxRender(fast) {
     : `<div class="bar" style="background:linear-gradient(to left,${WX_RAMP[rm.ramp].map((s) => 'rgba(' + s.slice(1, 4).join(',') + ',' + Math.max(0.25, s[4]) + ')').join(',')})"></div><div class="ticks">${rm.ticks.map((t) => '<span>' + t[1] + '</span>').join('')}</div><span class="s">${rm.unit}</span>`;
   wxRenderInfo();
   wxDrawLabels();
-  wxpOn();
+  wxpOn(); wxrOn();
 }
 function wxLine(v, full) {
   if (!v) return '<span class="s">لا توجد بيانات لهذه المنطقة</span>';
@@ -471,14 +572,14 @@ function wxRenderInfo() {
   $('wxInfo').innerHTML = `<div class="wxName"><b>${esc(arTitle(n))}</b>${n.k !== 'p' && n.up && WX.ar.byId[n.up] ? '<span class="s"> — ' + esc(arShort(WX.ar.byId[n.up])) + '</span>' : ''}<button class="wxFol${fol ? ' on' : ''}" id="wxFol" title="متابعة">${fol ? '⭐ متابَعة' : '☆ متابعة'}</button></div><div class="wxVals">${wxLine(wxValues(n.id), true)}</div>`;
   $('wxFol').onclick = () => wxToggleFollow(n.id);
 }
-function wxSelect(id) { WX.sel = id; wxRenderInfo(); wxDrawLabels(); }
+function wxSelect(id) { WX.sel = id; wxRenderInfo(); wxDrawLabels(); wxrOn(); }
 function wxToggleFollow(id) {
   const i = wxCfg.follow.indexOf(id);
   if (i >= 0) wxCfg.follow.splice(i, 1); else { if (wxCfg.follow.length >= 20) { toast('يمكن متابعة 20 منطقة كحد أقصى'); return; } wxCfg.follow.push(id); wxCfg.alerts = true; toast('⭐ ستصلك تنبيهات الطقس لهذه المنطقة'); }
   wxSaveCfg(); wxRenderInfo();
 }
 map.on('moveend', () => { if (WX.on) wxDrawLabels(); });
-document.addEventListener('visibilitychange', () => { if (!document.hidden && WX.on) wxpOn(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden && WX.on) { wxpOn(); wxrOn(); } });
 
 /* ---------------- every area in a list ---------------- */
 let wxListPath = [];
