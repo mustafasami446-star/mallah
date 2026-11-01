@@ -1,0 +1,41 @@
+name: Weather forecast
+
+# Every two hours: the forecast for every district and sub-district of Iraq (MET Norway, CC BY 4.0),
+# published on the "weather" branch (one commit, replaced each time, so the repository does not grow).
+# The app reads https://raw.githubusercontent.com/mustafasami446-star/mallah/weather/weather.json
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 */2 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: weather
+  cancel-in-progress: false
+
+jobs:
+  forecast:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            tools/weather.py
+            updates/areas.json
+          sparse-checkout-cone-mode: false
+      - name: Forecast
+        run: python3 tools/weather.py updates/areas.json out
+      - name: Publish
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd out
+          git init -q -b weather
+          git config user.name "github-actions[bot]"
+          git config user.email "41898599+github-actions[bot]@users.noreply.github.com"
+          git add weather.json alerts.json
+          git commit -qm "Weather $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push -fq "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" weather
