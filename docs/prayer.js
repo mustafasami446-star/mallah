@@ -120,7 +120,7 @@ function prRender() {
   const nx = prNext(now, w);
   const q = qiblaBearing(w.lat, w.lng), dist = hav([w.lat, w.lng], [KAABA.lat, KAABA.lng]);
   $('prBody').innerHTML = `
-    <div class="prNext"><div class="s">${esc(greg)}${hijri ? ' · ' + esc(hijri) : ''}</div>
+    <div class="prNext"><div class="s">${esc(greg)}${hijri ? ' · ' + esc(hijri) : ''}${typeof moonInfo === 'function' ? ' · ' + moonInfo(Date.now()).icon + ' ' + moonInfo(Date.now()).name : ''}</div>
       <div class="big" id="prNextName">${PR_NAMES[nx.k]} ${prClock(nx.t)}</div><div class="cd" id="prCount"></div>
       <div class="s">${w.known ? '📍 حسب موقعك الحالي' : (w.city ? '📍 ' + w.city + ' — شغّل الموقع لأوقات منطقتك' : '📍 حسب آخر موقع معروف')}</div></div>
     <div class="card"><div id="prRows">${rows.map((k) => `<div class="res prRow${k === nx.k && nx.t.getDate() === now.getDate() ? ' on' : ''}${k === 'sunrise' || k === 'sunset' || k === 'imsak' ? ' minor' : ''}"><div class="t" style="flex:1">${PR_NAMES[k]}</div><div class="tm">${prClock(T[k])}</div></div>`).join('')}</div>

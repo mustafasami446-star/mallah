@@ -1,8 +1,8 @@
 {
-  "versionCode": 60,
-  "versionName": "5.14",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.14/Mallah-Navigator.apk",
-  "size": 2597767,
-  "notes": "جديد: الأذان في أوقات الصلاة — جعفري أو عام، يُرفع في وقته حتى والبرنامج مغلق.",
-  "sha256": "ec559593f221daa02508339326ee48d24fb1a684405de58610592f948b0123a3"
+  "versionCode": 61,
+  "versionName": "5.15",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.15/Mallah-Navigator.apk",
+  "size": 2610117,
+  "notes": "جديد: شريط «يومك» (الطقس الآن والصلاة القادمة وعدّاد رمضان)، تنبيه الطقس والوقود في الرحلات الطويلة، شريط الأسبوع وصورة الطقس للمشاركة، وتكبير الخط.",
+  "sha256": "cd29ce91944b601cbf40d35b04a91215267da471d6119afc4c190aa19e21f583"
 }

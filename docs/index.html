@@ -410,6 +410,23 @@ body.ui-wx #wxBtn{color:#38bdf8;border-color:#38bdf8}
 #tripBar .dot{width:9px;height:9px;border-radius:50%;background:#34d399;flex:none;animation:tripDot 1.4s infinite}
 @keyframes tripDot{50%{opacity:.25}}
 body.ui-nav #tripBar{top:calc(150px + env(safe-area-inset-top))}
+/* daily touches */
+#dayBar{display:flex;gap:8px;margin:0 0 8px}
+#dayBar .db{flex:1;min-width:0;display:flex;align-items:center;gap:6px;height:38px;padding:0 10px;border-radius:12px;background:var(--panel2);color:var(--text);font:inherit;font-size:13px;white-space:nowrap;overflow:hidden}
+#dayBar .di{font-size:17px}#dayBar b{font-size:14.5px}#dayBar .dt{color:var(--muted);overflow:hidden;text-overflow:ellipsis}
+#dayTip{display:flex;align-items:center;gap:8px;margin-top:10px;padding:8px 10px;border-radius:12px;background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.22);font-size:12.5px;line-height:1.55}
+#dayTip .tl{color:#7dd3fc;font-weight:700;white-space:nowrap}#dayTip .tt{flex:1}#dayTip.act{cursor:pointer}#dayTip .tx{color:var(--muted);font-size:14px;padding:0 4px}
+.quickRes{background:rgba(14,165,233,.12);cursor:pointer}.quickRes .ic{background:#0369a1}
+#routeNote{position:absolute;top:calc(160px + env(safe-area-inset-top));left:12px;right:12px;z-index:700;background:#1e293b;border:1px solid #38bdf8;border-radius:16px;padding:10px 12px;box-shadow:var(--shadow);font-size:13.5px;line-height:1.7}
+#routeNote.hidden{display:none}#routeNote .rb{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}#routeNote button{height:32px;padding:0 10px;border-radius:10px;background:var(--panel2);color:var(--text);font:inherit;font-size:12.5px}#routeNote [data-x]{margin-inline-start:auto}
+.wxWeek{display:flex;gap:4px;margin-top:8px;overflow-x:auto;scrollbar-width:none}
+.wxWeek button{flex:1;min-width:44px;display:flex;flex-direction:column;align-items:center;gap:1px;padding:5px 2px;border-radius:10px;background:var(--panel);color:var(--text);font:inherit}
+.wxWeek button.on{outline:2px solid #38bdf8}.wxWeek small{font-size:10.5px;color:var(--muted)}.wxWeek span{font-size:17px}.wxWeek b{font-size:13px}.wxWeek i{font-style:normal;font-size:10px;color:#7dd3fc}
+.wxSun{font-size:11.5px;color:var(--muted);margin-top:6px}
+.fsRow{display:flex;gap:8px;padding:4px 14px 14px}.fsRow button{flex:1;height:40px;border-radius:12px;background:var(--panel2);color:var(--text);font:inherit;font-weight:600}.fsRow button.on{background:#0369a1;color:#e0f2fe}
+.fsRow [data-fs="l"]{font-size:16px}.fsRow [data-fs="xl"]{font-size:18px}
+body.fs-l #searchWrap,body.fs-l .panel,body.fs-l .sheet,body.fs-l #navTop,body.fs-l #navBottom,body.fs-l #menuDrop,body.fs-l #modal,body.fs-l .wxModal,body.fs-l #routeNote{zoom:1.12}
+body.fs-xl #searchWrap,body.fs-xl .panel,body.fs-xl .sheet,body.fs-xl #navTop,body.fs-xl #navBottom,body.fs-xl #menuDrop,body.fs-xl #modal,body.fs-xl .wxModal,body.fs-xl #routeNote{zoom:1.25}
 #areaCrumbs{display:flex;flex-wrap:wrap;align-items:center;gap:4px;padding:12px 14px 2px;font-size:14.5px}
 #areaCrumbs button{color:var(--accent);font-weight:600;padding:4px 2px}
 #areaCrumbs b{padding:4px 2px}
@@ -906,6 +923,7 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
 <script src="teamqr.js"></script>
 <script src="trip.js"></script>
 <script src="prayer.js"></script>
+<script src="extras.js"></script>
 <script src="weather.js"></script>
 <script src="licadmin.js"></script>
 <script src="license.js"></script>

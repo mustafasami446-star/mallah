@@ -461,7 +461,7 @@ function wxEnsure() {
     <div class="wxSlide"><input type="range" id="wxRange" min="0" max="47" step="1" dir="ltr"><div id="wxWhen"></div></div>
     <div class="wxLegend" id="wxLegend"></div>
     <div class="wxInfo" id="wxInfo"></div>
-    <div class="wxBtns"><button class="chip" id="wxList">📋 كل المناطق</button><button class="chip" id="wxBell">🔔 التنبيهات</button></div>
+    <div class="wxBtns"><button class="chip" id="wxList">📋 كل المناطق</button><button class="chip" id="wxShare">📤 مشاركة</button><button class="chip" id="wxBell">🔔 التنبيهات</button></div>
     <div class="wxSrc" id="wxSrc"></div>`;
   document.body.appendChild(el);
   $('wxClose').onclick = closeWeather;
@@ -476,6 +476,7 @@ function wxEnsure() {
   $('wxPlay').onclick = () => (WX.play ? wxStop() : wxStart());
   $('wxList').onclick = () => openWxList();
   $('wxBell').onclick = () => wxAlertSettings();
+  $('wxShare').onclick = () => wxShareCard();
 }
 function wxStart() {
   const n = WX.mode === 'h' ? WX.data.hours : WX.data.days;
@@ -569,8 +570,70 @@ function wxRenderInfo() {
   const n = WX.sel && WX.ar && WX.ar.byId[WX.sel];
   if (!n) { $('wxInfo').innerHTML = '<div class="s">اضغط رقمًا على الخريطة أو «كل المناطق» لترى تفاصيل منطقة</div>'; return; }
   const fol = wxCfg.follow.includes(n.id);
-  $('wxInfo').innerHTML = `<div class="wxName"><b>${esc(arTitle(n))}</b>${n.k !== 'p' && n.up && WX.ar.byId[n.up] ? '<span class="s"> — ' + esc(arShort(WX.ar.byId[n.up])) + '</span>' : ''}<button class="wxFol${fol ? ' on' : ''}" id="wxFol" title="متابعة">${fol ? '⭐ متابَعة' : '☆ متابعة'}</button></div><div class="wxVals">${wxLine(wxValues(n.id), true)}</div>`;
+  $('wxInfo').innerHTML = `<div class="wxName"><b>${esc(arTitle(n))}</b>${n.k !== 'p' && n.up && WX.ar.byId[n.up] ? '<span class="s"> — ' + esc(arShort(WX.ar.byId[n.up])) + '</span>' : ''}<button class="wxFol${fol ? ' on' : ''}" id="wxFol" title="متابعة">${fol ? '⭐ متابَعة' : '☆ متابعة'}</button></div><div class="wxVals">${wxLine(wxValues(n.id), true)}</div>${wxWeekHtml(n.id)}${n.c && typeof sunMoonLine === 'function' ? '<div class="wxSun">' + sunMoonLine(n.c[1], n.c[0]) + '</div>' : ''}`;
   $('wxFol').onclick = () => wxToggleFollow(n.id);
+  $('wxInfo').querySelectorAll('[data-wd]').forEach((b) => { b.onclick = () => { wxStop(); WX.mode = 'd'; WX.idx = +b.dataset.wd; wxRender(); }; });
+}
+/* the week in one row: tap a day to see it on the map */
+function wxWeekDays(id) {
+  const keep = [WX.mode, WX.idx], out = [];
+  WX.mode = 'd';
+  for (let i = 0; i < WX.data.days; i++) { WX.idx = i; out.push(wxValues(id)); }
+  [WX.mode, WX.idx] = keep;
+  return out;
+}
+function wxWeekHtml(id) {
+  const days = wxWeekDays(id);
+  if (!days.some(Boolean)) return '';
+  return '<div class="wxWeek">' + days.map((v, i) => !v ? '' : `<button data-wd="${i}" class="${WX.mode === 'd' && WX.idx === i ? 'on' : ''}"><small>${wxDayLabel(i, true)}</small><span>${wxSym(v.s)[0]}</span><b>${v.tx != null ? v.tx + '°' : '—'}</b><small>${v.tn != null ? v.tn + '°' : ''}</small>${v.p != null && v.p >= 20 ? '<i>💧' + v.p + '%</i>' : ''}</button>`).join('') + '</div>';
+}
+/* a picture of the forecast to send in WhatsApp */
+async function wxShareCard() {
+  const n = WX.sel && WX.ar && WX.ar.byId[WX.sel];
+  if (!n) { toast('اختر منطقة أولًا'); return; }
+  const days = wxWeekDays(n.id).slice(0, 5), W = 1080, H = 1350, c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d');
+  const g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#0c4a6e'); g.addColorStop(0.55, '#0b1f3a'); g.addColorStop(1, '#07111f');
+  x.fillStyle = g; x.fillRect(0, 0, W, H);
+  x.direction = 'rtl'; x.textAlign = 'center';
+  const font = (w, s) => { x.font = w + ' ' + s + 'px Plex, system-ui, sans-serif'; };
+  x.fillStyle = '#bae6fd'; font('600', 40); x.fillText('🌦 الطقس', W / 2, 110);
+  x.fillStyle = '#ffffff'; font('800', 70); x.fillText(arTitle(n), W / 2, 200);
+  const today = days[0] || {};
+  // now: the current hour (sky and temperature); then today's range and chance of rain
+  const keep = [WX.mode, WX.idx]; WX.mode = 'h'; WX.idx = wxNowIdx(); const now = wxValues(n.id) || {}; [WX.mode, WX.idx] = keep;
+  const sNow = wxSym(now.s != null && now.s >= 0 ? now.s : today.s, now.night);
+  font('400', 190); x.fillText(sNow[0], W / 2, 430);
+  font('800', 120); x.fillText((now.t != null ? now.t : today.tx != null ? today.tx : '—') + '°', W / 2, 590);
+  x.fillStyle = '#e0f2fe'; font('600', 46); x.fillText('الآن: ' + sNow[1], W / 2, 665);
+  x.fillStyle = '#cbd5e1'; font('500', 38);
+  x.fillText('اليوم: العظمى ' + (today.tx != null ? today.tx : '—') + '° · الصغرى ' + (today.tn != null ? today.tn : '—') + '°' + (today.p != null ? ' · المطر ' + today.p + '%' : ''), W / 2, 730);
+  if (today.w != null) x.fillText('💨 الرياح حتى ' + kmh(today.w) + ' كم/س', W / 2, 785);
+  // the next days
+  const cw = (W - 120) / 4;
+  days.slice(1, 5).forEach((v, k) => {
+    const cx = W - 60 - cw * k - cw / 2, y = 850;
+    x.fillStyle = 'rgba(255,255,255,.07)'; x.beginPath(); x.roundRect ? x.roundRect(cx - cw / 2 + 10, y, cw - 20, 300, 28) : x.rect(cx - cw / 2 + 10, y, cw - 20, 300); x.fill();
+    if (!v) return;
+    x.fillStyle = '#bae6fd'; font('700', 38); x.fillText(wxDayLabel(k + 1, true), cx, y + 60);
+    font('400', 80); x.fillText(wxSym(v.s)[0], cx, y + 160);
+    x.fillStyle = '#fff'; font('800', 48); x.fillText((v.tx != null ? v.tx : '—') + '°', cx, y + 230);
+    x.fillStyle = '#94a3b8'; font('600', 34); x.fillText((v.tn != null ? v.tn : '—') + '°' + (v.p != null && v.p >= 20 ? '  💧' + v.p + '%' : ''), cx, y + 276);
+  });
+  // signature
+  if (location.protocol !== 'file:') try {
+    const logo = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = 'icon-192.png'; });
+    x.drawImage(logo, W / 2 + 120, H - 150, 80, 80);
+  } catch (e) {}
+  x.fillStyle = '#e0f2fe'; font('800', 46); x.fillText('الملاح', W / 2 - 10, H - 95);
+  x.fillStyle = '#94a3b8'; font('500', 28); x.direction = 'ltr'; x.fillText('mustafasami446-star.github.io/mallah/get', W / 2, H - 45);
+  const data = c.toDataURL('image/jpeg', 0.9), text = '🌦 طقس ' + arTitle(n) + ' — من تطبيق الملاح:\nhttps://mustafasami446-star.github.io/mallah/get/';
+  if (NATIVE && Android.shareImage) { if (!Android.shareImage(data.split(',')[1], 'mallah-weather.jpg', text)) toast('تعذّرت المشاركة'); return; }
+  try {
+    const blob = await (await fetch(data)).blob(), file = new File([blob], 'mallah-weather.jpg', { type: 'image/jpeg' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], text }); return; }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'mallah-weather.jpg'; a.click(); toast('✓ حُفظت الصورة في التنزيلات');
+  } catch (e) {}
 }
 function wxSelect(id) { WX.sel = id; wxRenderInfo(); wxDrawLabels(); wxrOn(); }
 function wxToggleFollow(id) {
