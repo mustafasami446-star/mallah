@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>الملاح — متابعة رحلة</title>
+<meta name="robots" content="noindex"><meta name="theme-color" content="#0b1220">
+<link rel="icon" href="../icon-192.png">
+<link rel="stylesheet" href="../lib/leaflet.css">
+<style>
+:root{--bg:#0b1220;--panel:#111a2e;--panel2:#1a2540;--line:rgba(148,163,184,.2);--text:#e6f1ff;--muted:#8fa6c8}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif}
+#map{position:absolute;inset:0}
+#card{position:absolute;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));z-index:500;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:14px 16px;box-shadow:0 10px 30px rgba(0,0,0,.45);max-width:520px;margin:0 auto}
+#card .top{display:flex;align-items:center;gap:10px}#card .av{width:42px;height:42px;border-radius:50%;background:#0ea5e9;display:grid;place-items:center;font-weight:800;font-size:18px;flex:none}
+#card h1{font-size:17px;margin:0}#card .s{color:var(--muted);font-size:13px;margin-top:2px}
+.big{font-size:22px;font-weight:800;color:#7dd3fc;margin:10px 0 2px}.row{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13.5px;margin-top:6px}
+.btns{display:flex;gap:8px;margin-top:12px}.btns a,.btns button{flex:1;height:40px;border-radius:12px;border:0;background:var(--panel2);color:var(--text);font:inherit;font-size:14px;font-weight:600;display:grid;place-items:center;text-decoration:none;cursor:pointer}
+.ok{color:#86efac}.warn{color:#fbbf24}.end{color:#fca5a5}
+.me{width:22px;height:22px;border-radius:50%;background:#0ea5e9;border:3px solid #fff;box-shadow:0 0 0 0 rgba(14,165,233,.6);animation:pulse 2s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 18px rgba(14,165,233,0)}100%{box-shadow:0 0 0 0 rgba(14,165,233,0)}}
+.flag{font-size:28px;line-height:30px;text-align:center}
+#brand{position:absolute;top:calc(10px + env(safe-area-inset-top));right:10px;z-index:500;background:rgba(15,23,42,.85);border:1px solid var(--line);border-radius:14px;padding:6px 12px;font-size:13px;display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--text)}
+#brand img{width:22px;height:22px;border-radius:6px}
+.leaflet-control-attribution{font-size:10px}
+</style></head><body>
+<div id="map"></div>
+<a id="brand" href="../get/"><img src="../icon-192.png" alt=""><b>الملاح</b><span style="color:var(--muted)">متابعة رحلة</span></a>
+<div id="card"><div class="top"><div class="av" id="av">…</div><div><h1 id="who">جارٍ الاتصال…</h1><div class="s" id="ago"></div></div></div>
+  <div class="big" id="state"></div><div class="row" id="info"></div>
+  <div class="btns"><button id="center">📍 أظهر موقعه</button><a id="gmaps" target="_blank" rel="noopener">🗺 في خرائط Google</a></div></div>
+<script src="../lib/leaflet.js"></script>
+<script>
+'use strict';
+const API = 'AIzaSyDkpiVF2DqoGE1tJPylYYXlMkgZOju5Elk';
+const DBS = ['https://mallah-team-default-rtdb.europe-west1.firebasedatabase.app', 'https://mallah-team-default-rtdb.firebaseio.com', 'https://mallah-team-default-rtdb.asia-southeast1.firebasedatabase.app'];
+const $ = (id) => document.getElementById(id);
+const te = new TextEncoder();
+const hex = (u) => [...u].map((b) => b.toString(16).padStart(2, '0')).join('');
+const unb64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+const sha = async (s) => new Uint8Array(await crypto.subtle.digest('SHA-256', te.encode(s)));
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const clock = (ms) => new Date(ms).toLocaleTimeString('ar-IQ-u-nu-latn', { hour: 'numeric', minute: '2-digit' });
+const dist = (m) => (m >= 1000 ? (m / 1000).toFixed(m >= 10000 ? 0 : 1) + ' كم' : Math.round(m) + ' م');
+function hav(a, b) { const R = 6371000, r = Math.PI / 180, dl = (b[0] - a[0]) * r, dn = (b[1] - a[1]) * r; const x = Math.sin(dl / 2) ** 2 + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.sin(dn / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(x)); }
+
+const code = decodeURIComponent(location.hash.slice(1)).toUpperCase().replace(/[^A-Z2-9]/g, '');
+const map = L.map('map', { zoomControl: false, attributionControl: true }).setView([33.3, 44.4], 6);
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Esri, OpenStreetMap' }).addTo(map);
+let mark = null, flag = null, line = null, last = null, follow = true, key = null;
+map.on('dragstart', () => { follow = false; });
+
+function fail(t) { $('who').textContent = t; $('state').textContent = ''; $('av').textContent = '!'; }
+async function token() {
+  let a = null; try { a = JSON.parse(localStorage.getItem('tripAuth') || 'null'); } catch (e) {}
+  if (a && a.exp - 120000 > Date.now()) return a.id;
+  let r, j;
+  if (a && a.refresh) {
+    r = await fetch('https://securetoken.googleapis.com/v1/token?key=' + API, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'grant_type=refresh_token&refresh_token=' + encodeURIComponent(a.refresh) });
+    if (r.ok) { j = await r.json(); a = { id: j.id_token, refresh: j.refresh_token, exp: Date.now() + (+j.expires_in || 3600) * 1000 }; } else a = null;
+  } else a = null;
+  if (!a) {
+    r = await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=' + API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"returnSecureToken":true}' });
+    if (!r.ok) throw new Error('auth'); j = await r.json(); a = { id: j.idToken, refresh: j.refreshToken, exp: Date.now() + (+j.expiresIn || 3600) * 1000 };
+  }
+  try { localStorage.setItem('tripAuth', JSON.stringify(a)); } catch (e) {}
+  return a.id;
+}
+async function db() {
+  const k = localStorage.getItem('tripDb'); if (k) return k;
+  for (const c of DBS) { try { const r = await fetch(c + '/.json?shallow=true'), t = await r.text(); if ((r.status === 401 || r.status === 200) && !/different region|not found/i.test(t)) { localStorage.setItem('tripDb', c); return c; } } catch (e) {} }
+  return DBS[0];
+}
+async function dec(s) {
+  try { const [iv, ct] = String(s).split('.'); return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(iv) }, key, unb64(ct)))); } catch (e) { return null; }
+}
+let tree = {};
+function setAt(path, data) {
+  const parts = path.split('/').filter(Boolean);
+  if (!parts.length) { tree = data || {}; return; }
+  let o = tree; for (let i = 0; i < parts.length - 1; i++) { o[parts[i]] = o[parts[i]] || {}; o = o[parts[i]]; }
+  if (data === null) delete o[parts[parts.length - 1]]; else o[parts[parts.length - 1]] = data;
+}
+async function show() {
+  let rec = null;
+  for (const m of Object.values(tree.members || {})) { if (!m || !m.e) continue; const v = await dec(m.e); if (v && (!rec || v.t > rec.t)) rec = v; }
+  if (!rec) { if (tree.meta) { $('who').textContent = 'بانتظار أول موقع…'; } else fail('الرابط غير صحيح أو انتهت صلاحيته'); return; }
+  last = rec;
+  $('av').textContent = (rec.n || '؟').trim().charAt(0);
+  $('who').textContent = rec.n || '—';
+  document.title = 'الملاح — ' + (rec.n || '') + (rec.dest ? ' في الطريق إلى ' + rec.dest.n : '');
+  const ll = [rec.lat, rec.lng];
+  if (!mark) mark = L.marker(ll, { icon: L.divIcon({ className: '', html: '<div class="me"></div>', iconSize: [22, 22], iconAnchor: [11, 11] }) }).addTo(map);
+  else mark.setLatLng(ll);
+  if (rec.dest) {
+    const d = [rec.dest.lat, rec.dest.lng];
+    if (!flag) flag = L.marker(d, { icon: L.divIcon({ className: 'flag', html: '🏁', iconSize: [30, 30], iconAnchor: [8, 28] }) }).addTo(map).bindTooltip(esc(rec.dest.n), { direction: 'top' });
+    if (line) line.setLatLngs([ll, d]); else line = L.polyline([ll, d], { color: '#0ea5e9', weight: 3, dashArray: '6 8' }).addTo(map);
+  }
+  if (follow) { if (rec.dest && !show.fitted) { map.fitBounds(L.latLngBounds([ll, [rec.dest.lat, rec.dest.lng]]), { padding: [60, 60], maxZoom: 15 }); show.fitted = true; } else map.setView(ll, Math.max(map.getZoom(), 13)); }
+  $('gmaps').href = 'https://maps.google.com/?q=' + rec.lat + ',' + rec.lng;
+  render();
+}
+function render() {
+  const rec = last; if (!rec) return;
+  const age = Math.round((Date.now() - rec.t) / 60000);
+  $('ago').textContent = 'آخر تحديث ' + (age < 1 ? 'الآن' : 'قبل ' + age + ' د') + (rec.b != null ? ' · 🔋 ' + rec.b + '%' : '') + (rec.a ? ' · الدقة ±' + rec.a + ' م' : '');
+  const info = [];
+  let state = '';
+  if (rec.end) state = '<span class="end">انتهت مشاركة الرحلة</span>';
+  else if (rec.arr) state = '<span class="ok">✅ وصل' + (rec.dest ? ' إلى ' + esc(rec.dest.n) : '') + ' ' + clock(rec.arr) + '</span>';
+  else if (rec.dest) {
+    const rem = rec.rem != null ? rec.rem : hav([rec.lat, rec.lng], [rec.dest.lat, rec.dest.lng]);
+    let eta = rec.eta && rec.eta > Date.now() - 60000 ? rec.eta : null;
+    if (!eta) { const sp = rec.s && rec.s > 2 ? rec.s : 11; eta = rec.t + rem * 1.25 / sp * 1000; }
+    state = 'في الطريق إلى ' + esc(rec.dest.n);
+    info.push('⏱ الوصول المتوقع <b>' + clock(eta) + '</b>', '📏 متبقٍ ' + dist(rem));
+  } else state = '📍 يشارك موقعه معك';
+  if (!rec.end && !rec.arr && rec.s != null && rec.s > 1) info.push('🚗 ' + Math.round(rec.s * 3.6) + ' كم/س');
+  if (!rec.end && age >= 10) info.push('<span class="warn">⚠️ لم يصل تحديث منذ ' + age + ' دقيقة — قد يكون بلا إنترنت</span>');
+  $('state').innerHTML = state; $('info').innerHTML = info.join('');
+}
+setInterval(render, 30000);
+$('center').onclick = () => { follow = true; if (last) map.setView([last.lat, last.lng], Math.max(map.getZoom(), 15)); };
+
+let es = null, retry = 0;
+async function connect() {
+  try {
+    const base = await db(), tok = await token();
+    if (es) es.close();
+    es = new EventSource(base + '/groups/' + gid + '.json?auth=' + encodeURIComponent(tok));
+    const on = (patch) => (ev) => { let d; try { d = JSON.parse(ev.data); } catch (e) { return; } if (!d) return; retry = 0;
+      if (patch) Object.keys(d.data || {}).forEach((k) => setAt((d.path === '/' ? '' : d.path) + '/' + k, d.data[k])); else setAt(d.path, d.data);
+      show(); };
+    es.addEventListener('put', on(false)); es.addEventListener('patch', on(true));
+    es.addEventListener('auth_revoked', () => { localStorage.removeItem('tripAuth'); setTimeout(connect, 500); });
+    es.onerror = () => { es.close(); setTimeout(connect, Math.min(30000, 2000 * ++retry)); };
+  } catch (e) { $('ago').textContent = 'لا يوجد إنترنت — إعادة المحاولة…'; setTimeout(connect, Math.min(30000, 3000 * ++retry)); }
+}
+let gid = null;
+(async () => {
+  if (code.length !== 20) { fail('الرابط غير مكتمل — اطلب من صاحبه إرساله مرة أخرى'); return; }
+  gid = hex(await sha('mallah-group|' + code)).slice(0, 24);
+  key = await crypto.subtle.importKey('raw', await sha('mallah-key|' + code), 'AES-GCM', false, ['decrypt']);
+  connect();
+})();
+</script></body></html>

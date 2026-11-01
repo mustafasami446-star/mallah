@@ -1,8 +1,8 @@
 {
-  "versionCode": 57,
-  "versionName": "5.11",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.11/Mallah-Navigator.apk",
-  "size": 2573008,
-  "notes": "في الطقس: اختر منطقة فيهطل المطر داخل حدودها بقدر المطر المتوقع، والرياح تتحرك على الخريطة.",
-  "sha256": "1c0568a1835b80bb3b0da6bc5fd85b4fb8b0adc8d7706ed45ec2cd7ad08d30c0"
+  "versionCode": 58,
+  "versionName": "5.12",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.12/Mallah-Navigator.apk",
+  "size": 2589575,
+  "notes": "جديد: شارك رحلتك مع العائلة برابط مباشر يفتح بأي متصفح حتى تصل، وأوقات الصلاة واتجاه القبلة بدون إنترنت.",
+  "sha256": "4820de7074935de517f801167a3cd854e6fb0ea43f86e8e9b3fc092ca765153d"
 }

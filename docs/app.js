@@ -782,6 +782,7 @@ window.handleBack = function () {
   if (typeof areasHandleBack === 'function' && areasHandleBack()) return true;
   if (typeof qrHandleBack === 'function' && qrHandleBack()) return true;
   if (typeof wxHandleBack === 'function' && wxHandleBack()) return true;
+  if (typeof prHandleBack === 'function' && prHandleBack()) return true;
   if (typeof teamHandleBack === 'function' && teamHandleBack()) return true;
   if (typeof vecHandleBack === 'function' && vecHandleBack()) return true;
   for (const id of ['mapsPanel', 'savedPanel', 'favPanel']) if (!$(id).classList.contains('hidden')) { $(id).classList.add('hidden'); return true; }

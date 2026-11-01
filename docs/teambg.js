@@ -8,15 +8,20 @@ let teamBg = store.get('teamBg', true), teamSms = store.get('teamSms', { on: fal
 let bgHash = '', bgAsked = store.get('teamBgAsked', false);
 
 async function rawKeyB64(code) { return b64(await sha('mallah-key|' + code.replace(/-/g, ''))); }
-function bgWanted() { return BG_OK && team && !teamPaused && teamBg; }
+const teamBgWanted = () => BG_OK && team && !teamPaused && teamBg;
+function bgWanted() { return teamBgWanted() || (BG_OK && typeof trip !== 'undefined' && !!trip); }
 async function bgSync(force) {
   if (!BG_OK) return;
   let running = false; try { running = Android.teamRunning(); } catch (e) {}
   if (!bgWanted()) { if (running) { try { Android.teamStop(); } catch (e) {} } bgHash = ''; return; }
   if (document.visibilityState !== 'visible' || !fbAuth) return;     // Android only allows starting it from the screen
   await fbDb();
-  const cfg = { db: TEAM_FB.db, apiKey: TEAM_FB.apiKey, gid: team.gid, key: await rawKeyB64(team.code), uid: fbAuth.uid, refresh: fbAuth.refresh,
-    name: team.me.n, color: team.me.c, group: teamView.name || team.name || '', sos: teamSos || 0, smsOn: !!(teamSms.on && teamSms.to), smsTo: teamSms.to || '' };
+  const tm = teamBgWanted();
+  const cfg = tm
+    ? { db: TEAM_FB.db, apiKey: TEAM_FB.apiKey, gid: team.gid, key: await rawKeyB64(team.code), uid: fbAuth.uid, refresh: fbAuth.refresh,
+      name: team.me.n, color: team.me.c, group: teamView.name || team.name || '', sos: teamSos || 0, smsOn: !!(teamSms.on && teamSms.to), smsTo: teamSms.to || '' }
+    : { db: TEAM_FB.db, apiKey: TEAM_FB.apiKey, gid: '', key: '', uid: fbAuth.uid, refresh: fbAuth.refresh, name: store.get('tripName', '') };
+  if (window.tripBg) { const tr = await window.tripBg(); if (tr) { cfg.trip = tr; if (tm) cfg.tripName = store.get('tripName', ''); } }
   const h = JSON.stringify(cfg);
   if (!force && running && h === bgHash) return;
   bgHash = h;
@@ -26,6 +31,7 @@ setInterval(() => bgSync(false), 5000);
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState !== 'visible' || !BG_OK) return;
   let ev = null; try { ev = Android.teamTakeEvent(); } catch (e) {}
+  if (ev && window.tripOnEvent) window.tripOnEvent(ev);
   if (ev === 'paused' && team) { teamPaused = true; store.set('teamPaused', true); renderTeam(); toast('✋ أوقفتَ مشاركة موقعك من الإشعار'); }
   bgSync(false);
 });
