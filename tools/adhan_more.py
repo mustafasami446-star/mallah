@@ -53,11 +53,14 @@ for c in cands: print('C', c['t'], '|', round(c['len']), '|', c['lic'], '|', c['
 from faster_whisper import WhisperModel
 m = WhisperModel('small', device='cpu', compute_type='int8')
 os.makedirs('out', exist_ok=True); keep = []
+cands = [c for c in cands if not (c.get('size') and c['size'] > 80e6)]
+cands.sort(key=lambda c: (0 if re.search(r'شیعه|shia|karbala|najaf|کربلا|نجف|mashhad|مشهد|رضا|Iran|ایران|ماهور|ترکی|Tasnim|Mehr|Baku|Bahrain', c['t'] + c['desc'], re.I) else 1, c.get('size') or 0))
+cands = cands[:45]
+print('to transcribe', len(cands), flush=True)
 for n, c in enumerate(cands):
-    if c.get('size') and c['size'] > 400e6: continue
     try:
         open('in', 'wb').write(get(c['url']))
-        subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', 'in', '-vn', '-ac', '1', '-ar', '16000', '-t', '420', 'w.wav'], check=True)
+        subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', 'in', '-vn', '-ac', '1', '-ar', '16000', '-t', '240', 'w.wav'], check=True)
         segs, _ = m.transcribe('w.wav', language='ar', beam_size=1)
         txt = ' '.join(s.text.strip() for s in segs)
         shia = bool(re.search(r'علي|عليا|عليًا|ولي الله|خير العمل|خير الع|خير الرم', txt))
