@@ -1,6 +1,7 @@
 name: Weather forecast
 
-# Every two hours: the forecast for every district and sub-district of Iraq (MET Norway, CC BY 4.0),
+# Every two hours: the forecast for every district and sub-district of Iraq (MET Norway; chances of rain
+# and gusts from the ECMWF ensemble — both CC BY 4.0),
 # published on the "weather" branch (one commit, replaced each time, so the repository does not grow).
 # The app reads https://raw.githubusercontent.com/mustafasami446-star/mallah/weather/weather.json
 on:
@@ -27,7 +28,9 @@ jobs:
             updates/areas.json
           sparse-checkout-cone-mode: false
       - name: Forecast
-        run: python3 tools/weather.py updates/areas.json out
+        run: |
+          pip install -q ecmwf-opendata eccodes || echo "no ECMWF libraries — chances of rain left out"
+          python3 tools/weather.py updates/areas.json out
       - name: Publish
         env:
           TOKEN: ${{ secrets.GITHUB_TOKEN }}

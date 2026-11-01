@@ -2,7 +2,8 @@
 """الملاح — نشرة الطقس لكل محافظات العراق وأقضيتها ونواحيها.
 
 Runs on GitHub every two hours. Asks MET Norway (free, commercial use allowed, CC BY 4.0) for the
-forecast at every district / sub-district centre and on a 0.5° grid over Iraq, and writes:
+forecast at every district / sub-district centre and on a 0.5° grid over Iraq; the chance of rain and of
+strong gusts for each day comes from the ECMWF ensemble (open data, CC BY 4.0). Writes:
   weather.json  everything the app shows (48 hours hour by hour, 7 days, the colour grid)
   alerts.json   only the warnings (heavy rain, strong wind, storms, heat, frost) — small, for the phone
                 to check in the background
@@ -164,7 +165,52 @@ def alerts_for(aid, h, d, start, day0):
         if d['tx'][i] is not None and d['tx'][i] >= 49 and 'heat' not in seen: add('heat', i, d['tx'][i], when); seen.add('heat')
         if d['tn'][i] is not None and d['tn'][i] <= 0 and 'frost' not in seen: add('frost', i, d['tn'][i], when); seen.add('frost')
         if d['r'][i] is not None and d['r'][i] >= 200 and 'rain' not in seen: add('rain', i, round(d['r'][i] / 10), when); seen.add('rain')
+        if i < 3 and (d.get('p10') or [None] * DAYS)[i] is not None and d['p10'][i] >= 60 and 'rain' not in seen: add('rain', i, -d['p10'][i], when); seen.add('rain')   # v<0: a chance in %
+        if i < 3 and (d.get('g15') or [None] * DAYS)[i] is not None and d['g15'][i] >= 60 and 'wind' not in seen: add('wind', i, -d['g15'][i], when); seen.add('wind')
     return out
+
+
+def ecmwf_chances(day0, days):
+    """chance (%) of ≥1 mm, ≥10 mm of rain and of gusts over 15 m/s, for each Iraqi day, from the latest
+    00 UTC ECMWF ensemble (its 24-hour windows 00–24 UTC are 03:00–03:00 in Iraq). None when unavailable."""
+    try:
+        from ecmwf.opendata import Client
+        import eccodes
+    except Exception as e:
+        print('ecmwf: no library', e); return None
+    steps = ['%d-%d' % (24 * k, 24 * k + 24) for k in range(days + 2)]
+    try:
+        res = Client(source='ecmwf').retrieve(type='ep', time=0, step=steps, param=['tpg1', 'tpg10', '10fgg15'], target='ep.grib2')
+    except Exception as e:
+        print('ecmwf: download failed', str(e)[:200]); return None
+    run = res.datetime.date()
+    fields = {}
+    with open('ep.grib2', 'rb') as f:
+        while True:
+            h = eccodes.codes_grib_new_from_file(f)
+            if h is None: break
+            name, rng = eccodes.codes_get(h, 'shortName'), eccodes.codes_get(h, 'stepRange')
+            ni, nj = eccodes.codes_get(h, 'Ni'), eccodes.codes_get(h, 'Nj')
+            la0, lo0 = eccodes.codes_get(h, 'latitudeOfFirstGridPointInDegrees'), eccodes.codes_get(h, 'longitudeOfFirstGridPointInDegrees')
+            inc = eccodes.codes_get(h, 'iDirectionIncrementInDegrees')
+            fields[(name, int(rng.split('-')[0]) // 24)] = (eccodes.codes_get_values(h), ni, nj, la0, lo0, inc)
+            eccodes.codes_release(h)
+    print('ecmwf run', res.datetime, 'fields', len(fields))
+    def at(name, k, lat, lon):
+        fl = fields.get((name, k))
+        if fl is None: return None
+        v, ni, nj, la0, lo0, inc = fl
+        j = int(round((la0 - lat) / inc)); i = int(round(((lon - lo0) % 360) / inc))
+        if not (0 <= j < nj and 0 <= i < ni): return None
+        x = float(v[j * ni + i])
+        return None if x != x or x > 100.5 or x < -0.5 else round(x)
+    def chances(lat, lon):
+        out = dict(p=[], p10=[], g15=[])
+        for i in range(days):
+            k = (day0 + dt.timedelta(days=i) - run).days
+            out['p'].append(at('tpg1', k, lat, lon)); out['p10'].append(at('tpg10', k, lat, lon)); out['g15'].append(at('10fgg15', k, lat, lon))
+        return out
+    return chances
 
 
 def main():
@@ -176,26 +222,31 @@ def main():
     grid = [(j, i, GRID['lat0'] + j * GRID['step'], GRID['lon0'] + i * GRID['step']) for j in range(GRID['ny']) for i in range(GRID['nx'])]
     t0 = time.time()
     with ThreadPoolExecutor(8) as ex:                # MET Norway asks for < 20 requests a second
-        area_docs = list(ex.map(lambda p: fetch('complete', p[1], p[2]), pts))
+        area_docs = list(ex.map(lambda p: fetch('compact', p[1], p[2]), pts))
         grid_docs = list(ex.map(lambda g: fetch('compact', g[2], g[3]), grid))
     ok = sum(1 for x in area_docs if x) + sum(1 for x in grid_docs if x)
     print('fetched %d/%d in %.0fs' % (ok, len(pts) + len(grid), time.time() - t0))
     if sum(1 for x in area_docs if x) < len(pts) * 0.8: sys.exit('too many failures — keeping the previous forecast')
 
+    chance = ecmwf_chances(day0, DAYS)
     A, alerts = {}, []
     for (aid, lat, lon), doc in zip(pts, area_docs):
         if not doc: continue
         ser = series(doc)
         h, d = hourly(ser, start), daily(ser, day0)
+        if chance:
+            c = chance(lat, lon)
+            d['p'] = c['p']; d['p10'] = c['p10']; d['g15'] = c['g15']
         A[aid] = dict(h=h, d=d)
         alerts += alerts_for(aid, h, d, start, day0)
     # the grid: hour by hour temperature, rain, wind (speed + direction); day by day max temperature, rain, wind
-    G = dict(GRID, h=dict(t=[], r=[], w=[], d=[]), d=dict(tx=[], tn=[], r=[], w=[]))
+    G = dict(GRID, h=dict(t=[], r=[], w=[], d=[]), d=dict(tx=[], tn=[], r=[], w=[], p=[]))
     for (j, i, lat, lon), doc in zip(grid, grid_docs):
         ser = series(doc)
         h, d = hourly(ser, start), daily(ser, day0)
         for k in ('t', 'r', 'w', 'd'): G['h'][k].append(h[k])
         for k in ('tx', 'tn', 'r', 'w'): G['d'][k].append(d[k])
+        G['d']['p'].append(chance(lat, lon)['p'] if chance else [None] * DAYS)
     meta = dict(v=1, made=dt.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'), start=start.strftime('%Y-%m-%dT%H:00Z'),
                 day0=day0.isoformat(), hours=HOURS, days=DAYS, sym=SYM,
                 src='بيانات الطقس: MET Norway (المعهد النرويجي للأرصاد) — CC BY 4.0')
@@ -208,7 +259,7 @@ def main():
     for a in areas:
         if a['p'] == 'basra' and a['k'] == 'd' and a['id'] in A:
             x = A[a['id']]
-            print(a['ar'], 'T', x['h']['t'][:6], 'P', x['h']['p'][:6], 'W', x['h']['w'][:6], 'days tx', x['d']['tx'], 'p', x['d']['p'], 's', x['d']['s'])
+            print(a['ar'], 'T', x['h']['t'][:6], 'R', x['h']['r'][:6], 'W', x['h']['w'][:6], 'days tx', x['d']['tx'], 'r', x['d']['r'], 'p', x['d']['p'], 'p10', x['d'].get('p10'), 'g15', x['d'].get('g15'), 's', x['d']['s'])
             break
 
 
