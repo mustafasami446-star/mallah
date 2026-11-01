@@ -1,8 +1,8 @@
 {
-  "versionCode": 58,
-  "versionName": "5.12",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.12/Mallah-Navigator.apk",
-  "size": 2589575,
-  "notes": "جديد: شارك رحلتك مع العائلة برابط مباشر يفتح بأي متصفح حتى تصل، وأوقات الصلاة واتجاه القبلة بدون إنترنت.",
-  "sha256": "4820de7074935de517f801167a3cd854e6fb0ea43f86e8e9b3fc092ca765153d"
+  "versionCode": 59,
+  "versionName": "5.13",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.13/Mallah-Navigator.apk",
+  "size": 2597767,
+  "notes": "تحسينات في الثبات والأمان، ومشاركة الرحلة مع العائلة، وأوقات الصلاة والقبلة.",
+  "sha256": "87b16135bdbbe57ef01ca7281258b0d812e3a538ef74cbad2975acba6f838539"
 }

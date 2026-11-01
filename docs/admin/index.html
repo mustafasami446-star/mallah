@@ -29,6 +29,8 @@ const NAT = !!(window.Android && Android.bioAuth);           // inside the Andro
 function copyA(t) { if (NAT) { Android.copy(t); msgA('✓ نُسخ'); return; } navigator.clipboard.writeText(t).then(() => msgA('✓ نُسخ'), () => prompt('انسخ:', t)); }
 const openA = (u) => (NAT ? Android.openUrl(u) : window.open(u, '_blank')), confirmA = (m) => window.confirm(m);
 window.onFileSaved = (ok) => msgA(ok ? '✓ حُفظت النسخة' : 'لم تُحفظ النسخة');
+/* Android app: watch for new crash reports every hour, with a notification */
+window.licaWatch = () => { if (NAT && Android.watchCrash) { lsDb().then((db) => Android.watchCrash(db, LSYNC.api)).catch(() => {}); } };
 function saveA(name, text) {
   if (NAT) { Android.saveFile(name, text); return; }
   const blob = new Blob([text], { type: 'application/json' }), file = new File([blob], name, { type: 'application/json' });
@@ -143,12 +145,48 @@ async function lsDb() {
   }
   return (LSYNC.db = LSYNC.dbs[0]);
 }
-async function lsReq(method, path, body) {
+async function lsReq(method, path, body, query) {
   const db = await lsDb(), tok = await lsToken();
-  const r = await fetch(db + path + '.json?auth=' + encodeURIComponent(tok), { method, headers: { 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) });
+  const r = await fetch(db + path + '.json?auth=' + encodeURIComponent(tok) + (query || ''), { method, headers: { 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) });
   if (r.status === 401 || r.status === 403) throw new Error('rules');
   if (!r.ok) throw new Error('db ' + r.status);
   return r.json();
+}
+/* ---------------- crash reports from the users' phones ----------------
+   Each report is sealed with the public key inside the app; only the secret key here opens it. */
+let licaCrashKey = null;
+async function licaOpenCrash(r) {
+  if (!licaCrashKey) {
+    const k = localStorage.getItem('licAdminKey'); if (!k) return null;
+    licaCrashKey = await crypto.subtle.importKey('pkcs8', lsUnB64(k), { name: 'ECDH', namedCurve: 'P-256' }, false, ['deriveKey']);
+  }
+  try {
+    const pub = await crypto.subtle.importKey('raw', lsUnB64(r.k), { name: 'ECDH', namedCurve: 'P-256' }, false, []);
+    const key = await crypto.subtle.deriveKey({ name: 'ECDH', public: pub }, licaCrashKey, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+    const raw = lsUnB64(r.e);
+    return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: raw.slice(0, 12) }, key, raw.slice(12))));
+  } catch (e) { return null; }
+}
+/* the last 300 reports, opened and grouped: the same error on many phones is one line with a count */
+async function licaCrashes() {
+  const all = (await lsReq('GET', '/crash', undefined, '&orderBy=' + encodeURIComponent('"$key"') + '&limitToLast=300')) || {};
+  const groups = {};
+  for (const [id, r] of Object.entries(all)) {
+    if (!r) continue;
+    const o = r.e && r.k ? await licaOpenCrash(r) : (r.m ? r : null);      // (the first reports were not sealed yet)
+    if (!o) continue;
+    const top = String(o.s || '').split('\n').map((x) => x.trim()).filter((x) => x && x !== o.m && !x.startsWith('TypeError') && !x.startsWith('Error'))[0] || '';
+    const sig = (o.m || '').slice(0, 160) + '|' + top.replace(/:\d+:\d+\)?$/, '');
+    const g = groups[sig] || (groups[sig] = { sig, m: o.m, s: o.s, k: o.k, n: 0, devs: new Set(), vers: new Set(), uis: new Set(), first: Infinity, last: 0, ids: [] });
+    g.n++; g.devs.add(o.d || '?'); g.vers.add(o.v || r.v || '?'); if (o.ui) g.uis.add(o.ui);
+    const t = r.t || o.at || 0; g.first = Math.min(g.first, t); if (t > g.last) { g.last = t; g.s = o.s; }
+    g.ids.push(id);
+  }
+  return Object.values(groups).sort((a, b) => b.last - a.last);
+}
+function licaCrashText(g) {
+  return '🐞 عطل في الملاح\n' + g.m + '\n\nعدد المرات: ' + g.n + ' · الأجهزة: ' + [...g.devs].join('، ') + '\nالإصدارات: ' + [...g.vers].join('، ')
+    + '\nآخر مرة: ' + new Date(g.last).toLocaleString('ar-IQ-u-nu-latn') + (g.uis.size ? '\nالشاشة: ' + [...g.uis].join(' / ') : '') + '\n\n' + (g.s || '');
 }
 function licaSaveLog() { localStorage.setItem('licAdminLog', JSON.stringify(LICA.log)); }
 function licaMerge(list) {
@@ -201,6 +239,7 @@ function licaPanel(root) {
     <div class="btnRow"><button class="chip go" id="laMake">🔑 توليد الرمز</button></div>
     <div id="laOut"></div></div>
     <div class="card"><h3>السجل (${LICA.log.length})</h3><div class="s" id="laSync" style="padding:4px 14px 8px"></div><div class="btnRow" style="padding-bottom:8px"><button class="chip" id="laSyncGo">🔄 مزامنة الآن</button></div><div id="laLog"></div></div>
+    <div class="card"><h3 id="laCrH">🐞 أعطال المستخدمين</h3><div class="s" id="laCrS" style="padding:4px 14px 8px"></div><div class="btnRow" style="padding-bottom:8px"><button class="chip" id="laCrGo">🔄 تحديث</button><button class="chip" id="laCrAll">إظهار التي أُصلحت</button></div><div id="laCr"></div></div>
     <div class="card"><h3>💾 نسخة احتياطية</h3><div class="btnRow"><button class="chip go" id="laBackup">💾 حفظ نسخة من السجل</button><button class="chip" id="laRestore">📂 استعادة نسخة</button><input type="file" id="laFile" accept=".json,application/json" hidden></div>
     <div class="btnRow"><button class="chip" id="laPin">🔒 تغيير رمز PIN</button><button class="chip" id="laLockNow">🔒 قفل الآن</button><button class="chip del" id="laForget">🗑 حذف المفتاح من هذا الجهاز</button></div>
     <div class="s" style="padding:6px 14px 12px;color:var(--muted);line-height:1.7">المفتاح السري محفوظ على هذا الجهاز فقط. لا ترسله لأحد: من يملكه يستطيع تفعيل أي جهاز.</div></div>`;
@@ -219,6 +258,36 @@ function licaPanel(root) {
   q('laSync').textContent = licaSyncText();
   q('laSyncGo').onclick = sync;
   sync();
+  // crash reports
+  let crShowAll = false, crGroups = [];
+  const fixed = () => { try { return JSON.parse(localStorage.getItem('licCrashFixed') || '[]'); } catch (e) { return []; } };
+  const drawCr = () => {
+    const fx = fixed(), seen = +localStorage.getItem('licCrashSeen') || 0;
+    const list = crGroups.filter((g) => crShowAll || !fx.includes(g.sig));
+    const fresh = crGroups.filter((g) => !fx.includes(g.sig) && g.last > seen).length;
+    q('laCrH').textContent = '🐞 أعطال المستخدمين' + (fresh ? ' — ' + fresh + ' جديدة' : '');
+    q('laCrS').textContent = crGroups.length ? (list.length ? 'الأحدث أولًا. اضغط عطلًا لترى تفاصيله.' : '✓ لا توجد أعطال مفتوحة') : '✓ لم يصل أي عطل';
+    q('laCrAll').textContent = crShowAll ? 'إخفاء التي أُصلحت' : 'إظهار التي أُصلحت';
+    q('laCr').innerHTML = list.map((g, i) => `<div class="res laCrRow" style="display:block;cursor:pointer" data-i="${i}">
+      <div class="t" style="${fx.includes(g.sig) ? 'opacity:.55;text-decoration:line-through' : ''}">${g.last > seen && !fx.includes(g.sig) ? '🔴 ' : ''}${escA(g.m)}</div>
+      <div class="s">${g.n} مرة · ${g.devs.size} جهاز · ${escA([...g.vers].join('، '))} · آخرها ${escA(new Date(g.last).toLocaleString('ar-IQ-u-nu-latn', { day: 'numeric', month: 'numeric', hour: 'numeric', minute: '2-digit' }))}</div>
+      <div class="laCrMore hidden"><div class="s" style="margin-top:6px">الأجهزة: ${escA([...g.devs].join('، '))}${g.uis.size ? '<br>الشاشة: ' + escA([...g.uis].join(' / ')) : ''}</div>
+        <pre dir="ltr" style="white-space:pre-wrap;word-break:break-all;font-size:11px;background:var(--panel2);padding:8px;border-radius:10px;max-height:220px;overflow:auto">${escA(g.s || '')}</pre>
+        <div class="btnRow" style="padding:0"><button class="chip" data-copy="${i}">📋 نسخ للإرسال</button><button class="chip go" data-fix="${i}">${fx.includes(g.sig) ? '↩ إعادة فتح' : '✓ تم الإصلاح'}</button></div></div></div>`).join('');
+    q('laCr').querySelectorAll('.laCrRow').forEach((row) => { row.onclick = (e) => { if (e.target.closest('button')) return; row.querySelector('.laCrMore').classList.toggle('hidden'); }; });
+    q('laCr').querySelectorAll('[data-copy]').forEach((b) => { b.onclick = () => copyA(licaCrashText(list[+b.dataset.copy])); });
+    q('laCr').querySelectorAll('[data-fix]').forEach((b) => { b.onclick = () => { const g = list[+b.dataset.fix], f = fixed(), i = f.indexOf(g.sig); if (i >= 0) f.splice(i, 1); else f.push(g.sig); localStorage.setItem('licCrashFixed', JSON.stringify(f.slice(-500))); drawCr(); }; });
+  };
+  const loadCr = () => {
+    if (!root.isConnected) return;
+    q('laCrS').textContent = 'جارٍ التحميل…';
+    licaCrashes().then((g) => { crGroups = g; drawCr(); setTimeout(() => localStorage.setItem('licCrashSeen', String(Date.now())), 4000); })
+      .catch((e) => { if (q('laCrS')) q('laCrS').textContent = e && e.message === 'rules' ? '⚠️ انشر قواعد Firebase الجديدة (فيها crash) لترى الأعطال' : '⚠️ تعذّر التحميل — تحقق من الإنترنت'; });
+  };
+  q('laCrGo').onclick = loadCr;
+  q('laCrAll').onclick = () => { crShowAll = !crShowAll; drawCr(); };
+  loadCr();
+  if (typeof window.licaWatch === 'function') window.licaWatch();
   q('laMake').onclick = async () => {
     const dev = licaCleanDev(q('laDev').value);
     if (!dev) { msgA('رقم الجهاز غير صحيح — 12 حرفًا ورقمًا مثل AB3D-EF4H-JK5M'); return; }

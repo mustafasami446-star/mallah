@@ -27,9 +27,21 @@
     const r = e && e.reason; add(r && r.message ? r.message : String(r), r && r.stack, 'promise');
   });
   window.mallahCrash = (msg, stack) => add(msg, stack, 'manual');
+  /* sealed for the designer: only the secret key in «الملاح — الإدارة» can open a report (ECDH + AES-GCM) */
+  async function seal(obj) {
+    const pub = await crypto.subtle.importKey('spki', Uint8Array.from(atob(LIC.pub), (c) => c.charCodeAt(0)), { name: 'ECDH', namedCurve: 'P-256' }, false, []);
+    const eph = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, false, ['deriveKey']);
+    const k = await crypto.subtle.deriveKey({ name: 'ECDH', public: pub }, eph.privateKey, { name: 'AES-GCM', length: 256 }, false, ['encrypt']);
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, k, new TextEncoder().encode(JSON.stringify(obj))));
+    const raw = new Uint8Array(await crypto.subtle.exportKey('raw', eph.publicKey));
+    const all = new Uint8Array(12 + ct.length); all.set(iv); all.set(ct, 12);
+    const b = (u) => { let s = ''; u.forEach((x) => { s += String.fromCharCode(x); }); return btoa(s); };
+    return { e: b(all), k: b(raw) };
+  }
   async function flush() {
     try { const n = typeof Android !== 'undefined' && Android.takeCrash && Android.takeCrash(); if (n) { const l = n.split('\n'); add(l[1] || l[0], n, 'native'); } } catch (e) {}
-    if (!qd.length || typeof fbReq !== 'function' || !navigator.onLine) return;
+    if (!qd.length || typeof fbReq !== 'function' || typeof LIC === 'undefined' || !navigator.onLine) return;
     let dev = ''; try { dev = typeof Android !== 'undefined' && Android.deviceModel ? Android.deviceModel() : ''; } catch (e) {}
     if (!dev) { const ua = navigator.userAgent; dev = /iPhone|iPad/.test(ua) ? 'iOS web' : /Android/.test(ua) ? 'Android web' : /Windows/.test(ua) ? 'Windows web' : /Mac/.test(ua) ? 'Mac web' : 'web'; }
     const v = typeof APP_VERSION !== 'undefined' ? APP_VERSION : '?';
@@ -37,7 +49,8 @@
       const r = qd[0];
       const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
       try {
-        await fbReq('PUT', '/crash/' + id, { m: r.m, s: r.s, k: r.k, ui: r.ui, v, d: dev.slice(0, 80), at: r.at, t: { '.sv': 'timestamp' } });
+        const box = await seal({ m: r.m, s: r.s, k: r.k, ui: r.ui, v, d: dev.slice(0, 80), at: r.at });
+        await fbReq('PUT', '/crash/' + id, { e: box.e, k: box.k, v, t: { '.sv': 'timestamp' } });
       } catch (e) { break; }
       qd.shift(); save();
     }
