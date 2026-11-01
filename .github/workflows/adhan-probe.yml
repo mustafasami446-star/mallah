@@ -10,5 +10,5 @@ jobs:
         with: { ref: adhan-samples, path: s }
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
-      - run: pip install -q "faster-whisper==1.0.3" "av==12.3.0"
+      - run: pip install -q "faster-whisper==1.0.3" "av==12.3.0" requests
       - run: python3 tools/adhan_fetch.py
