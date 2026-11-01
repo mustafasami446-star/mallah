@@ -10,13 +10,14 @@ for q in ['adhan', 'azan', 'athan', 'ezan', 'أذان', 'اذان', 'آذان', 
         r2 = api(action='query', list='search', srsearch=q + ' filetype:video', srnamespace=6, srlimit=30)
     except Exception as e:
         print('fail', q, e); continue
-    for x in r['query']['search'] + r2['query']['search']: seen[x['title']] = q
+    if 'query' not in r: print('noq', q, str(r)[:300])
+    for x in r.get('query', {}).get('search', []) + r2.get('query', {}).get('search', []): seen[x['title']] = q
 titles = list(seen)
 print('found', len(titles))
 out = []
 for i in range(0, len(titles), 40):
     r = api(action='query', titles='|'.join(titles[i:i + 40]), prop='imageinfo', iiprop='url|size|mime|extmetadata|metadata', iiextmetadatafilter='LicenseShortName|Artist|ImageDescription|Categories|DateTimeOriginal')
-    for pg in r['query']['pages']:
+    for pg in r.get('query', {}).get('pages', []):
         ii = (pg.get('imageinfo') or [{}])[0]; em = ii.get('extmetadata', {})
         md = {m['name']: m['value'] for m in (ii.get('metadata') or []) if isinstance(m, dict) and 'name' in m}
         out.append(dict(t=pg['title'], url=ii.get('url'), mime=ii.get('mime'), size=ii.get('size'), len=md.get('length') or md.get('playtime_seconds'),
