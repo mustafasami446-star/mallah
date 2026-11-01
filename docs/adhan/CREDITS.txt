@@ -1,0 +1,7 @@
+Adhan recordings used by Mallah (الملاح). The files here were trimmed of leading silence and loudness-normalised.
+j-hatamzadeh.mp3  "AzaanMaahur.ogg" by Saeed Hatamzadeh Varmazyar — CC BY-SA 4.0 — https://commons.wikimedia.org/wiki/File:AzaanMaahur.ogg
+j-sobhdel.mp3     "اذان حسین صبحدل.webm" by Hossein Sobhdel (audio from 1:50) — CC BY-SA 4.0 — https://commons.wikimedia.org/wiki/File:اذان_حسین_صبحدل.webm
+g-nabawi.mp3      "33937 ejaz215 call-to-prayer-from-the-prophet-s-mo.ogg" by ejaz215 — CC BY 3.0 — https://commons.wikimedia.org/wiki/File:33937_ejaz215_call-to-prayer-from-the-prophet-s-mo.ogg
+g-fakhry.mp3      "Call to prayer by Sabah Fakhry.mp3" — Public domain — https://commons.wikimedia.org/wiki/File:Call_to_prayer_by_Sabah_Fakhry.mp3
+g-quiet.mp3       "Beautiful adhan.ogg" by Adam-synagda — CC0 — https://commons.wikimedia.org/wiki/File:Beautiful_adhan.ogg
+The modified files are shared under the same licences (CC BY-SA 4.0 where the original is CC BY-SA).

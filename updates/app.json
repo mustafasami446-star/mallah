@@ -1,8 +1,8 @@
 {
-  "versionCode": 59,
-  "versionName": "5.13",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.13/Mallah-Navigator.apk",
+  "versionCode": 60,
+  "versionName": "5.14",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.14/Mallah-Navigator.apk",
   "size": 2597767,
-  "notes": "تحسينات في الثبات والأمان، ومشاركة الرحلة مع العائلة، وأوقات الصلاة والقبلة.",
-  "sha256": "87b16135bdbbe57ef01ca7281258b0d812e3a538ef74cbad2975acba6f838539"
+  "notes": "جديد: الأذان في أوقات الصلاة — جعفري أو عام، يُرفع في وقته حتى والبرنامج مغلق.",
+  "sha256": "ec559593f221daa02508339326ee48d24fb1a684405de58610592f948b0123a3"
 }

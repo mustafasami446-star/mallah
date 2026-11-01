@@ -13,7 +13,17 @@ const PR_NAMES = { imsak: 'الإمساك', fajr: 'الفجر', sunrise: 'الش
 let prCfg = store.get('prCfg', null);          // {method, asr: 1|2, adj: {fajr: 0, ...}, adhan: {on, prayers, sound, loud}}
 /* the adhan recordings (freely licensed, from Wikimedia Commons), downloaded once when the adhan is switched on */
 const ADHAN_BASE = 'https://mustafasami446-star.github.io/mallah/adhan/';
-const ADHAN_SOUNDS = [];        // filled below: {id, name, file, jafari, credit}
+const ADHAN_SOUNDS = [{"id": "j-hatamzadeh", "name": "أذان جعفري — مقام ماهور", "file": "j-hatamzadeh.mp3", "jafari": true, "def": true, "credit": "بصوت سعيد حاتم زاده ورمزيار · CC BY-SA 4.0 · ويكيميديا كومنز"}, {"id": "j-sobhdel", "name": "أذان جعفري — أداء مطوّل", "file": "j-sobhdel.mp3", "jafari": true, "credit": "بصوت حسين صبحدل · CC BY-SA 4.0 · ويكيميديا كومنز"}, {"id": "g-nabawi", "name": "أذان المسجد النبوي", "file": "g-nabawi.mp3", "jafari": false, "def": true, "credit": "تسجيل ejaz215 · CC BY 3.0 · ويكيميديا كومنز"}, {"id": "g-fakhry", "name": "أذان بصوت صباح فخري", "file": "g-fakhry.mp3", "jafari": false, "credit": "ملكية عامة · ويكيميديا كومنز"}, {"id": "g-quiet", "name": "أذان هادئ", "file": "g-quiet.mp3", "jafari": false, "credit": "تسجيل Adam-synagda · CC0 · ويكيميديا كومنز"}];
+/* the list can grow without an app update: adhan/sounds.json on the site */
+(function () {
+  try { const c = JSON.parse(localStorage.getItem('adhanCat') || 'null'); if (c && c.length) ADHAN_SOUNDS.splice(0, ADHAN_SOUNDS.length, ...c); } catch (e) {}
+  setTimeout(() => fetch(ADHAN_BASE + 'sounds.json?t=' + Math.floor(Date.now() / 3600e3), { cache: 'no-cache' }).then((r) => r.json()).then((j) => {
+    if (!j || !Array.isArray(j.sounds) || !j.sounds.length) return;
+    ADHAN_SOUNDS.splice(0, ADHAN_SOUNDS.length, ...j.sounds);
+    try { localStorage.setItem('adhanCat', JSON.stringify(j.sounds)); } catch (e) {}
+    if ($('prAdhan')) prAdhanCard();
+  }).catch(() => {}), 9000);
+})();
 const ADHAN_KEYS = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
 /* ---------------- the astronomy ---------------- */
@@ -200,7 +210,7 @@ function prChooseMethod(first) {
 }
 /* ---------------- the adhan ---------------- */
 function adhanCfg() { return Object.assign({ on: false, prayers: ADHAN_KEYS.slice(), sound: null, loud: false }, (prCfg && prCfg.adhan) || {}); }
-function adhanDefaultSound() { const j = prCfg && prCfg.method === 'jafari'; return (ADHAN_SOUNDS.find((x) => !!x.jafari === j) || ADHAN_SOUNDS[0] || {}).id; }
+function adhanDefaultSound() { const j = prCfg && prCfg.method === 'jafari'; return (ADHAN_SOUNDS.find((x) => !!x.jafari === j && x.def) || ADHAN_SOUNDS.find((x) => !!x.jafari === j) || ADHAN_SOUNDS[0] || {}).id; }
 const adhanSound = (id) => ADHAN_SOUNDS.find((x) => x.id === id) || ADHAN_SOUNDS.find((x) => x.id === adhanDefaultSound());
 let adhanPreview = null;
 function prAdhanCard() {
@@ -215,7 +225,7 @@ function prAdhanCard() {
     <div class="${a.on ? '' : 'hidden'}" id="adMore">
       <div class="adPr">${ADHAN_KEYS.map((k) => `<button class="chip${a.prayers.includes(k) ? ' on' : ''}" data-ad="${k}">${PR_NAMES[k]}</button>`).join('')}</div>
       <div class="s" style="padding:6px 14px 2px">الصوت:</div>
-      ${ADHAN_SOUNDS.map((x) => `<label class="wxSw adSnd"><input type="radio" name="adS" value="${x.id}" ${snd && snd.id === x.id ? 'checked' : ''}> <span style="flex:1">${esc(x.name)}<br><small class="s">${esc(x.credit)}</small></span><button class="chip" data-play="${x.id}">▶</button></label>`).join('')}
+      ${ADHAN_SOUNDS.slice().sort((x, y) => (prCfg.method === 'jafari' ? (y.jafari ? 1 : 0) - (x.jafari ? 1 : 0) : (x.jafari ? 1 : 0) - (y.jafari ? 1 : 0))).map((x) => `<label class="wxSw adSnd"><input type="radio" name="adS" value="${x.id}" ${snd && snd.id === x.id ? 'checked' : ''}> <span style="flex:1">${esc(x.name)}<br><small class="s">${esc(x.credit)}</small></span><button class="chip" data-play="${x.id}">▶</button></label>`).join('')}
       ${NATIVE ? `<label class="wxSw"><input type="checkbox" id="adLoud" ${a.loud ? 'checked' : ''}> يُرفع حتى والهاتف على الصامت</label>` : ''}
       <div class="s" style="padding:4px 14px 12px">${!ready ? '⏳ جارٍ تنزيل صوت الأذان (مرة واحدة)… ' : ''}${next}</div>
     </div>`;
@@ -270,4 +280,5 @@ function adhanWebPlan() {
 setTimeout(() => adhanSync(true), 8000);
 setInterval(() => adhanSync(false), 5 * 60e3);
 { const b = $('openPrayer'); if (b) b.onclick = openPrayer; }
+try { if (NATIVE && Android.takePrayerLaunch && Android.takePrayerLaunch()) setTimeout(openPrayer, 700); } catch (e) {}
 window.openPrayer = openPrayer;
