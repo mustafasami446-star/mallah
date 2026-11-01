@@ -192,3 +192,30 @@ document.addEventListener('click', (e) => {
 });
 { const b = $('openAdmin'); if (b) b.onclick = openAdmin; adminShow(); }
 { const c = $('adminClose'); if (c) c.onclick = () => $('adminPanel').classList.add('hidden'); }
+
+/* host glue for the admin page inside the app */
+function saveA(name, text) {
+  if (NATIVE && Android.saveFile) { try { Android.saveFile(name, 'application/json', text); return; } catch (e) {} }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' })); a.download = name; a.click();
+  toast('✓ حُفظت النسخة في التنزيلات');
+}
+function licaOnRelock() { const p = $('adminPanel'); if (p && !p.classList.contains('hidden')) licaRender($('adminBody')); }
+if (NATIVE && typeof Android.bioAuth === 'function') {
+  let bioWait = null;
+  window.licaBioResult = (ok) => { const w = bioWait; bioWait = null; if (w) w(!!ok); };
+  const ask = () => new Promise((r) => { bioWait = r; Android.bioAuth(); });
+  window.licaBio = { avail: async () => { try { return !!Android.bioAvailable(); } catch (e) { return false; } }, enroll: ask, verify: ask };
+}
+{
+  const _panel = licaPanel;
+  licaPanel = function (root) {
+    _panel(root);
+    if (!(NATIVE && Android.adminShortcut)) return;
+    const c = document.createElement('div'); c.className = 'card';
+    c.innerHTML = '<b>🔑 أيقونة على الشاشة الرئيسية</b><div class="s">أضف أيقونة «الملاح — الإدارة» تفتح هذه الصفحة مباشرة (بعد البصمة أو PIN).</div><div class="btnRow"><button class="chip go" id="laShortcut">➕ إضافة الأيقونة</button></div>';
+    root.appendChild(c);
+    c.querySelector('#laShortcut').onclick = () => { if (!Android.adminShortcut()) toast('الشاشة الرئيسية في هذا الهاتف لا تدعم إضافة الأيقونات من التطبيق', 4000); };
+  };
+}
+window.openAdminShortcut = () => { if (localStorage.getItem('licAdminKey')) openAdmin(); else toast('وضع المصمم غير مفعّل على هذا الجهاز'); };
+try { if (NATIVE && Android.takeAdminLaunch && Android.takeAdminLaunch()) setTimeout(openAdminShortcut, 400); } catch (e) {}

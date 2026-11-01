@@ -1,8 +1,8 @@
 {
-  "versionCode": 53,
-  "versionName": "5.7",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.7/Mallah-Navigator.apk",
-  "size": 2490561,
-  "notes": "تصحيح الاسم في رمز الدفع بشاشة التفعيل. الملاح يعمل كاملًا 14 يومًا تجريبية ثم يُفعَّل مرة واحدة — الإعدادات ← «🔑 التفعيل».",
-  "sha256": "223c80d7699cb29a27a62cc1595ae3a7cad116ab2b88280137de8e2ef109dad0"
+  "versionCode": 54,
+  "versionName": "5.8",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.8/Mallah-Navigator.apk",
+  "size": 2552392,
+  "notes": "تحسينات في الأمان والثبات. الملاح يعمل كاملًا 14 يومًا تجريبية ثم يُفعَّل مرة واحدة — الإعدادات ← «🔑 التفعيل».",
+  "sha256": "5afa7826fa1aa1d8930f44a55d9481bfa734b66481706a3e62717fed8eda8cf6"
 }
