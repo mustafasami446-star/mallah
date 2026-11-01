@@ -1,8 +1,8 @@
 {
-  "versionCode": 54,
-  "versionName": "5.8",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.8/Mallah-Navigator.apk",
-  "size": 2552392,
-  "notes": "تحسينات في الأمان والثبات. الملاح يعمل كاملًا 14 يومًا تجريبية ثم يُفعَّل مرة واحدة — الإعدادات ← «🔑 التفعيل».",
-  "sha256": "5afa7826fa1aa1d8930f44a55d9481bfa734b66481706a3e62717fed8eda8cf6"
+  "versionCode": 55,
+  "versionName": "5.9",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.9/Mallah-Navigator.apk",
+  "size": 2568912,
+  "notes": "جديد: الطقس على الخريطة — المطر والرياح والحرارة لكل محافظة وقضاء وناحية، ساعة بساعة وأيامًا لأسبوع، مع تنبيهات الأمطار الغزيرة والرياح القوية والعواصف.",
+  "sha256": "2b559d3e8002906158c145eed35a66df8a6fe2113d34f045e3a33f57cf36a271"
 }

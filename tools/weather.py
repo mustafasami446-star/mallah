@@ -160,7 +160,7 @@ def alerts_for(aid, h, d, start, day0):
         s = h['s'][i]
         if 'storm' not in seen and s >= 0 and 'thunder' in SYM[s]: add('storm', i, 0, when); seen.add('storm')
     # the next days: heat, frost, a very wet day
-    for i in range(DAYS):
+    for i in range(3):                     # further ahead is too uncertain to warn about
         when = (day0 + dt.timedelta(days=i)).isoformat()
         if d['tx'][i] is not None and d['tx'][i] >= 49 and 'heat' not in seen: add('heat', i, d['tx'][i], when); seen.add('heat')
         if d['tn'][i] is not None and d['tn'][i] <= 0 and 'frost' not in seen: add('frost', i, d['tn'][i], when); seen.add('frost')

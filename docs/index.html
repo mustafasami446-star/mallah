@@ -359,6 +359,41 @@ body.attr-min #attrBtn{opacity:.8;pointer-events:auto}
 .pvl.sm{font-size:16px}
 .pvMe{fill:#3b82f6;stroke:#fff;stroke-width:3}
 .hereTag{font-size:12px;color:#93c5fd;font-weight:600}
+/* weather */
+.wxFab{position:absolute;top:0;left:62px}
+body.ui-wx #searchWrap,body.ui-wx #areaChip,body.ui-wx #covHint{display:none}
+body.ui-wx #wxBtn{color:#38bdf8;border-color:#38bdf8}
+#wxSheet{z-index:640;padding-top:8px;max-height:58vh;overflow:auto}
+.wxTop{display:flex;align-items:center;gap:8px}.wxTop b{font-size:16px}.wxTop .s{flex:1;color:var(--muted);font-size:12px}
+.wxTabs{display:flex;gap:6px;margin:8px 0 6px;overflow-x:auto}
+.wxTabs button,.wxMode button{flex:1;height:36px;border-radius:12px;background:var(--panel2);color:var(--text);font:inherit;font-size:13.5px;font-weight:600;white-space:nowrap;padding:0 8px}
+.wxTabs button.on,.wxMode button.on{background:#0369a1;color:#e0f2fe}
+.wxTime{display:flex;gap:8px;align-items:center}.wxMode{display:flex;gap:6px;flex:1}
+.wxPlay{width:44px;height:36px;border-radius:12px;background:#0369a1;color:#fff;font-size:16px}
+.wxSlide{display:flex;align-items:center;gap:10px;margin:8px 0 2px}.wxSlide input{flex:1;accent-color:#38bdf8}
+#wxWhen{min-width:118px;text-align:center;font-weight:700;font-size:13.5px;color:#7dd3fc}
+.wxLegend{display:flex;align-items:center;gap:8px;margin:4px 0;font-size:11.5px;color:var(--muted)}.wxLegend .bar{height:8px;width:90px;border-radius:5px;flex:none}
+.wxLegend .ticks{display:flex;gap:7px}
+.wxInfo{background:var(--panel2);border-radius:14px;padding:9px 11px;margin:6px 0}.wxInfo .s{color:var(--muted);font-size:12.5px}
+.wxName{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-bottom:4px}.wxName b{font-size:14.5px}
+.wxFol{margin-inline-start:auto;height:30px;padding:0 10px;border-radius:10px;background:var(--panel);color:var(--text);font:inherit;font-size:12.5px}.wxFol.on{color:#facc15}
+.wxVals{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:13px}.wxVals .big{font-size:18px}.wxVals.sm{font-size:12px;color:var(--muted);gap:2px 10px}.wxVals.sm .big{font-size:14px}
+.wxP{white-space:nowrap}
+.wxBtns{display:flex;gap:8px}.wxBtns .chip{flex:1}
+.wxSrc{font-size:10.5px;color:var(--muted);margin-top:6px;text-align:center}
+.wxLbl{display:flex!important;flex-direction:column;align-items:center;transform:translate(-50%,-50%);pointer-events:auto;white-space:nowrap}
+.wxLbl span{background:rgba(15,23,42,.88);color:#fff;border-radius:10px;padding:2px 7px;font-weight:700;font-size:13px;box-shadow:0 1px 4px rgba(0,0,0,.45);text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.wxLbl span small{font-size:10.5px;font-weight:600}.wxLbl span i{display:inline-block;font-style:normal;margin-inline-start:2px}
+.wxLbl b{font-size:10.5px;color:#f1f5f9;text-shadow:0 0 3px #000,0 0 3px #000;margin-top:1px;font-weight:600}
+.wxLbl.on span{outline:2px solid #fff}
+.wxImg{image-rendering:auto;pointer-events:none}
+.wxRow{align-items:center;gap:6px;cursor:pointer}.wxRow .chip{height:32px;padding:0 9px;flex:none}
+#wxCrumbs{display:flex;flex-wrap:wrap;align-items:center;gap:4px;padding:12px 14px 2px;font-size:14.5px}#wxCrumbs button{color:var(--accent);font-weight:600;padding:4px 2px}
+#wxAlertBar{position:absolute;top:calc(70px + env(safe-area-inset-top));left:12px;right:12px;z-index:1200;display:flex;gap:8px;align-items:flex-start;background:#7c2d12;border:1px solid #f97316;color:#ffedd5;border-radius:16px;padding:10px 12px;box-shadow:var(--shadow);font-size:13.5px}
+#wxAlertBar.hidden{display:none}#wxAlertBar .g{flex:1;cursor:pointer}#wxAlertBar .x{color:#ffedd5;font-size:16px;padding:0 4px}#wxAlertBar .s{color:#fed7aa;font-size:12px}
+.wxModal{position:fixed;inset:0;z-index:1300;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px}
+.wxModal .card{width:100%;max-width:440px;max-height:80vh;overflow:auto}
+.wxSw{display:flex;gap:10px;align-items:flex-start;padding:8px 14px;font-size:14px}.wxSw input{width:20px;height:20px;flex:none;accent-color:#38bdf8}
 #areaCrumbs{display:flex;flex-wrap:wrap;align-items:center;gap:4px;padding:12px 14px 2px;font-size:14.5px}
 #areaCrumbs button{color:var(--accent);font-weight:600;padding:4px 2px}
 #areaCrumbs b{padding:4px 2px}
@@ -579,6 +614,7 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
   <div style="position:relative">
     <button class="fab" id="layersBtn" aria-label="طبقات الخريطة"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg></button>
     <div id="layerMenu" class="hidden"></div>
+    <button class="fab wxFab" id="wxBtn" aria-label="الطقس" title="الطقس"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="3"/><path d="M8 2v1.2M2 8h1.2M3.8 3.8l.9.9M12.2 3.8l-.9.9"/><path d="M8.5 19h9a3.5 3.5 0 0 0 .3-7 5 5 0 0 0-9.6 1.2A3 3 0 0 0 8.5 19z" fill="var(--panel)"/></svg></button>
   </div>
 </div>
 <div id="menuDrop" class="hidden">
@@ -850,6 +886,7 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
 <script src="teamchat.js"></script>
 <script src="teambg.js"></script>
 <script src="teamqr.js"></script>
+<script src="weather.js"></script>
 <script src="licadmin.js"></script>
 <script src="license.js"></script>
 <script src="ar.js"></script>

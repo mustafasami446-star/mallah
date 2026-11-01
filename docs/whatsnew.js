@@ -49,6 +49,15 @@ const WN_ART = {
     <path d="M200 0 L140 320" stroke="#e2e8f0" stroke-width="3" stroke-dasharray="8 8"/>
     <g font-size="14" font-weight="700" text-anchor="middle" paint-order="stroke" stroke="#0b1220" stroke-width="5">
       <text x="80" y="40" fill="#fef9c3">صور القمر الصناعي</text><text x="250" y="290" fill="#bae6fd">خريطتك المنزّلة</text></g></svg>`,
+  weather: () => wnSvg(`
+    <path d="M60 60 L230 50 L270 150 L240 290 L90 300 L40 180 Z" fill="#2563eb" fill-opacity=".22" stroke="#38bdf8" stroke-width="2"/>
+    <ellipse cx="170" cy="170" rx="80" ry="60" fill="#7c3aed" fill-opacity=".35"/><ellipse cx="185" cy="160" rx="40" ry="30" fill="#db2777" fill-opacity=".35"/>
+    <g font-weight="700" font-size="17" text-anchor="middle">
+      <g transform="translate(110 110)"><rect x="-34" y="-16" width="68" height="30" rx="12" fill="#38bdf8"/><text y="6" fill="#fff">💧2.1</text></g>
+      <g transform="translate(220 230)"><rect x="-30" y="-16" width="60" height="30" rx="12" fill="#f59e0b"/><text y="6" fill="#fff">31°</text></g>
+      <g transform="translate(110 250)"><rect x="-30" y="-16" width="60" height="30" rx="12" fill="#2563eb"/><text y="6" fill="#fff">70%</text></g></g>
+    <g stroke="#f8fafc" stroke-width="3" stroke-linecap="round" fill="none"><path d="M200 90l30 -12m-8 -5l8 5l-5 8"/><path d="M240 120l30 -12m-8 -5l8 5l-5 8"/></g>
+    <text x="150" y="40" font-size="30" text-anchor="middle">🌦</text>`),
   team: () => wnSvg(`
     <path d="M70 300 L74 222 L170 205 L176 64" fill="none" stroke="#22c55e" stroke-width="5" stroke-dasharray="2 10" stroke-linecap="round"/>
     ${[[74, 236, '#ef4444', 'م'], [170, 150, '#06b6d4', 'ع'], [210, 210, '#a855f7', 'ح']].map(([x, y, c, t]) => `<g transform="translate(${x} ${y})"><circle r="17" fill="${c}" stroke="#fff" stroke-width="3"/><text y="6" fill="#fff" font-size="16" font-weight="700" text-anchor="middle">${t}</text></g>`).join('')}
@@ -64,6 +73,9 @@ const WN_ART = {
 
 /* ---------------- what's new, newest version first ---------------- */
 const WHATS_NEW = [
+  { v: '5.9', slides: [
+    { art: 'weather', t: 'الطقس على الخريطة', d: 'زر جديد بجانب الطبقات: المطر والرياح والحرارة والحالة لكل محافظة وقضاء وناحية، ساعة بساعة ليومين وأيامًا لأسبوع، مع خريطة ملوّنة تتحرك بزر ▶. وتصلك تنبيهات الأمطار الغزيرة والرياح القوية والعواصف في منطقتك.', act: ['🌦 افتح الطقس', () => { if (typeof openWeather === 'function') openWeather(); }] }
+  ] },
   { v: '5.6', slides: [
     { art: 'update', t: 'تجربة 14 يومًا ثم التفعيل', d: 'من الآن يعمل الملاح كاملًا 14 يومًا تجريبية على كل جهاز، ثم يحتاج تفعيلًا مرة واحدة فقط (15,000 دينار) عبر سوبر كي وواتساب. التفاصيل في الإعدادات ← «🔑 التفعيل».', act: ['🔑 عرض التفعيل', () => { const b = document.getElementById('openLic'); if (b) b.click(); }] }
   ] },
