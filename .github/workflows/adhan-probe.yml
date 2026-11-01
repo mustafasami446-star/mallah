@@ -1,0 +1,10 @@
+name: adhan probe (temporary)
+on: workflow_dispatch
+jobs:
+  p:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tools/adhan_probe.py
+      - uses: actions/upload-artifact@v4
+        with: { name: adhan, path: adhan_list.json }
