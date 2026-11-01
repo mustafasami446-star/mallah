@@ -1,0 +1,9 @@
+name: wx probe
+on: workflow_dispatch
+jobs:
+  p:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install -q ecmwf-opendata eccodes && python3 -m eccodes selfcheck || true
+      - run: python3 tools/wx_probe.py
