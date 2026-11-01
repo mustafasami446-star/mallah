@@ -181,7 +181,7 @@ function wxFrame() {
   });
   x.fill(); x.globalCompositeOperation = 'source-over';
   // wind: arrows blowing the way the wind goes
-  if (WX.tab === 'wind' && WX.mode === 'h') {
+  if (WX.tab === 'wind' && WX.mode === 'h' && !WXP.can) {
     x.lineCap = 'round'; x.lineJoin = 'round';
     for (let j = 0; j < G.ny; j++) for (let i = 0; i < G.nx; i++) {
       const k = j * G.nx + i, sp = G.h.w[k][WX.idx], dir = G.h.d[k][WX.idx];
@@ -213,6 +213,103 @@ function wxInIraq(lat, lng) {
   const k = lat + ',' + lng;
   if (!wxIraqCache.has(k)) wxIraqCache.set(k, (window.PROVINCES ? PROVINCES.features : []).some((f) => inArea({ g: f.geometry, b: bboxOf(f.geometry) }, lat, lng)));
   return wxIraqCache.get(k);
+}
+
+/* ---------------- moving wind: little streaks carried by the wind ---------------- */
+const WXP = { can: !!window.requestAnimationFrame, cv: null, ctx: null, parts: [], U: null, V: null, key: '', raf: 0, mask: null, last: 0 };
+function wxpMask() {
+  if (WXP.mask) return WXP.mask;
+  const G = WX.data.grid, N = 120, m = new Uint8Array(N * N);
+  const lat0 = G.lat0, lat1 = G.lat0 + (G.ny - 1) * G.step, lon0 = G.lon0, lon1 = G.lon0 + (G.nx - 1) * G.step;
+  const provs = (window.PROVINCES ? PROVINCES.features : []).map((f) => ({ g: f.geometry, b: bboxOf(f.geometry) }));
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+    const lat = lat0 + (j + 0.5) / N * (lat1 - lat0), lng = lon0 + (i + 0.5) / N * (lon1 - lon0);
+    m[j * N + i] = provs.some((p) => inArea(p, lat, lng)) ? 1 : 0;
+  }
+  return (WXP.mask = { m, N, lat0, lat1, lon0, lon1 });
+}
+function wxpInside(lat, lng) {
+  const M = wxpMask(), i = Math.floor((lng - M.lon0) / (M.lon1 - M.lon0) * M.N), j = Math.floor((lat - M.lat0) / (M.lat1 - M.lat0) * M.N);
+  return i >= 0 && j >= 0 && i < M.N && j < M.N && M.m[j * M.N + i] === 1;
+}
+function wxpField() {
+  const key = WX.idx + '|' + WX.data.made;
+  if (WXP.key === key) return;
+  const G = WX.data.grid, n = G.nx * G.ny; WXP.U = new Float32Array(n); WXP.V = new Float32Array(n);
+  for (let k = 0; k < n; k++) {
+    const sp = G.h.w[k][WX.idx], dir = G.h.d[k][WX.idx];
+    if (sp == null || dir == null) { WXP.U[k] = NaN; WXP.V[k] = NaN; continue; }
+    const s = sp / 10, a = dir * Math.PI / 180;             // "from" direction -> the way it blows
+    WXP.U[k] = -s * Math.sin(a); WXP.V[k] = -s * Math.cos(a);
+  }
+  WXP.key = key;
+}
+function wxpWind(lat, lng) {
+  const G = WX.data.grid, gx = (lng - G.lon0) / G.step, gy = (lat - G.lat0) / G.step;
+  const i0 = Math.max(0, Math.min(G.nx - 2, Math.floor(gx))), j0 = Math.max(0, Math.min(G.ny - 2, Math.floor(gy)));
+  const fx = Math.min(1, Math.max(0, gx - i0)), fy = Math.min(1, Math.max(0, gy - j0));
+  let u = 0, v = 0, w = 0;
+  [[i0, j0, (1 - fx) * (1 - fy)], [i0 + 1, j0, fx * (1 - fy)], [i0, j0 + 1, (1 - fx) * fy], [i0 + 1, j0 + 1, fx * fy]].forEach(([i, j, q]) => {
+    const k = j * G.nx + i; if (WXP.U[k] === WXP.U[k]) { u += WXP.U[k] * q; v += WXP.V[k] * q; w += q; }
+  });
+  return w ? [u / w, v / w] : null;
+}
+function wxpSpawn(p) {
+  const M = wxpMask(), b = map.getBounds();
+  const s = Math.max(M.lat0, b.getSouth()), n = Math.min(M.lat1, b.getNorth()), w = Math.max(M.lon0, b.getWest()), e = Math.min(M.lon1, b.getEast());
+  for (let t = 0; t < 12; t++) {
+    const lat = s + Math.random() * Math.max(0, n - s), lng = w + Math.random() * Math.max(0, e - w);
+    if (n > s && e > w && wxpInside(lat, lng)) { p.lat = lat; p.lng = lng; p.age = Math.floor(Math.random() * 60); return p; }
+  }
+  p.lat = NaN; p.age = 0; return p;
+}
+function wxpOn() {
+  if (!WXP.can || !WX.on || WX.tab !== 'wind' || WX.mode !== 'h' || !WX.data) { wxpOff(); return; }
+  if (!WXP.cv) {
+    const cv = document.createElement('canvas'); cv.id = 'wxWind';
+    map.getContainer().appendChild(cv); WXP.cv = cv; WXP.ctx = cv.getContext('2d');
+    map.on('movestart zoomstart', wxpClear); map.on('moveend zoomend resize', wxpResize);
+  }
+  wxpResize(); wxpField();
+  if (!WXP.raf) WXP.raf = requestAnimationFrame(wxpStep);
+}
+function wxpOff() {
+  if (WXP.raf) cancelAnimationFrame(WXP.raf); WXP.raf = 0;
+  if (WXP.cv) { map.off('movestart zoomstart', wxpClear); map.off('moveend zoomend resize', wxpResize); WXP.cv.remove(); WXP.cv = null; WXP.ctx = null; }
+}
+function wxpClear() { if (WXP.ctx) WXP.ctx.clearRect(0, 0, WXP.cv.width, WXP.cv.height); WXP.moving = true; }
+function wxpResize() {
+  if (!WXP.cv) return;
+  const r = map.getContainer().getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);
+  WXP.cv.width = Math.round(r.width * dpr); WXP.cv.height = Math.round(r.height * dpr); WXP.dpr = dpr;
+  WXP.moving = false;
+  const want = Math.round(Math.min(900, r.width * r.height / 450));
+  WXP.parts = Array.from({ length: want }, () => wxpSpawn({}));
+}
+function wxpStep(ts) {
+  WXP.raf = 0;
+  if (!WXP.cv || !WX.on || document.hidden) return;
+  WXP.raf = requestAnimationFrame(wxpStep);
+  if (WXP.moving || ts - WXP.last < 30) return;           // ~30 frames a second is plenty
+  WXP.last = ts;
+  wxpField();
+  const x = WXP.ctx, dpr = WXP.dpr, W = WXP.cv.width, H = WXP.cv.height;
+  x.globalCompositeOperation = 'destination-in'; x.fillStyle = 'rgba(0,0,0,0.9)'; x.fillRect(0, 0, W, H);
+  x.globalCompositeOperation = 'source-over'; x.lineWidth = 1.3 * dpr; x.lineCap = 'round';
+  const dpp = 360 / (256 * Math.pow(2, map.getZoom())), f = 0.32 * dpp;   // a 10 m/s wind moves ~3 px a frame at any zoom
+  x.beginPath();
+  for (const p of WXP.parts) {
+    if (p.lat !== p.lat || p.age++ > 90) { wxpSpawn(p); continue; }
+    const uv = wxpWind(p.lat, p.lng);
+    if (!uv) { wxpSpawn(p); continue; }
+    const a = map.latLngToContainerPoint([p.lat, p.lng]);
+    p.lat += uv[1] * f; p.lng += uv[0] * f / Math.cos(p.lat * Math.PI / 180);
+    if (!wxpInside(p.lat, p.lng)) { wxpSpawn(p); continue; }
+    const b = map.latLngToContainerPoint([p.lat, p.lng]);
+    if (b.x < 0 || b.y < 0 || b.x > W / dpr || b.y > H / dpr) { wxpSpawn(p); continue; }
+    x.moveTo(a.x * dpr, a.y * dpr); x.lineTo(b.x * dpr, b.y * dpr);
+  }
+  x.strokeStyle = 'rgba(248,250,252,.85)'; x.stroke();
 }
 
 /* ---------------- numbers on the map ---------------- */
@@ -309,7 +406,7 @@ async function openWeather(areaId) {
   wxLoad(true).then(() => { if (WX.on) wxRender(); }).catch(() => {});
 }
 function closeWeather() {
-  WX.on = false; wxStop();
+  WX.on = false; wxStop(); wxpOff();
   document.body.classList.remove('ui-wx');
   if ($('wxSheet')) $('wxSheet').classList.add('hidden');
   if (WX.overlay) { map.removeLayer(WX.overlay); WX.overlay = null; }
@@ -346,6 +443,7 @@ function wxRender(fast) {
     : `<div class="bar" style="background:linear-gradient(to left,${WX_RAMP[rm.ramp].map((s) => 'rgba(' + s.slice(1, 4).join(',') + ',' + Math.max(0.25, s[4]) + ')').join(',')})"></div><div class="ticks">${rm.ticks.map((t) => '<span>' + t[1] + '</span>').join('')}</div><span class="s">${rm.unit}</span>`;
   wxRenderInfo();
   wxDrawLabels();
+  wxpOn();
 }
 function wxLine(v, full) {
   if (!v) return '<span class="s">لا توجد بيانات لهذه المنطقة</span>';
@@ -380,6 +478,7 @@ function wxToggleFollow(id) {
   wxSaveCfg(); wxRenderInfo();
 }
 map.on('moveend', () => { if (WX.on) wxDrawLabels(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden && WX.on) wxpOn(); });
 
 /* ---------------- every area in a list ---------------- */
 let wxListPath = [];

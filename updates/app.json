@@ -1,8 +1,8 @@
 {
-  "versionCode": 55,
-  "versionName": "5.9",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.9/Mallah-Navigator.apk",
-  "size": 2568912,
-  "notes": "جديد: الطقس على الخريطة — المطر والرياح والحرارة لكل محافظة وقضاء وناحية، ساعة بساعة وأيامًا لأسبوع، مع تنبيهات الأمطار الغزيرة والرياح القوية والعواصف.",
-  "sha256": "2b559d3e8002906158c145eed35a66df8a6fe2113d34f045e3a33f57cf36a271"
+  "versionCode": 56,
+  "versionName": "5.10",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.10/Mallah-Navigator.apk",
+  "size": 2573008,
+  "notes": "الرياح تتحرك على خريطة الطقس باتجاهها وسرعتها الحقيقيين. وفي الطقس: المطر والرياح والحرارة لكل محافظة وقضاء وناحية مع التنبيهات.",
+  "sha256": "5cad0669ca6a0f4659204bed49921239075682c7cec2f5044a81d8378793c38d"
 }
