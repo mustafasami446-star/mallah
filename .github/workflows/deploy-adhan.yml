@@ -1,0 +1,39 @@
+name: Deploy adhan notifications (Cloudflare)
+
+# The small Cloudflare worker that sends the adhan notification to iPhones and laptops at prayer time.
+# Needs two repository secrets: CLOUDFLARE_API_TOKEN (Workers Scripts:Edit + D1:Edit) and CLOUDFLARE_ACCOUNT_ID.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["worker/adhan/**"]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - name: Check the secrets
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then echo "::error::Add CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID in Settings → Secrets and variables → Actions"; exit 1; fi
+      - name: Database
+        working-directory: worker/adhan
+        run: |
+          npx -y wrangler@4 d1 list --json > d1.json || true
+          ID=$(node -e "try{const l=require('./d1.json');const d=l.find(x=>x.name==='mallah-adhan');if(d)console.log(d.uuid)}catch(e){}")
+          if [ -z "$ID" ]; then npx -y wrangler@4 d1 create mallah-adhan; npx -y wrangler@4 d1 list --json > d1.json; ID=$(node -e "const l=require('./d1.json');console.log(l.find(x=>x.name==='mallah-adhan').uuid)"); fi
+          echo "database $ID"
+          sed "s/@@DBID@@/$ID/" wrangler.toml.tpl > wrangler.toml
+      - name: Deploy
+        working-directory: worker/adhan
+        run: |
+          npx -y wrangler@4 deploy 2>&1 | tee deploy.log
+          URL=$(grep -oE 'https://[a-z0-9.-]+\.workers\.dev' deploy.log | head -1)
+          echo "WORKER URL: $URL"
+          curl -s "$URL/key" && echo
