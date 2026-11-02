@@ -2,10 +2,43 @@
  "v": 1,
  "note": "Adhan recordings offered in the app. Add an entry and its mp3 here to offer a new recording without an app update. Every recording must be free to use (CC0 / CC BY / CC BY-SA / public domain) or used with the owner's written permission.",
  "sounds": [
-  {"id": "j-hatamzadeh", "name": "أذان جعفري — مقام ماهور", "file": "j-hatamzadeh.mp3", "jafari": true, "def": true, "credit": "بصوت سعيد حاتم زاده ورمزيار · CC BY-SA 4.0 · ويكيميديا كومنز"},
-  {"id": "j-sobhdel", "name": "أذان جعفري — أداء مطوّل", "file": "j-sobhdel.mp3", "jafari": true, "credit": "بصوت حسين صبحدل · CC BY-SA 4.0 · ويكيميديا كومنز"},
-  {"id": "g-nabawi", "name": "أذان المسجد النبوي", "file": "g-nabawi.mp3", "jafari": false, "def": true, "credit": "تسجيل ejaz215 · CC BY 3.0 · ويكيميديا كومنز"},
-  {"id": "g-fakhry", "name": "أذان بصوت صباح فخري", "file": "g-fakhry.mp3", "jafari": false, "credit": "ملكية عامة · ويكيميديا كومنز"},
-  {"id": "g-quiet", "name": "أذان هادئ", "file": "g-quiet.mp3", "jafari": false, "credit": "تسجيل Adam-synagda · CC0 · ويكيميديا كومنز"}
- ]
+  {
+   "id": "j-hatamzadeh",
+   "name": "أذان جعفري — مقام ماهور",
+   "file": "j-hatamzadeh.mp3",
+   "jafari": true,
+   "def": true,
+   "credit": "بصوت سعيد حاتم زاده ورمزيار · CC BY-SA 4.0 · ويكيميديا كومنز"
+  },
+  {
+   "id": "j-sobhdel",
+   "name": "أذان جعفري — أداء مطوّل",
+   "file": "j-sobhdel.mp3",
+   "jafari": true,
+   "credit": "بصوت حسين صبحدل · CC BY-SA 4.0 · ويكيميديا كومنز"
+  },
+  {
+   "id": "g-nabawi",
+   "name": "أذان المسجد النبوي",
+   "file": "g-nabawi.mp3",
+   "jafari": false,
+   "def": true,
+   "credit": "تسجيل ejaz215 · CC BY 3.0 · ويكيميديا كومنز"
+  },
+  {
+   "id": "g-fakhry",
+   "name": "أذان بصوت صباح فخري",
+   "file": "g-fakhry.mp3",
+   "jafari": false,
+   "credit": "ملكية عامة · ويكيميديا كومنز"
+  },
+  {
+   "id": "g-quiet",
+   "name": "أذان هادئ",
+   "file": "g-quiet.mp3",
+   "jafari": false,
+   "credit": "تسجيل Adam-synagda · CC0 · ويكيميديا كومنز"
+  }
+ ],
+ "push": "https://mallah-adhan.mustafasami446.workers.dev"
 }

@@ -20,7 +20,7 @@ const ADHAN_SOUNDS = [{"id": "j-hatamzadeh", "name": "أذان جعفري — م
   setTimeout(() => fetch(ADHAN_BASE + 'sounds.json?t=' + Math.floor(Date.now() / 3600e3), { cache: 'no-cache' }).then((r) => r.json()).then((j) => {
     if (!j || !Array.isArray(j.sounds) || !j.sounds.length) return;
     ADHAN_SOUNDS.splice(0, ADHAN_SOUNDS.length, ...j.sounds);
-    try { localStorage.setItem('adhanCat', JSON.stringify(j.sounds)); } catch (e) {}
+    try { localStorage.setItem('adhanCat', JSON.stringify(j.sounds)); if (j.push) localStorage.setItem('adhanPushUrl', j.push); } catch (e) {}
     if ($('prAdhan')) prAdhanCard();
   }).catch(() => {}), 9000);
 })();
@@ -221,14 +221,17 @@ function prAdhanCard() {
   try { if (NATIVE && Android.adhanNext && a.on) { const [t, k] = Android.adhanNext().split('|'); if (+t > Date.now()) next = 'الأذان القادم: ' + PR_NAMES[ADHAN_KEYS[+k]] + ' ' + prClock(new Date(+t)); } } catch (e) {}
   let ready = true; try { if (NATIVE && Android.adhanReady && a.on && snd) ready = Android.adhanReady(snd.id); } catch (e) {}
   el.innerHTML = `<h3>🔊 الأذان</h3>
-    <label class="wxSw"><input type="checkbox" id="adOn" ${a.on ? 'checked' : ''}> رفع الأذان في أوقات الصلاة ${NATIVE ? '(حتى والبرنامج مغلق)' : '(ما دامت صفحة الملاح مفتوحة)'}</label>
+    <label class="wxSw"><input type="checkbox" id="adOn" ${a.on ? 'checked' : ''}> رفع الأذان في أوقات الصلاة ${NATIVE ? '(حتى والبرنامج مغلق)' : ''}</label>
     <div class="${a.on ? '' : 'hidden'}" id="adMore">
       <div class="adPr">${ADHAN_KEYS.map((k) => `<button class="chip${a.prayers.includes(k) ? ' on' : ''}" data-ad="${k}">${PR_NAMES[k]}</button>`).join('')}</div>
       <div class="s" style="padding:6px 14px 2px">الصوت:</div>
       ${ADHAN_SOUNDS.slice().sort((x, y) => (prCfg.method === 'jafari' ? (y.jafari ? 1 : 0) - (x.jafari ? 1 : 0) : (x.jafari ? 1 : 0) - (y.jafari ? 1 : 0))).map((x) => `<label class="wxSw adSnd"><input type="radio" name="adS" value="${x.id}" ${snd && snd.id === x.id ? 'checked' : ''}> <span style="flex:1">${esc(x.name)}<br><small class="s">${esc(x.credit)}</small></span><button class="chip" data-play="${x.id}">▶</button></label>`).join('')}
       ${NATIVE ? `<label class="wxSw"><input type="checkbox" id="adLoud" ${a.loud ? 'checked' : ''}> يُرفع حتى والهاتف على الصامت</label>` : ''}
       <div class="s" style="padding:4px 14px 12px">${!ready ? '⏳ جارٍ تنزيل صوت الأذان (مرة واحدة)… ' : ''}${next}</div>
+      ${adhanPushHtml()}
     </div>`;
+  if ($('adPushOn')) $('adPushOn').onclick = () => adhanPushEnable(false);
+  if ($('adPushTest')) $('adPushTest').onclick = () => adhanPushEnable(true);
   const save = (ch) => { prCfg.adhan = Object.assign(adhanCfg(), ch); store.set('prCfg', prCfg); adhanSync(true); prAdhanCard(); };
   $('adOn').onchange = () => save({ on: $('adOn').checked, sound: a.sound || adhanDefaultSound() });
   el.querySelectorAll('[data-ad]').forEach((b) => { b.onclick = () => { const p = adhanCfg().prayers.slice(), i = p.indexOf(b.dataset.ad); if (i >= 0) p.splice(i, 1); else p.push(b.dataset.ad); save({ prayers: p }); }; });
@@ -254,7 +257,77 @@ function adhanSync(force) {
   adhanSent = { lat: w.lat, lng: w.lng };
   if (NATIVE && Android.adhanConfig) {
     try { Android.adhanConfig(JSON.stringify({ on: !!a.on && !!snd, prayers: a.prayers, method: prCfg.method, asr: prCfg.asr || 1, adj: prCfg.adj || {}, lat: w.lat, lng: w.lng, loud: !!a.loud, sound: snd ? { id: snd.id, url: ADHAN_BASE + snd.file } : null })); } catch (e) {}
-  } else adhanWebPlan();
+  } else { adhanWebPlan(); adhanPushSync(); }
+}
+/* ---------------- web (iPhone, laptop): a notification at prayer time even with the page closed ----------------
+   A small Cloudflare worker keeps this browser's push address with its rounded position and method, and
+   sends a notification at each prayer time; tapping it opens Mallah, which plays the full adhan. */
+const adhanPushUrl = () => { try { return localStorage.getItem('adhanPushUrl') || 'https://mallah-adhan.mustafasami446.workers.dev'; } catch (e) { return 'https://mallah-adhan.mustafasami446.workers.dev'; } };
+const adhanIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const adhanStandalone = () => (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+const adhanPushPossible = () => !NATIVE && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window && !!adhanPushUrl();
+async function adhanPushSub(create) {
+  const reg = await navigator.serviceWorker.ready;
+  let s = await reg.pushManager.getSubscription();
+  if (!s && create) {
+    const k = (await (await fetch(adhanPushUrl() + '/key')).json()).key;
+    s = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: Uint8Array.from(atob(k.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((k.length + 3) % 4)), (c) => c.charCodeAt(0)) });
+  }
+  return s;
+}
+async function adhanPushSend(on, test) {
+  const s = await adhanPushSub(on); if (!s) return null;
+  const a = adhanCfg(), w = prWhere();
+  const r = await fetch(adhanPushUrl() + '/sub', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ on, test: !!test, sub: s.toJSON(), cfg: { lat: w.lat, lng: w.lng, method: prCfg.method, asr: prCfg.asr || 1, adj: prCfg.adj || {}, prayers: a.prayers, tz: -new Date().getTimezoneOffset() } }) });
+  return r.json();
+}
+async function adhanPushEnable(test) {
+  try {
+    if (Notification.permission !== 'granted' && (await Notification.requestPermission()) !== 'granted') { toast('لم يُسمح بالإشعارات — فعّلها من إعدادات المتصفح', 5000); return; }
+    const j = await adhanPushSend(true, test);
+    store.set('adhanPush', true); store.set('adhanPushAt', Date.now());
+    toast(test ? (j && j.ok ? '✓ أُرسل إشعار تجريبي — يصل خلال ثوانٍ' : 'تعذّر إرسال الإشعار التجريبي') : '✓ سيصلك إشعار في وقت كل صلاة حتى والصفحة مغلقة', 5000);
+  } catch (e) { toast('تعذّر تفعيل الإشعار — تحقق من الإنترنت', 4500); }
+  prAdhanCard();
+}
+async function adhanPushSync() {
+  if (!adhanPushPossible() || !store.get('adhanPush', false)) return;
+  try {
+    const on = !!adhanCfg().on;
+    await adhanPushSend(on);
+    if (!on) store.set('adhanPush', false);
+    store.set('adhanPushAt', Date.now());
+  } catch (e) {}
+}
+function adhanPushHtml() {
+  if (NATIVE || !adhanCfg().on) return '';
+  if (adhanIOS() && !adhanStandalone()) return '<div class="adPush"><b>📲 ليصلك الأذان والصفحة مغلقة</b><br>أضف الملاح إلى الشاشة الرئيسية: زر المشاركة <span dir="ltr">⬆️</span> ← «إضافة إلى الشاشة الرئيسية»، ثم افتحه من الأيقونة وفعّل الإشعار من هنا.</div>';
+  if (!adhanPushPossible()) return '';
+  const on = store.get('adhanPush', false) && Notification.permission === 'granted';
+  return `<div class="adPush">${on ? '✓ <b>إشعار الأذان مفعّل</b> — يصلك في وقت كل صلاة حتى والصفحة مغلقة، والشاشة مطفأة. اضغطه ليُرفع الأذان.' : '<b>🔔 أذان والصفحة مغلقة</b><br>فعّل الإشعار ليصلك تنبيه في وقت كل صلاة حتى والصفحة مغلقة؛ اضغطه ليُرفع الأذان.'}
+    <div class="btnRow" style="padding:8px 0 0">${on ? '<button class="chip" id="adPushTest">🔔 جرّب الإشعار</button>' : '<button class="chip go" id="adPushOn">🔔 تفعيل الإشعار</button>'}</div></div>`;
+}
+/* opened from the notification: show the prayer page and play the adhan */
+function adhanFromPush(k) {
+  openPrayer();
+  const snd = adhanSound(adhanCfg().sound); if (!snd) return;
+  const au = new Audio(ADHAN_BASE + snd.file);
+  au.play().catch(() => {
+    const b = document.createElement('div'); b.id = 'adPlayNow'; b.className = 'wxModal';
+    b.innerHTML = `<div class="card" style="text-align:center;padding:20px"><div style="font-size:44px">🕌</div><b style="font-size:18px">حان وقت صلاة ${PR_NAMES[k] || ''}</b><div class="btnRow" style="justify-content:center;padding:14px 0 0"><button class="chip go" id="adPlayGo">▶ رفع الأذان</button><button class="chip" id="adPlayNo">إغلاق</button></div></div>`;
+    document.body.appendChild(b);
+    $('adPlayGo').onclick = () => { au.play().catch(() => {}); b.remove(); };
+    $('adPlayNo').onclick = () => b.remove();
+  });
+  window.adhanNow = au;
+}
+{
+  const m = location.search.match(/[?&]adhan=([a-z]+)/);
+  if (m) { history.replaceState(null, '', location.pathname); setTimeout(() => adhanFromPush(m[1]), 900); }
+  if (navigator.serviceWorker) navigator.serviceWorker.addEventListener('message', (e) => { if (e.data && e.data.adhan) adhanFromPush(e.data.adhan); });
+  // keep the address fresh (the push services change it now and then)
+  setTimeout(() => { if (Date.now() - store.get('adhanPushAt', 0) > 3 * 86400e3) adhanPushSync(); }, 12000);
 }
 /* web: only while the page is open */
 let adhanWebT = null;

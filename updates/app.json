@@ -1,8 +1,8 @@
 {
-  "versionCode": 62,
-  "versionName": "5.16",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.16/Mallah-Navigator.apk",
-  "size": 2610117,
-  "notes": "إصلاح «اكتشف ما حولك»: المستشفيات والصيدليات والوقود وغيرها تظهر دائمًا، حتى عندما تكون خوادم الخرائط العامة مشغولة.",
-  "sha256": "e50df23058a4291a1884990fd34fe88eeed8a036ca7a7e65e88626210a385afe"
+  "versionCode": 63,
+  "versionName": "5.17",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.17/Mallah-Navigator.apk",
+  "size": 2614213,
+  "notes": "تحسينات، وإشعار الأذان للآيفون واللابتوب حتى والصفحة مغلقة.",
+  "sha256": "f35920cbf25ae5a3c383aa6e9dcfb3f5ef06fcee83068123d9055e0e8f04601c"
 }
