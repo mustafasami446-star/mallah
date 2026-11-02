@@ -23,7 +23,17 @@ jobs:
         run: |
           echo "token present: $([ -n "$CLOUDFLARE_API_TOKEN" ] && echo yes || echo NO) (length ${#CLOUDFLARE_API_TOKEN})"
           echo "account present: $([ -n "$CLOUDFLARE_ACCOUNT_ID" ] && echo yes || echo NO) (length ${#CLOUDFLARE_ACCOUNT_ID})"
-          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then echo "::error::Add CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID in Settings → Secrets and variables → Actions"; exit 1; fi
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then echo "::error::Add CLOUDFLARE_API_TOKEN in Settings → Secrets and variables → Actions"; exit 1; fi
+          # the account id is 32 hex characters; if it is missing or wrong, ask Cloudflare which account the token belongs to
+          if ! echo "$CLOUDFLARE_ACCOUNT_ID" | grep -qE '^[0-9a-f]{32}$'; then
+            ID=$(curl -s -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" https://api.cloudflare.com/client/v4/accounts | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{const j=JSON.parse(s);console.log((j.result&&j.result[0]&&j.result[0].id)||'');if(!j.success)console.error(JSON.stringify(j.errors))}catch(e){}})")
+            if [ -z "$ID" ]; then
+              ID=$(curl -s -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" https://api.cloudflare.com/client/v4/user/tokens/verify >/dev/null; curl -s -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "https://api.cloudflare.com/client/v4/memberships" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{const j=JSON.parse(s);console.log((j.result&&j.result[0]&&j.result[0].account&&j.result[0].account.id)||'')}catch(e){}})")
+            fi
+            echo "account id from the token: $([ -n "$ID" ] && echo found || echo NOT FOUND)"
+            if [ -z "$ID" ]; then echo "::error::CLOUDFLARE_ACCOUNT_ID must be the 32-character Account ID"; exit 1; fi
+            echo "CLOUDFLARE_ACCOUNT_ID=$ID" >> "$GITHUB_ENV"
+          fi
       - name: Database
         working-directory: worker/adhan
         run: |
