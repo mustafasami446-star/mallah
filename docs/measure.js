@@ -244,8 +244,8 @@ function measOnLocation() {
 }
 const _prevOps = window.onOpsLocation;
 window.onOpsLocation = function () { if (_prevOps) _prevOps(); measOnLocation(); };
-$('mType').onclick = () => {
-  const t = prompt('أدخل إحداثيات نقطة أو أكثر مفصولة بـ ; (عشرية، درجات، أو UTM)', '');
+$('mType').onclick = async () => {
+  const t = await uiPrompt('أدخل إحداثيات نقطة أو أكثر مفصولة بـ ; (عشرية، درجات، أو UTM)', '', { ok: 'إضافة' });
   if (!t) return;
   let ok = 0, bad = 0;
   t.split(/[;\n]+/).map((x) => x.trim()).filter(Boolean).forEach((x) => { const p = parseCoords(x); if (p) { M.pts.push([p.lat, p.lng]); M.sig.push(0.5); ok++; } else bad++; });
@@ -254,16 +254,16 @@ $('mType').onclick = () => {
   if (ok) { const b = L.latLngBounds(M.pts); setFollow(false); map.fitBounds(b.pad(0.3), { maxZoom: 19 }); }
   toast(ok + ' نقطة أضيفت' + (bad ? ' · ' + bad + ' غير مفهومة' : ''));
 };
-$('mDims').onclick = () => {
-  const l = parseFloat(normDigits(prompt('الطول بالأمتار', '') || '')); if (!isFinite(l) || l <= 0) return;
-  const w = parseFloat(normDigits(prompt('العرض بالأمتار', '') || '')); if (!isFinite(w) || w <= 0) return;
+$('mDims').onclick = async () => {
+  const l = parseFloat(normDigits((await uiPrompt('الطول بالأمتار', '', { num: 1, ok: 'التالي' })) || '')); if (!isFinite(l) || l <= 0) return;
+  const w = parseFloat(normDigits((await uiPrompt('العرض بالأمتار', '', { num: 1, ok: 'احسب' })) || '')); if (!isFinite(w) || w <= 0) return;
   const a = l * w;
   actionSheet('📐 ' + nf(l, 2) + ' × ' + nf(w, 2) + ' م', [{ label: '<b>' + fmtArea(a) + '</b> · ' + areaUnits(a), fn: () => copyText(fmtArea(a) + ' (' + areaUnits(a) + ')') }]);
 };
 
 /* ---------- toolbar ---------- */
-function setMode(m) {
-  if (M.pts.length && m !== M.mode && !confirm('تغيير الطريقة يمسح النقاط الحالية. متابعة؟')) return;
+async function setMode(m) {
+  if (M.pts.length && m !== M.mode && !(await uiConfirm('تغيير الطريقة يمسح النقاط الحالية. متابعة؟', { ok: 'متابعة' }))) return;
   if (M.walkRec) { M.walkRec = false; keepGps(); }
   if (m !== M.mode) { M.pts = []; M.sig = []; }
   M.mode = m;
@@ -272,7 +272,7 @@ function setMode(m) {
 }
 document.querySelectorAll('#mModes button').forEach((b) => { b.onclick = () => setMode(b.dataset.m); });
 $('mUndo').onclick = () => { M.pts.pop(); M.sig.pop(); redraw(); };
-$('mClear').onclick = () => { if (M.pts.length && confirm('مسح كل النقاط؟')) { M.pts = []; M.sig = []; M.editId = null; redraw(); } };
+$('mClear').onclick = async () => { if (M.pts.length && (await uiConfirm('مسح كل النقاط؟', { ok: 'مسح', danger: true }))) { M.pts = []; M.sig = []; M.editId = null; redraw(); } };
 function openMeasure(mode) {
   if (navState) endNav(false, true);
   if (directState) endDirect(false);
@@ -287,8 +287,8 @@ function openMeasure(mode) {
   }
   redraw();
 }
-function closeMeasure() {
-  if (M.pts.length && !confirm('إنهاء القياس؟ النقاط غير المحفوظة ستُمسح.')) return;
+async function closeMeasure() {
+  if (M.pts.length && !(await uiConfirm('إنهاء القياس؟ النقاط غير المحفوظة ستُمسح.', { ok: 'إنهاء', danger: true }))) return;
   if (avg) { avg = null; clearInterval(avgTimer); $("mHere").textContent = "📍 زاوية هنا"; $("mHere").classList.remove("rec"); }
   measActive = false; M.walkRec = false; M.pts = []; M.sig = []; keepGps();
   mLayer.clearLayers(); mVerts.forEach((m) => map.removeLayer(m)); mVerts = [];
@@ -331,12 +331,12 @@ function measCsv(m) {
   rows.push([m.type === 'line' ? 'Length_m' : 'Perimeter_m', m.per.toFixed(2)]);
   return rows.map((r) => r.map(csvCell).join(',')).join('\r\n') + '\r\n';
 }
-$('mSave').onclick = () => {
+$('mSave').onclick = async () => {
   const r = result(); if (!(r.closed || (M.mode === 'line' && r.S.length >= 2))) return;
   if (M.walkRec) { M.walkRec = false; simplifyWalk(); keepGps(); }
   const old = M.editId && measures.find((x) => x.id === M.editId);
   const def = old ? old.name : (M.mode === 'line' ? 'خط ' : 'قطعة ') + stamp(new Date());
-  const name = prompt('اسم القياس', def); if (name == null) return;
+  const name = await uiPrompt('اسم القياس', def, { ok: 'حفظ' }); if (name == null) return;
   const S = shapePts();
   const m = { id: old ? old.id : Date.now().toString(36), name: name.trim() || def, type: M.mode === 'line' ? 'line' : 'area', how: M.mode,
     pts: S.map((p) => [Math.round(p[0] * 1e7) / 1e7, Math.round(p[1] * 1e7) / 1e7]), src: M.pts.map((p) => [p[0], p[1]]), sig: M.sig.slice(),
@@ -364,8 +364,8 @@ function renderMeasures() {
         { label: '↗ مشاركة النتيجة', fn: () => doShare(measText(m)) },
         { label: '🌍 حفظ كملف KML', fn: () => saveTextFile(fn + '.kml', 'application/vnd.google-earth.kml+xml', measKml(m)) },
         { label: '📊 حفظ الزوايا كملف Excel (CSV)', fn: () => saveTextFile(fn + '.csv', 'text/csv', measCsv(m)) },
-        { label: '✏️ إعادة التسمية', fn: () => { const n = prompt('الاسم', m.name); if (n && n.trim()) { m.name = n.trim(); store.set('measures', measures); renderMeasures(); } } },
-        { label: '🗑 حذف', cls: 'danger', fn: () => { if (confirm('حذف «' + m.name + '»؟')) { measures.splice(i, 1); store.set('measures', measures); renderMeasures(); } } }
+        { label: '✏️ إعادة التسمية', fn: async () => { const n = await uiPrompt('الاسم', m.name, { ok: 'حفظ' }); if (n && n.trim()) { m.name = n.trim(); store.set('measures', measures); renderMeasures(); } } },
+        { label: '🗑 حذف', cls: 'danger', fn: async () => { if (await uiConfirm('حذف «' + m.name + '»؟', { ok: 'حذف', danger: true })) { measures.splice(i, 1); store.set('measures', measures); renderMeasures(); } } }
       ]);
     };
   });

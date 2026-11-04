@@ -86,14 +86,14 @@ function renderRecBar() {
   $('recToggle').textContent = '⏹ إيقاف التسجيل';
 }
 setInterval(() => { if (rec) renderRecBar(); }, 30000);
-function stopRec() {
+async function stopRec() {
   if (!rec) return;
   const r = rec;
   rec = null; try { localStorage.removeItem('recTrack'); } catch (e) {}
   drawRec(); renderRecBar(); keepGps();
   if (r.pts.length < 2 || r.dist < 20) { toast('المسار قصير جدًا ولم يُحفظ'); return; }
   const def = 'مسار ' + stamp(new Date(r.start)) + ' ' + hhmm(new Date(r.start));
-  const name = (prompt('اسم المسار', def) || def).trim();
+  const name = ((await uiPrompt('اسم المسار', def, { ok: 'حفظ' })) || def).trim();
   const pts = r.pts.map((p) => [p[0], p[1]]);
   const idx = simplifyIdx(pts, 3);
   const t = { id: Date.now().toString(36), name, date: r.start, dur: r.pts[r.pts.length - 1][2] - r.start, dist: r.dist, pts: idx.map((i) => pts[i]) };
@@ -101,7 +101,7 @@ function stopRec() {
   if (!saveTracks()) { tracks.shift(); return; }
   say('تم حفظ المسار'); toast('تم حفظ المسار «' + name + '» (' + fmtDist(r.dist) + ')', 4000);
 }
-$('recToggle').onclick = () => { if (rec) { if (confirm('إيقاف تسجيل المسار وحفظه؟')) stopRec(); } else startRec(); };
+$('recToggle').onclick = async () => { if (rec) { if (await uiConfirm('إيقاف تسجيل المسار وحفظه؟', { ok: 'إيقاف وحفظ' })) stopRec(); } else startRec(); };
 
 /* show a saved track */
 function showTrack(t) {
@@ -186,14 +186,14 @@ function renderTracks() {
       actionSheet(t.name, [
         { label: '🗺 عرض على الخريطة', fn: () => { $('tracksPanel').classList.add('hidden'); showTrack(t); } },
         { label: '💾 حفظ كملف GPX (لمشاركته أو فتحه في Google Earth)', fn: () => saveTextFile(t.name.replace(/[\\/:*?"<>|]/g, '_') + '.gpx', 'application/gpx+xml', trackGpx(t)) },
-        { label: '✏️ إعادة التسمية', fn: () => { const n = prompt('الاسم الجديد', t.name); if (n && n.trim()) { t.name = n.trim(); saveTracks(); renderTracks(); } } },
-        { label: '🗑 حذف', cls: 'danger', fn: () => { if (confirm('حذف «' + t.name + '»؟')) { tracks.splice(i, 1); saveTracks(); renderTracks(); } } }
+        { label: '✏️ إعادة التسمية', fn: async () => { const n = await uiPrompt('الاسم الجديد', t.name, { ok: 'حفظ' }); if (n && n.trim()) { t.name = n.trim(); saveTracks(); renderTracks(); } } },
+        { label: '🗑 حذف', cls: 'danger', fn: async () => { if (await uiConfirm('حذف «' + t.name + '»؟', { ok: 'حذف', danger: true })) { tracks.splice(i, 1); saveTracks(); renderTracks(); } } }
       ]);
     };
   });
 }
 $('openTracks').onclick = () => { $('menuDrop').classList.add('hidden'); renderTracks(); $('tracksPanel').classList.remove('hidden'); };
-$('recStartBtn').onclick = () => { if (rec) { if (confirm('إيقاف تسجيل المسار وحفظه؟')) stopRec(); } else { startRec(); $('tracksPanel').classList.add('hidden'); } renderTracks(); };
+$('recStartBtn').onclick = async () => { if (rec) { if (await uiConfirm('إيقاف تسجيل المسار وحفظه؟', { ok: 'إيقاف وحفظ' })) stopRec(); } else { startRec(); $('tracksPanel').classList.add('hidden'); } renderTracks(); };
 $('trackImpBtn').onclick = () => $('trackFile').click();
 $('trackFile').addEventListener('change', async (e) => {
   const f = e.target.files && e.target.files[0]; e.target.value = ''; if (!f) return;
@@ -239,7 +239,7 @@ function zoneMenu(z) {
   const t = ZT[z.type] || ZT.info;
   actionSheet(t.icon + ' ' + z.name + ' — نصف القطر ' + fmtDist(z.r), [
     { label: z.on ? '🔕 إيقاف التنبيه لهذه المنطقة' : '🔔 تشغيل التنبيه', fn: () => { z.on = !z.on; saveZones(); renderZonesOnMap(); renderZones(); } },
-    { label: '✏️ إعادة التسمية', fn: () => { const n = prompt('اسم المنطقة', z.name); if (n && n.trim()) { z.name = n.trim(); saveZones(); renderZonesOnMap(); renderZones(); } } },
+    { label: '✏️ إعادة التسمية', fn: async () => { const n = await uiPrompt('اسم المنطقة', z.name, { ok: 'حفظ' }); if (n && n.trim()) { z.name = n.trim(); saveZones(); renderZonesOnMap(); renderZones(); } } },
     { label: '🗑 حذف المنطقة', cls: 'danger', fn: () => { zones = zones.filter((x) => x !== z); delete zoneState[z.id]; saveZones(); renderZonesOnMap(); renderZones(); updateZoneBanner(); } }
   ]);
 }
@@ -248,8 +248,8 @@ function addZoneAt(lat, lng, defName) {
     label: ZT[k].icon + ' ' + ZT[k].ar,
     fn: () => actionSheet('نصف قطر المنطقة', [100, 250, 500, 1000, 2000].map((r) => ({
       label: fmtDist(r),
-      fn: () => {
-        const n = prompt('اسم المنطقة', defName || ZT[k].ar); if (n == null) return;
+      fn: async () => {
+        const n = await uiPrompt('اسم المنطقة', defName || ZT[k].ar, { ok: 'إضافة' }); if (n == null) return;
         zones.push({ id: Date.now().toString(36), name: n.trim() || ZT[k].ar, type: k, lat, lng, r, on: true });
         saveZones(); renderZonesOnMap(); toast('تمت إضافة منطقة التنبيه'); onOpsLocation();
       }
@@ -291,7 +291,7 @@ function renderZones() {
   l.querySelectorAll('[data-zshow]').forEach((b) => { b.onclick = () => { const z = zones[+b.dataset.zshow]; $('zonesPanel').classList.add('hidden'); setFollow(false); map.fitBounds(L.latLng(z.lat, z.lng).toBounds(z.r * 2.6)); }; });
   l.querySelectorAll('[data-zmore]').forEach((b) => { b.onclick = () => zoneMenu(zones[+b.dataset.zmore]); });
 }
-$('openZones').onclick = () => { $('menuDrop').classList.add('hidden'); if (!fieldUnlocked && !tryUnlock()) return; renderZones(); $('zonesPanel').classList.remove('hidden'); };
+$('openZones').onclick = async () => { $('menuDrop').classList.add('hidden'); if (!fieldUnlocked && !(await tryUnlock())) return; renderZones(); $('zonesPanel').classList.remove('hidden'); };
 $('zoneHereBtn').onclick = () => { if (!me) { toast('لم يُحدَّد موقعك بعد'); return; } $('zonesPanel').classList.add('hidden'); addZoneAt(me.lat, me.lng); };
 $('zoneDestBtn').onclick = () => { if (dest) addZoneAt(dest.lat, dest.lng, dest.name); };
 
@@ -300,16 +300,16 @@ let visits = store.get('visits', []);
 const VS = { ok: '✅ سليم / تم الفحص', maint: '🔧 يحتاج صيانة', fault: '⛔ عطل / متوقف', other: '📝 أخرى' };
 function saveVisits() { try { localStorage.setItem('visits', JSON.stringify(visits)); return true; } catch (e) { toast('لا توجد مساحة كافية لحفظ الزيارة'); return false; } }
 function siteAt(lat, lng) { return allSites().find((s) => hav([s.lat, s.lng], [lat, lng]) < 3); }
-function logVisit(target) {
+async function logVisit(target) {
   if (!target) return;
   if (!me) { toast('لم يُحدَّد موقعك بعد'); startLocation(); return; }
   const dist = hav([me.lat, me.lng], [target.lat, target.lng]);
-  if (dist > 100 && !confirm('أنت على بعد ' + fmtDist(dist) + ' من الموقع. هل تريد تسجيل الزيارة رغم ذلك؟')) return;
+  if (dist > 100 && !(await uiConfirm('أنت على بعد ' + fmtDist(dist) + ' من الموقع. هل تريد تسجيل الزيارة رغم ذلك؟', { ok: 'تسجيل' }))) return;
   const site = siteAt(target.lat, target.lng);
   actionSheet('تسجيل زيارة: ' + target.name, Object.keys(VS).map((k) => ({
     label: VS[k],
-    fn: () => {
-      const note = prompt('ملاحظة (اختياري)', '');
+    fn: async () => {
+      const note = await uiPrompt('ملاحظة (اختياري)', '', { ok: 'تسجيل' });
       if (note == null) return;
       visits.unshift({ id: Date.now().toString(36), site: target.name, set: site ? site.set : '', t: Date.now(), lat: me.lat, lng: me.lng, acc: Math.round(me.acc || 0), dist: Math.round(dist), status: k, note: note.trim() });
       if (!saveVisits()) { visits.shift(); return; }
@@ -330,11 +330,11 @@ function renderVisits() {
   l.innerHTML = visits.slice(0, 200).map((v, i) => { const d = new Date(v.t); return `<div class="item"><div style="font-size:20px">${VS[v.status].split(' ')[0]}</div>
     <div class="grow"><div class="t">${esc(v.site)}</div><div class="s">${stamp(d)} ${hhmm(d)} · ${esc(VS[v.status].replace(/^\S+\s/, ''))}${v.note ? ' · ' + esc(v.note) : ''}${v.dist > 100 ? ' · <span class="warnTxt">على بعد ' + fmtDist(v.dist) + '</span>' : ''}</div></div>
     <button class="chip del" data-vrm="${i}">حذف</button></div>`; }).join('');
-  l.querySelectorAll('[data-vrm]').forEach((b) => { b.onclick = () => { if (confirm('حذف هذه الزيارة؟')) { visits.splice(+b.dataset.vrm, 1); saveVisits(); renderVisits(); } }; });
+  l.querySelectorAll('[data-vrm]').forEach((b) => { b.onclick = async () => { if (await uiConfirm('حذف هذه الزيارة؟', { ok: 'حذف', danger: true })) { visits.splice(+b.dataset.vrm, 1); saveVisits(); renderVisits(); } }; });
 }
-$('openVisits').onclick = () => { $('menuDrop').classList.add('hidden'); if (!fieldUnlocked && !tryUnlock()) return; renderVisits(); $('visitsPanel').classList.remove('hidden'); };
+$('openVisits').onclick = async () => { $('menuDrop').classList.add('hidden'); if (!fieldUnlocked && !(await tryUnlock())) return; renderVisits(); $('visitsPanel').classList.remove('hidden'); };
 $('visitsExport').onclick = () => { if (!visits.length) { toast('لا توجد زيارات لتصديرها'); return; } saveTextFile('زيارات-' + stamp(new Date()) + '.csv', 'text/csv', visitsCsv()); };
-$('visitsClear').onclick = () => { if (visits.length && confirm('حذف كل الزيارات المسجلة؟ صدّرها أولًا إذا كنت تحتاجها.')) { visits = []; saveVisits(); renderVisits(); } };
+$('visitsClear').onclick = async () => { if (visits.length && (await uiConfirm('حذف كل الزيارات المسجلة؟ صدّرها أولًا إذا كنت تحتاجها.', { ok: 'حذف الكل', danger: true }))) { visits = []; saveVisits(); renderVisits(); } };
 
 /* arrival at a work site → offer to log a visit */
 window.onArrived = function (at) {

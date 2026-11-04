@@ -233,7 +233,7 @@ function teamInvite() {
   const txt = '👥 انضم إلى مجموعتي «' + teamView.name + '» في تطبيق الملاح لنرى مواقع بعضنا على الطريق.\n\nرمز المجموعة: ' + team.code + '\n\n' + link + '\n\n(في تطبيق أندرويد: ☰ ← الفريق ← الانضمام، والصق الرمز)';
   if (NATIVE && Android.shareText) Android.shareText(txt);
   else if (navigator.share) navigator.share({ text: txt }).catch(() => {});
-  else { try { navigator.clipboard.writeText(txt); toast('✓ نُسخت الدعوة'); } catch (e) { prompt('انسخ الدعوة:', txt); } }
+  else { try { navigator.clipboard.writeText(txt); toast('✓ نُسخت الدعوة'); } catch (e) { uiPrompt('انسخ الدعوة:', txt); } }
 }
 
 /* ---------------- the meeting point ---------------- */

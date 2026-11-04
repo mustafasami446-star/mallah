@@ -145,6 +145,6 @@ async function shareApp() {
       if (navigator.share) { await navigator.share({ text }); return; }
     }
   } catch (e) { if (e && e.name === 'AbortError') return; }
-  try { await navigator.clipboard.writeText(text); toast('✓ نُسخ الرابط — الصقه في واتساب'); } catch (e) { prompt('انسخ الرابط:', link); }
+  try { await navigator.clipboard.writeText(text); toast('✓ نُسخ الرابط — الصقه في واتساب'); } catch (e) { uiPrompt('انسخ الرابط:', link); }
 }
 { const b = $('shareApp'); if (b) b.onclick = shareApp; }

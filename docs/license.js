@@ -130,7 +130,7 @@ function showLock(closable) {
   document.body.appendChild(el);
   if ($('lkX')) $('lkX').onclick = () => el.remove();
   if (LIC.state === 'active') return;
-  $('lkCopy').onclick = () => { try { navigator.clipboard.writeText(LIC.dev); toast('✓ نُسخ رقم الجهاز'); } catch (e) { prompt('رقم جهازك:', LIC.dev); } };
+  $('lkCopy').onclick = () => { try { navigator.clipboard.writeText(LIC.dev); toast('✓ نُسخ رقم الجهاز'); } catch (e) { uiPrompt('رقم جهازك — انسخه:', LIC.dev); } };
   $('lkWa').onclick = () => openExt('https://wa.me/' + LIC.wa + '?text=' + encodeURIComponent(waText()));
   $('lkGo').onclick = licActivate;
   // paying from this same phone: keep the payment code as a picture, then «scan from gallery» in SuperQi
@@ -166,8 +166,8 @@ licInit().then(() => { const pend = store.get('licPending', null); if (pend && L
 
 /* ---------------- designer mode (generating codes) ---------------- */
 const LICA_PUB = LIC.pub;
-const escA = esc, msgA = (m) => toast(m, 4000), openA = (u) => openExt(u), confirmA = (m) => window.confirm(m);
-function copyA(t) { try { navigator.clipboard.writeText(t).then(() => toast('✓ نُسخ'), () => prompt('انسخ:', t)); } catch (e) { prompt('انسخ:', t); } }
+const escA = esc, msgA = (m) => toast(m, 4000), openA = (u) => openExt(u), confirmA = (m) => uiConfirm(m, { danger: true });
+function copyA(t) { try { navigator.clipboard.writeText(t).then(() => toast('✓ نُسخ'), () => uiPrompt('انسخ:', t)); } catch (e) { uiPrompt('انسخ:', t); } }
 function adminShow() { const b = $('openAdmin'); if (b) b.classList.toggle('hidden', !localStorage.getItem('licAdminKey')); }
 function openAdmin() {
   document.querySelectorAll('.panel:not(.hidden)').forEach((p) => p.classList.add('hidden'));
@@ -175,7 +175,7 @@ function openAdmin() {
   licaRender($('adminBody'));
 }
 let adminTaps = 0, adminTapT = 0;
-document.addEventListener('click', (e) => {
+document.addEventListener('click', async (e) => {
   if (!e.target.closest('.cApp, .lkHead img')) return;
   if (Date.now() - adminTapT > 1500) adminTaps = 0;
   adminTapT = Date.now();
@@ -186,7 +186,7 @@ document.addEventListener('click', (e) => {
     openAdmin();
   };
   if (localStorage.getItem('licAdminKey')) { go(); return; }
-  const k = prompt('وضع المصمم — الصق المفتاح السري:');
+  const k = await uiPrompt('وضع المصمم — الصق المفتاح السري:', '', { ok: 'حفظ' });
   if (!k) return;
   licaSetKey(k).then((ok) => { if (ok) { toast('✓ حُفظ المفتاح على هذا الجهاز'); adminShow(); go(); } else toast('المفتاح غير صحيح'); });
 });

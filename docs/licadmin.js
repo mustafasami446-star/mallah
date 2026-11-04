@@ -249,7 +249,7 @@ function licaPanel(root) {
   };
   q('laPin').onclick = () => licaPinSetup(root, () => licaPanel(root));
   q('laLockNow').onclick = () => { licaUnlocked = false; licaRender(root); };
-  q('laForget').onclick = () => { if (confirmA('حذف المفتاح السري من هذا الجهاز؟ (احتفظ بنسخة منه أولًا)')) { localStorage.removeItem('licAdminKey'); LICA.key = null; msgA('حُذف المفتاح من هذا الجهاز'); } };
+  q('laForget').onclick = async () => { if (await confirmA('حذف المفتاح السري من هذا الجهاز؟ (احتفظ بنسخة منه أولًا)')) { localStorage.removeItem('licAdminKey'); LICA.key = null; msgA('حُذف المفتاح من هذا الجهاز'); } };
 }
 
 /* ---------------- the lock: fingerprint / face, or a PIN ---------------- */

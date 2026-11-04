@@ -370,8 +370,8 @@ function renderSitesPanel() {
       actionSheet(s.name + ' — ' + s.sites.length + ' موقعًا', [
         { label: '💾 تصدير…', fn: () => exportMenu([s], s.name) },
         { label: '🗺 عرض المواقع على الخريطة', fn: () => { if (!s.sites.length) return; $('sitesPanel').classList.add('hidden'); s.visible = true; saveSiteSets(); renderSitesOnMap(); setFollow(false); map.fitBounds(L.latLngBounds(s.sites.map((x) => [x[1], x[2]])).pad(0.1), { maxZoom: 16 }); } },
-        { label: '✏️ إعادة التسمية', fn: () => { const n = prompt('اسم القائمة', s.name); if (n && n.trim()) { s.name = n.trim(); saveSiteSets(); renderSitesPanel(); renderSitesOnMap(); } } },
-        { label: '🗑 حذف القائمة', cls: 'danger', fn: () => { if (!confirm('حذف قائمة «' + s.name + '» من الهاتف؟')) return; siteSets.splice(i, 1); saveSiteSets(); renderSitesPanel(); renderSitesOnMap(); } }
+        { label: '✏️ إعادة التسمية', fn: async () => { const n = await uiPrompt('اسم القائمة', s.name, { ok: 'حفظ' }); if (n && n.trim()) { s.name = n.trim(); saveSiteSets(); renderSitesPanel(); renderSitesOnMap(); } } },
+        { label: '🗑 حذف القائمة', cls: 'danger', fn: async () => { if (!(await uiConfirm('حذف قائمة «' + s.name + '» من الهاتف؟', { ok: 'حذف', danger: true }))) return; siteSets.splice(i, 1); saveSiteSets(); renderSitesPanel(); renderSitesOnMap(); } }
       ]);
     };
   });
@@ -414,9 +414,9 @@ $('expAllBtn').onclick = () => exportMenu(siteSets, 'مواقع العمل ' + n
 
 /* ---------- add a site from the field ---------- */
 function addSite(lat, lng, defName) {
-  const finish = (set) => {
-    const n = prompt('اسم الموقع أو رقمه', defName || ''); if (n == null || !n.trim()) return;
-    const d = prompt('وصف (اختياري)', '') || '';
+  const finish = async (set) => {
+    const n = await uiPrompt('اسم الموقع أو رقمه', defName || '', { ok: 'التالي' }); if (n == null || !n.trim()) return;
+    const d = (await uiPrompt('وصف (اختياري)', '', { ok: 'إضافة' })) || '';
     set.sites.push([n.trim(), Math.round(lat * 1e7) / 1e7, Math.round(lng * 1e7) / 1e7, d.trim()]);
     set.visible = true;
     if (!saveSiteSets()) { set.sites.pop(); return; }
@@ -424,10 +424,10 @@ function addSite(lat, lng, defName) {
     toast('تمت إضافة «' + n.trim() + '» إلى ' + set.name);
   };
   const items = siteSets.map((s) => ({ label: '📁 ' + esc(s.name) + ' (' + s.sites.length + ')', fn: () => finish(s) }));
-  items.push({ label: '➕ قائمة جديدة…', fn: () => {
-    const nm = prompt('اسم القائمة الجديدة', 'مواقع مضافة'); if (!nm || !nm.trim()) return;
+  items.push({ label: '➕ قائمة جديدة…', fn: async () => {
+    const nm = await uiPrompt('اسم القائمة الجديدة', 'مواقع مضافة', { ok: 'التالي' }); if (!nm || !nm.trim()) return;
     const set = { id: Date.now().toString(36), name: nm.trim(), date: Date.now(), visible: true, sites: [] };
-    siteSets.push(set); finish(set);
+    siteSets.push(set); await finish(set);
     if (!set.sites.length) { siteSets = siteSets.filter((x) => x !== set); saveSiteSets(); }
   } });
   actionSheet('إضافة إلى أي قائمة؟', items);
@@ -441,8 +441,8 @@ $('addSiteBtn').onclick = () => { if (dest) addSite(dest.lat, dest.lng, dest.nam
 $('openSites').onclick = () => { $('menuDrop').classList.add('hidden'); renderSitesPanel(); $('sitesPanel').classList.remove('hidden'); };
 $('impBtn').onclick = () => $('siteFile').click();
 $('unlockBtn').onclick = () => tryUnlock();
-function tryUnlock() {
-  const p = prompt('أدخل رمز القفل');
+async function tryUnlock() {
+  const p = await uiPrompt('أدخل رمز القفل', '', { type: 'password', ok: 'فتح' });
   if (p == null) return false;
   if (pinHash(p) === fset.pin) { fieldUnlocked = true; renderSitesPanel(); renderSitesOnMap(); toast('تم فتح القفل'); return true; }
   toast('الرمز غير صحيح'); return false;
@@ -470,14 +470,14 @@ $('setField').onchange = () => {
 $('setFmt').onchange = () => { fset.fmt = $('setFmt').value; saveFset(); if (dest) fieldSheetUpdate(); };
 $('setZone').onchange = () => { fset.zone = Math.max(1, Math.min(60, +$('setZone').value || 38)); saveFset(); renderSettings(); };
 $('setHemi').onchange = () => { fset.north = $('setHemi').value === 'N'; saveFset(); };
-$('pinSet').onclick = () => {
-  if (fset.pin && !fieldUnlocked && !tryUnlock()) return;
-  const a = prompt('أدخل رمزًا جديدًا (4 أرقام أو أكثر)'); if (a == null) return;
+$('pinSet').onclick = async () => {
+  if (fset.pin && !fieldUnlocked && !(await tryUnlock())) return;
+  const a = await uiPrompt('أدخل رمزًا جديدًا (4 أرقام أو أكثر)', '', { type: 'password', ok: 'التالي' }); if (a == null) return;
   if (!/^\S{4,}$/.test(a)) { toast('الرمز قصير جدًا'); return; }
-  const b = prompt('أعد إدخال الرمز للتأكيد'); if (b !== a) { toast('الرمزان غير متطابقين'); return; }
+  const b = await uiPrompt('أعد إدخال الرمز للتأكيد', '', { type: 'password', ok: 'تأكيد' }); if (b !== a) { toast('الرمزان غير متطابقين'); return; }
   fset.pin = pinHash(a); fieldUnlocked = true; saveFset(); renderSettings(); toast('تم تعيين رمز القفل');
 };
-$('pinOff').onclick = () => { if (!fieldUnlocked && !tryUnlock()) return; fset.pin = null; fieldUnlocked = true; saveFset(); renderSettings(); toast('تمت إزالة الرمز'); };
+$('pinOff').onclick = async () => { if (!fieldUnlocked && !(await tryUnlock())) return; fset.pin = null; fieldUnlocked = true; saveFset(); renderSettings(); toast('تمت إزالة الرمز'); };
 $('pinLock').onclick = () => { fieldUnlocked = false; renderSettings(); renderSitesOnMap(); toast('تم قفل مواقع العمل'); };
 
 /* ================= destination sheet additions ================= */

@@ -54,7 +54,7 @@ async function tripStart(destination, hours) {
   if (!me) { toast('بانتظار تحديد موقعك…'); startLocation(); return; }
   if (trip) { tripShareLink(); return; }
   let name = store.get('tripName', '') || store.get('teamName', '');
-  if (!name) { name = (prompt('اسمك كما ستراه العائلة:', '') || '').trim().slice(0, 30); if (!name) return; }
+  if (!name) { name = ((await uiPrompt('اسمك كما ستراه العائلة:', '', { ok: 'متابعة' })) || '').trim().slice(0, 30); if (!name) return; }
   store.set('tripName', name);
   toast('📡 جارٍ تجهيز الرابط…');
   try {
@@ -120,7 +120,7 @@ function tripBar() {
   const left = Math.max(0, trip.until - Date.now()), h = Math.floor(left / 3600e3), m = Math.round((left % 3600e3) / 60e3);
   b.innerHTML = `<span class="dot"></span><span class="g">📡 ${trip.arr ? 'وصلت — تنتهي المشاركة بعد قليل' : trip.dest ? 'العائلة تتابع رحلتك إلى ' + esc(trip.dest.n) : 'العائلة تتابع موقعك · ' + (h ? h + ' س ' : '') + m + ' د'}</span><button id="tripSh">🔗</button><button id="tripX">إيقاف</button>`;
   $('tripSh').onclick = tripShareLink;
-  $('tripX').onclick = () => { if (confirm('إيقاف مشاركة الرحلة؟ لن ترى العائلة موقعك بعد الآن.')) tripStop(false); };
+  $('tripX').onclick = async () => { if (await uiConfirm('إيقاف مشاركة الرحلة؟ لن ترى العائلة موقعك بعد الآن.', { ok: 'إيقاف', danger: true })) tripStop(false); };
 }
 /* the share menus get a «live link» choice */
 {

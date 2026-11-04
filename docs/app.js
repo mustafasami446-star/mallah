@@ -923,10 +923,10 @@ function finishDl(id, done, total, failed, bytes, cancelled) {
 window.onDownloadDone = (id, d, t, f, b) => finishDl(id, d, t, f, b, false);
 window.onDownloadCancelled = (id, d, t, f, b) => finishDl(id, d, t, f, b, true);
 $('dlCancel').onclick = () => { if (NATIVE) Android.cancelDownload(); };
-function deleteArea(id) {
+async function deleteArea(id) {
   const a = areas.find((x) => x.id === id); if (!a) return;
   if (dlCur && dlCur.id === id) { toast('أوقف التنزيل أولًا'); return; }
-  if (!confirm('حذف خريطة ' + a.name + ' من الهاتف؟')) return;
+  if (!(await uiConfirm('حذف خريطة ' + a.name + ' من الهاتف؟', { ok: 'حذف', danger: true }))) return;
   dlQueue = dlQueue.filter((q) => q.id !== id);
   areas = areas.filter((x) => x.id !== id); saveAreas();
   const keep = areas.map((k) => [k.s, k.w, k.n, k.e, k.minZ, k.maxZ].map((v) => (+v).toFixed(6)).join(',')).join(';');
@@ -967,7 +967,7 @@ function renderMaps() {
   });
   renderDl();
 }
-$('dlView').onclick = () => {
+$('dlView').onclick = async () => {
   const b = map.getBounds(), z = map.getZoom();
   const box = { s: b.getSouth(), w: b.getWest(), n: b.getNorth(), e: b.getEast() };
   const minZ = Math.max(5, Math.min(z, 12) - 2), maxZ = OFFLINE_MAX_Z;
@@ -975,7 +975,7 @@ $('dlView').onclick = () => {
   if (n > 40000) { toast('المنطقة كبيرة جدًا (' + fmtMB(n * KB_PER_TILE * 1024) + '). قرّب الخريطة أكثر ثم حاول.', 4500); return; }
   const c = map.getCenter();
   const name = 'منطقة ' + c.lat.toFixed(2) + '، ' + c.lng.toFixed(2);
-  if (!confirm('تنزيل المنطقة الظاهرة؟ الحجم التقريبي ' + fmtMB(n * KB_PER_TILE * 1024))) return;
+  if (!(await uiConfirm('تنزيل المنطقة الظاهرة؟ الحجم التقريبي ' + fmtMB(n * KB_PER_TILE * 1024), { ok: 'تنزيل' }))) return;
   queueDownload(Object.assign({ id: 'v' + Date.now().toString(36), name, minZ, maxZ }, box));
 };
 
@@ -1076,7 +1076,7 @@ $('favBtn').onclick = () => {
   const items = [
     { label: '🏠 تعيين كالبيت', fn: () => setFav('home') },
     { label: '💼 تعيين كالعمل', fn: () => setFav('work') },
-    { label: '⭐ حفظ باسم…', fn: () => { const n = prompt('اسم المكان', dest.name); if (n && n.trim()) setFav('other', n.trim()); } }
+    { label: '⭐ حفظ باسم…', fn: async () => { const n = await uiPrompt('اسم المكان', dest.name, { ok: 'حفظ' }); if (n && n.trim()) setFav('other', n.trim()); } }
   ];
   if (f) items.push({ label: '🗑 إزالة من المفضلة', cls: 'danger', fn: () => { favs = favs.filter((x) => x !== f); saveFavs(); updateFavBtn(); toast('تمت الإزالة من المفضلة'); } });
   actionSheet(dest.name, items);
@@ -1103,7 +1103,7 @@ function renderFavs() {
       const f = favs.find((x) => x.id === b.dataset.more);
       actionSheet(f.kind === 'other' ? f.name : KIND_AR[f.kind], [
         { label: '↗ مشاركة المكان', fn: () => shareMenu('📍 ' + (f.kind === 'other' ? f.name : KIND_AR[f.kind]), f.lat, f.lng) },
-        { label: '✏️ إعادة التسمية', fn: () => { const n = prompt('الاسم الجديد', f.name); if (n && n.trim()) { f.name = n.trim(); if (f.kind !== 'other') f.kind = 'other'; saveFavs(); renderFavs(); } } },
+        { label: '✏️ إعادة التسمية', fn: async () => { const n = await uiPrompt('الاسم الجديد', f.name, { ok: 'حفظ' }); if (n && n.trim()) { f.name = n.trim(); if (f.kind !== 'other') f.kind = 'other'; saveFavs(); renderFavs(); } } },
         { label: '🗑 حذف', cls: 'danger', fn: () => { favs = favs.filter((x) => x !== f); saveFavs(); renderFavs(); } }
       ]);
     };

@@ -469,8 +469,8 @@ function importPack() {
   packBusyState = { id: '', label: '📁 جارٍ نسخ ملف الخريطة', info: '', pct: 0, t: Date.now() };
   PK.importFile(); renderPacks();
 }
-function removePack(id) {
-  if (!confirm('حذف خريطة ' + provName(id) + ' من الهاتف؟ ستحتاج لتنزيلها من جديد للعمل بدون إنترنت هناك.')) return;
+async function removePack(id) {
+  if (!(await uiConfirm('حذف خريطة ' + provName(id) + ' من الهاتف؟ ستحتاج لتنزيلها من جديد للعمل بدون إنترنت هناك.', { ok: 'حذف', danger: true }))) return;
   const last = packs().length === 1;
   if (last && layerKey === 'vec') setLayer('osm');
   PK.remove(id).then(refreshPacks);
@@ -944,7 +944,7 @@ function openDiag() {
     $('diagRun').onclick = async () => { $('diagOut').textContent = diagText('جارٍ الاختبار…'); $('diagOut').textContent = diagText(await diagTest()); };
     $('diagShare').onclick = () => { const t = $('diagOut').textContent; if (NATIVE && Android.shareText) Android.shareText(t); else if (navigator.share) navigator.share({ text: t }).catch(() => {}); else { try { navigator.clipboard.writeText(t); toast('تم النسخ'); } catch (e) {} } };
     const nc = $('diagNetClear');
-    if (nc) nc.onclick = () => { if (!confirm('مسح كل أجزاء الخرائط التي حُفظت أثناء التصفح؟ (لا يمسّ الخرائط المنزّلة)')) return; Android.netCacheClear(); toast('تم المسح'); setTimeout(() => { $('diagOut').textContent = diagText(); }, 1500); };
+    if (nc) nc.onclick = async () => { if (!(await uiConfirm('مسح كل أجزاء الخرائط التي حُفظت أثناء التصفح؟ (لا يمسّ الخرائط المنزّلة)', { ok: 'مسح', danger: true }))) return; Android.netCacheClear(); toast('تم المسح'); setTimeout(() => { $('diagOut').textContent = diagText(); }, 1500); };
     const ck = $('diagCheck');
     if (ck) ck.onclick = () => {
       const box = $('diagCheckOut'); box.classList.remove('hidden');
