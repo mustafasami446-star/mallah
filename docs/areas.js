@@ -101,16 +101,19 @@ function arEnsure() {
   <div class="panelBody" id="areaBody">
     <div id="areaCrumbs"></div>
     <div id="areaMapWrap"></div>
+    <div id="areaSheet" class="mid"><div class="grab" id="areaGrab"></div><div id="areaLegend"></div><div id="areaSheetBody">
     <div class="card" id="areaSel"></div>
     <div class="card"><h3 id="areaListH"></h3><div id="areaList"></div></div>
     <div class="note">حدود الأقضية والنواحي، وأسماء المدن والأحياء والقرى، من OpenStreetMap — وقد تكون تقريبية أو ناقصة في بعض المحافظات. الأحياء والقرى تظهر بعد تنزيل خريطة المحافظة.</div>
-  </div>`;
+  </div></div></div>`;
   document.body.appendChild(el);
   $('areaClose').onclick = () => el.classList.add('hidden');
+  arSheetInit();
 }
 function openAreas(startId) {
   arEnsure();
   $('areaPanel').classList.remove('hidden');
+  arSheet('min');                   // the map first; the cards come up with a tap or a swipe
   $('areaSel').innerHTML = '<div class="item"><div class="grow s">جارٍ التحميل…</div></div>';
   if (typeof loadPlaces === 'function') { const lp = loadPlaces(); if (lp && lp.then) lp.then(() => { if (!$('areaPanel').classList.contains('hidden')) arRender(); }); }
   arLoad().then(() => {
@@ -125,7 +128,7 @@ function openAreas(startId) {
     arRender();
   }).catch(() => { $('areaSel').innerHTML = '<div class="item"><div class="grow s">تعذّر تحميل حدود المناطق</div></div>'; });
 }
-function arEnter(id) { arPath.push(id); arSel = null; stSel = null; plPick = null; arRender(); $('areaBody').scrollTop = 0; }
+function arEnter(id) { arPath.push(id); arSel = null; stSel = null; plPick = null; arRender(); arSheet('mid'); $('areaSheetBody').scrollTop = 0; }
 function arUp(depth) { stSel = null; plPick = null; arSel = arPath[depth] || null; arPath = arPath.slice(0, depth); arRender(); }
 function arRender() {
   const cur = arCur(), kids = arKids(cur.id), here = me ? arHere(me.lat, me.lng) : [];
@@ -139,7 +142,7 @@ function arRender() {
   const selN = arSel && AR.byId[arSel];
   // a province or district map shows everything inside it: the sub-district borders and every town, neighbourhood and village
   const preview = cur.k !== 'iraq' ? arSettle(cur) : [];
-  $('areaMapWrap').innerHTML = arSvg(cur, kids, here, preview, true) + (preview.length ? STL : '');
+  $('areaMapWrap').innerHTML = arSvg(cur, kids, here, preview, true); $('areaLegend').innerHTML = preview.length ? STL : '';
   azAttach();
   // selected area (or a tapped town / neighbourhood / village)
   const sel = arSel && AR.byId[arSel];
@@ -158,7 +161,7 @@ function arRender() {
     return `<div class="res provRow${n.id === arSel ? ' on' : ''}" data-pick="${n.id}"><div class="ic">${n.k === 'p' ? '🗺' : n.k === 'd' ? '🏙' : '📍'}</div><div style="flex:1;min-width:0"><div class="t">${esc(arTitle(n))}${here.includes(n.id) ? ' <span class="hereTag">📍</span>' : ''}</div><div class="s">${subTxt}</div></div>${sub || st.length ? '<div class="s" style="flex:none">‹</div>' : ''}</div>`;
   }).join('');
   $('areaList').querySelectorAll('[data-pick]').forEach((el) => {
-    el.onclick = () => { arSel = el.dataset.pick; plPick = null; arRender(); $('areaBody').scrollTo({ top: 0, behavior: 'smooth' }); };
+    el.onclick = () => { arSel = el.dataset.pick; plPick = null; arRender(); arSheet('mid'); $('areaSheetBody').scrollTo({ top: 0, behavior: 'smooth' }); };
   });
 }
 function arCard(n, here, isCur) {
@@ -215,9 +218,10 @@ function arSvg(cur, kids, here, dots, preview) {
     D.push({ x, y, g, p, i, rank: ST_RANK[p.k] });
   });
   D.sort((a, b) => b.rank - a.rank);          // villages underneath, towns on top
-  const base = { x: -8, y: -8, w: W + 16, h: H + 16 };
+  const content = { x: -8, y: -8, w: W + 16, h: H + 16 };
   const keep = AZ && AZ.id === cur.id && AZ.W === W;
-  AZ = { id: cur.id, W, H, base, vb: keep ? AZ.vb : Object.assign({}, base), sc, dots: D, lbls, leaf: !preview, me: null };
+  AZ = { id: cur.id, W, H, content, base: keep ? AZ.base : Object.assign({}, content), vb: keep ? AZ.vb : null, sc, dots: D, lbls, leaf: !preview, me: null };
+  if (!AZ.vb) AZ.vb = Object.assign({}, AZ.base);
   if (me && me.lng >= w && me.lng <= e && me.lat >= s && me.lat <= n) AZ.me = XY(me.lng, me.lat);
   const vb = AZ.vb;
   return `<div id="azBox"><svg id="areaSvg" viewBox="${vb.x} ${vb.y} ${vb.w} ${vb.h}" xmlns="http://www.w3.org/2000/svg">${paths}<g id="azDots"></g><g id="azMe"></g><g id="azLbl"></g></svg>
@@ -290,8 +294,19 @@ function azClamp(v) {
   return v;
 }
 /* touch and mouse: drag to move, two fingers to zoom, double tap / wheel to zoom, a tap selects */
+function azFit() {
+  const svg = $('areaSvg'); if (!svg || !AZ) return;
+  const r = svg.getBoundingClientRect(); if (!r.width || !r.height) return;
+  const R = r.width / r.height, c = AZ.content, b = { x: c.x, y: c.y, w: c.w, h: c.h };
+  if (c.w / c.h < R) { b.w = c.h * R; b.x = c.x - (b.w - c.w) / 2; } else { b.h = c.w / R; b.y = c.y - (b.h - c.h) / 2; }
+  const z = AZ.vb && AZ.base ? AZ.base.w / AZ.vb.w : 1, cx = AZ.vb ? AZ.vb.x + AZ.vb.w / 2 : b.x + b.w / 2, cy = AZ.vb ? AZ.vb.y + AZ.vb.h / 2 : b.y + b.h / 2;
+  AZ.base = b;
+  const w = b.w / Math.max(1, z), h = b.h / Math.max(1, z);
+  AZ.vb = azClamp({ x: cx - w / 2, y: cy - h / 2, w, h });
+}
 function azAttach() {
   const svg = $('areaSvg'); if (!svg) return;
+  azFit();
   azDraw();
   $('azBtns').onclick = (e) => {
     const z = e.target.closest('[data-z]'); if (!z) return;
@@ -345,15 +360,39 @@ function azTap(sx, sy, cx, cy) {
   AZ.dots.forEach((d) => { const dd = Math.hypot((d.x - vb.x) * k - sx, (d.y - vb.y) * k - sy); if (dd < bd) { bd = dd; best = d; } });
   if (best) {
     if (AZ.leaf) stSel = best.i; else plPick = best.p;
-    arRender(); return;
+    arRender(); arSheet('mid'); $('areaSheetBody').scrollTop = 0; return;
   }
   const t = document.elementFromPoint(cx, cy), a = t && t.closest && t.closest('[data-ar]');
   if (!a) { if (plPick) { plPick = null; arRender(); } return; }
   plPick = null;
   if (a.dataset.ar === arSel && (arKids(arSel).length || arSettle(AR.byId[arSel]).length)) arEnter(arSel);
-  else { arSel = a.dataset.ar; arRender(); }
+  else { arSel = a.dataset.ar; arRender(); arSheet('mid'); $('areaSheetBody').scrollTop = 0; }
 }
-window.addEventListener('resize', () => { if ($('areaSvg')) azSoon(); });
+window.addEventListener('resize', () => { if ($('areaSvg')) { azFit(); azSoon(); } });
+
+/* the cards and lists sit in a sheet over the full-screen map: pull it up (or tap its handle) to open it, down to give the map room */
+const AR_SHEETS = ['min', 'mid', 'full'];
+function arSheet(st) {
+  const el = $('areaSheet'); if (!el) return;
+  AR_SHEETS.forEach((k) => el.classList.toggle(k, k === st));
+}
+const arSheetNow = () => AR_SHEETS.find((k) => $('areaSheet').classList.contains(k)) || 'mid';
+function arSheetInit() {
+  const el = $('areaSheet'), body = $('areaSheetBody');
+  $('areaGrab').onclick = () => arSheet({ min: 'mid', mid: 'full', full: 'min' }[arSheetNow()]);
+  $('areaLegend').onclick = () => { if (arSheetNow() === 'min') arSheet('mid'); };
+  let y0 = null, fromTop = false;
+  el.addEventListener('touchstart', (e) => { y0 = e.touches[0].clientY; fromTop = !body.contains(e.target) || body.scrollTop <= 0; }, { passive: true });
+  el.addEventListener('touchend', (e) => {
+    if (y0 == null) return;
+    const dy = e.changedTouches[0].clientY - y0; y0 = null;
+    const i = AR_SHEETS.indexOf(arSheetNow());
+    if (dy < -40 && (i === 0 || !body.contains(e.target) || arSheetNow() !== 'full')) arSheet(AR_SHEETS[Math.min(2, i + 1)]);
+    else if (dy > 50 && fromTop) arSheet(AR_SHEETS[Math.max(0, i - 1)]);
+  }, { passive: true });
+  // in the smallest state, touching the peeking card opens it
+  body.addEventListener('click', (e) => { if (arSheetNow() === 'min' && !e.target.closest('button')) arSheet('mid'); }, true);
+}
 
 /* the card of a town / neighbourhood / village */
 function placeCardHtml(p, area) {
@@ -375,7 +414,7 @@ function arAreaOf(p) {
 /* ---------------- the fourth level: towns, neighbourhoods and villages of a sub-district ---------------- */
 function stRender(cur, here) {
   const list = arSettle(cur);
-  $('areaMapWrap').innerHTML = arSvg(cur, [], here, list) + (list.length ? STL : '');
+  $('areaMapWrap').innerHTML = arSvg(cur, [], here, list); $('areaLegend').innerHTML = list.length ? STL : '';
   azAttach();
   const p = stSel != null ? list[stSel] : null;
   if (p) {
@@ -397,7 +436,7 @@ function stRender(cur, here) {
   });
   $('areaList').innerHTML = h;
   $('areaList').querySelectorAll('[data-sp]').forEach((el) => {
-    el.onclick = () => { stSel = +el.dataset.sp; arRender(); $('areaBody').scrollTo({ top: 0, behavior: 'smooth' }); };
+    el.onclick = () => { stSel = +el.dataset.sp; arRender(); arSheet('mid'); $('areaSheetBody').scrollTo({ top: 0, behavior: 'smooth' }); };
   });
 }
 function stGo(p, near) {

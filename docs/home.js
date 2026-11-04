@@ -4,8 +4,15 @@
 const homeEl = $('searchWrap');
 
 /* ---------------- sheet: collapsed / expanded ---------------- */
-function homeExpand(on) { homeEl.classList.toggle('expanded', on); placeFabs(); }
-$('homeGrab').onclick = () => { if (nearOn() && nearHits.length) setNearMode(nearMode === 'list' ? 'map' : 'list'); else homeExpand(!homeEl.classList.contains('expanded')); };
+/* three heights: «mini» (only the handle and «إلى أين؟», the map gets the screen), normal, and expanded (discover around you) */
+function homeExpand(on) { homeEl.classList.toggle('expanded', on); if (on) homeMini(false); placeFabs(); }
+function homeMini(on) { homeEl.classList.toggle('mini', on); store.set('homeMini', on); placeFabs(); }
+if (store.get('homeMini', false)) homeEl.classList.add('mini');
+$('homeGrab').onclick = () => {
+  if (nearOn() && nearHits.length) { setNearMode(nearMode === 'list' ? 'map' : 'list'); return; }
+  if (homeEl.classList.contains('mini')) homeMini(false);
+  else homeExpand(!homeEl.classList.contains('expanded'));
+};
 qEl.addEventListener('focus', () => homeExpand(true));
 (function swipe() {
   let y0 = null;
@@ -14,8 +21,9 @@ qEl.addEventListener('focus', () => homeExpand(true));
     if (y0 == null) return;
     const dy = e.changedTouches[0].clientY - y0; y0 = null;
     if (nearOn()) { if (dy < -40 && nearMode === 'map') setNearMode('list'); else if (dy > 50 && homeEl.scrollTop <= 0 && nearMode === 'list' && nearHits.length) setNearMode('map'); return; }
-    if (dy < -40) homeExpand(true);
-    else if (dy > 50 && homeEl.scrollTop <= 0) { homeExpand(false); qEl.blur(); }
+    const mini = homeEl.classList.contains('mini'), exp = homeEl.classList.contains('expanded');
+    if (dy < -40) { if (mini) homeMini(false); else homeExpand(true); }
+    else if (dy > 50 && homeEl.scrollTop <= 0) { if (exp) { homeExpand(false); qEl.blur(); } else if (!mini && !qEl.value) { qEl.blur(); homeMini(true); } }
   }, { passive: true });
 })();
 /* while results are shown, the discover section steps aside */

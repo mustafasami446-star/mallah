@@ -1,8 +1,8 @@
 {
-  "versionCode": 73,
-  "versionName": "5.27",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.27/Mallah-Navigator.apk",
-  "size": 2622467,
-  "notes": "«المناطق»: تكبير الخريطة لاستعراض أسماء النواحي والمدن والأحياء والقرى بالعربي والإنجليزي، وأسماؤها على الخريطة الكبيرة.",
-  "sha256": "f9538ebc09beed0429f4c95aa872e112813f5990e603e79d98ca249e26ae4c64"
+  "versionCode": 74,
+  "versionName": "5.28",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.28/Mallah-Navigator.apk",
+  "size": 2626563,
+  "notes": "خريطة «المناطق» بكامل الشاشة والبطاقات في لوحة ترفعها بإصبعك، ولوحة الشاشة الرئيسية تُسحب للأسفل لتكبر الخريطة.",
+  "sha256": "2b323f8e32130764684736e527fa2d6503dce6e9b6f156e974d277901b5ff8f6"
 }
