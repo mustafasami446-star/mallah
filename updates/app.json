@@ -1,8 +1,8 @@
 {
-  "versionCode": 63,
-  "versionName": "5.17",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.17/Mallah-Navigator.apk",
+  "versionCode": 64,
+  "versionName": "5.18",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.18/Mallah-Navigator.apk",
   "size": 2614213,
-  "notes": "تحسينات، وإشعار الأذان للآيفون واللابتوب حتى والصفحة مغلقة.",
-  "sha256": "f35920cbf25ae5a3c383aa6e9dcfb3f5ef06fcee83068123d9055e0e8f04601c"
+  "notes": "إصلاح تنزيل الخرائط في نسخة الويب (الآيفون واللابتوب)، وتحسينات.",
+  "sha256": "783a3a14552680e3b969b5c1b6a570834fff1f5af367b8b1cc42cd64ee6dd5ec"
 }

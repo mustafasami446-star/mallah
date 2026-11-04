@@ -453,18 +453,20 @@ async function queuePacks(ids) {
   else go();
 }
 function pumpQueue() {
+  // a left-over "busy" mark with nothing actually running (e.g. a file picker that was closed): clear it
+  if (packBusyState && !readPackInfo().busy && Date.now() - (packBusyState.t || 0) > 20000) packBusyState = null;
   if (packBusyState || readPackInfo().busy) return;
   const id = packQueue.shift(); if (!id) return;
   const r = remotePack(id); if (!r) { pumpQueue(); return; }
   lastReq = r;
   if (!PK.download(id, r.url, r.size || 0)) { packQueue.unshift(id); toast('يوجد تنزيل قيد التنفيذ'); return; }
-  packBusyState = { id, label: '⬇ جارٍ تنزيل خريطة ' + provName(id), info: '', pct: 0 };
+  packBusyState = { id, label: '⬇ جارٍ تنزيل خريطة ' + provName(id), info: '', pct: 0, t: Date.now() };
   renderPacks();
 }
 function importPack() {
   if (!PK) return;
   toast('اختر ملف الخريطة (mallah-….zip)', 3500);
-  packBusyState = { id: '', label: '📁 جارٍ نسخ ملف الخريطة', info: '', pct: 0 };
+  packBusyState = { id: '', label: '📁 جارٍ نسخ ملف الخريطة', info: '', pct: 0, t: Date.now() };
   PK.importFile(); renderPacks();
 }
 function removePack(id) {
@@ -475,6 +477,7 @@ function removePack(id) {
 }
 window.onMapPackProgress = (phase, done, total, id) => {
   if (!packBusyState) packBusyState = { id: id || '', label: '' };
+  packBusyState.t = Date.now();
   if (id && !packBusyState.id) packBusyState.id = id;
   if (phase === 'verify') { packBusyState.label = '🔍 جارٍ فحص سلامة ملف الخريطة…'; packBusyState.info = ''; packBusyState.pct = 100; renderPacks(); return; }
   if (phase === 'install') { packBusyState.label = '⚙️ جارٍ تجهيز خريطة ' + (packBusyState.id ? provName(packBusyState.id) : '') + '…'; packBusyState.info = ''; packBusyState.pct = 100; }
@@ -505,8 +508,9 @@ window.onMapPackDone = (ok, msg, id) => {
     actionSheet('⚠️ ملف خريطة ' + (id ? provName(id) : '') + ' وصل تالفًا (انقطع التنزيل أو تغيّر أثناءه)، فلم يُثبَّت.', [
       { label: '⬇ تنزيله من جديد', fn: () => queuePacks([id]) }
     ]);
+  } else if (msg === 'cancelled') {
     packQueue = [];
-    toast(PK && PK.kind === 'web' ? 'تم الإيقاف' : 'تم إيقاف التنزيل — يمكنك المتابعة لاحقًا من نفس النقطة');
+    if (id) toast(PK && PK.kind === 'web' ? 'تم الإيقاف' : 'تم إيقاف التنزيل — يمكنك المتابعة لاحقًا من نفس النقطة');
   } else if (msg === 'direct') {
     // web: GitHub does not let a web page download the file directly — let the browser save it, then install it
     packQueue = [];

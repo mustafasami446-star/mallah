@@ -192,9 +192,16 @@
       busy = true; busyId = id; cancelled = false;
       const gen = gen0();
       run(gen, async () => {
-        let r;
-        try { r = await fetch(url, { mode: 'cors' }); } catch (e) { throw new Error('direct'); }
-        if (!r.ok || !r.body) throw new Error('direct');
+        // GitHub release files cannot be read by a web page directly (no CORS header): go through Mallah's
+        // small Cloudflare pass-through first, then try GitHub itself
+        const m = String(url).match(/\/releases\/download\/(map-\d{8}\/mallah-[a-z0-9_-]+\.zip)$/);
+        const tries = (m ? ['https://mallah-adhan.mustafasami446.workers.dev/map?f=' + encodeURIComponent(m[1])] : []).concat([url]);
+        let r = null;
+        for (const u of tries) {
+          try { const x = await fetch(u, { mode: 'cors' }); if (x.ok && x.body) { r = x; break; } } catch (e) {}
+          if (cancelled) throw new Error('cancelled');
+        }
+        if (!r) throw new Error('direct');
         return storeFromStream(gen, r, size);
       });
       return true;
@@ -202,7 +209,12 @@
     importFile() {
       const inp = document.createElement('input');
       inp.type = 'file'; inp.accept = '.zip,application/zip';
+      let picked = false;
+      const none = () => { if (!picked && !busy) finish(false, 'cancelled'); };
+      inp.addEventListener('cancel', none);
+      window.addEventListener('focus', function back() { window.removeEventListener('focus', back); setTimeout(none, 1500); });
       inp.onchange = () => {
+        picked = true;
         const f = inp.files && inp.files[0];
         if (!f) { finish(false, 'cancelled'); return; }
         if (busy) return; busy = true; busyId = ''; cancelled = false;
