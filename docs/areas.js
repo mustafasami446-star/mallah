@@ -79,6 +79,7 @@ function stCount(list) {
   const w = (k, one, two, many, acc) => !c[k] ? '' : c[k] === 1 ? one : c[k] === 2 ? two : c[k] + ' ' + (c[k] <= 10 ? many : acc);
   return [w('town', 'بلدة واحدة', 'بلدتان', 'مدن وبلدات', 'مدينة وبلدة'), w('nb', 'حي واحد', 'حيّان', 'أحياء', 'حيًا'), w('vil', 'قرية واحدة', 'قريتان', 'قرى', 'قرية')].filter(Boolean).join(' · ');
 }
+const STL = '<div class="stLegend"><span><i class="town"></i>مدن وبلدات</span><span><i class="nb"></i>أحياء</span><span><i class="vil"></i>قرى</span></div>';
 let stSel = null;   // the chosen town / neighbourhood / village (index into arSettle(cur)) at the fourth level
 /* the deepest area around a point, for "you are here" */
 function arHere(lat, lng) {
@@ -143,7 +144,9 @@ function arRender() {
   $('areaCrumbs').querySelectorAll('[data-up]').forEach((b) => { b.onclick = () => arUp(+b.dataset.up); });
   if (arLeaf(cur) && arPath.length) { stRender(cur, here); return; }
   // the map of this level
-  $('areaMapWrap').innerHTML = arSvg(cur, kids, here);
+  const selN = arSel && AR.byId[arSel];
+  const preview = cur.k !== 'iraq' ? arSettle(selN || cur) : [];
+  $('areaMapWrap').innerHTML = arSvg(cur, kids, here, preview, true) + (preview.length ? STL : '');
   // selected area
   const sel = arSel && AR.byId[arSel];
   $('areaSel').innerHTML = sel ? arCard(sel, here) : arCard(cur, here, true);
@@ -169,7 +172,8 @@ function arCard(n, here, isCur) {
   if (n.k !== 'iraq') bits.push(AR_KIND[n.k]);
   if (sub) bits.push(sub + ' ' + AR_KIDS[n.k].replace('ال', ''));
   const st = arLeaf(n) ? arSettle(n) : [];
-  if (st.length) bits.push(stCount(st));
+  const stAll = n.k !== 'iraq' ? (st.length ? st : arSettle(n)) : [];
+  if (stAll.length) bits.push(stCount(stAll));
   const cnt = n.k !== 'iraq' && typeof places !== 'undefined' && places ? placesIn(n).length : 0;
   if (cnt) bits.push(cnt.toLocaleString('en') + ' مكان في خرائطك');
   if (n.k === 'iraq') return `<div class="item"><div class="grow s">اضغط على محافظة في الخريطة أو اخترها من القائمة، ثم اضغطها مرة ثانية للدخول إلى أقضيتها</div></div>`;
@@ -180,7 +184,7 @@ function arCard(n, here, isCur) {
     ? '<div class="s" style="margin-top:8px">لعرض أحيائها وقراها: نزّل خريطة المحافظة من «الخرائط بدون إنترنت».</div>' : '';
   return `<div class="areaCard"><div class="t">${esc(arTitle(n))}${inHere ? ' <span class="hereTag">📍 أنت هنا</span>' : ''}</div><div class="s">${bits.join(' · ')}</div><div class="areaBtns">${btns}</div>${noMap}</div>`;
 }
-function arSvg(cur, kids, here, dots) {
+function arSvg(cur, kids, here, dots, preview) {
   const W = 600, shapes = kids.length ? kids : [cur];
   if (!shapes[0] || !shapes[0].g) return '';
   let w = 180, e = -180, s = 90, n = -90;
@@ -197,29 +201,30 @@ function arSvg(cur, kids, here, dots) {
     if (k.c && shapes.length > 1 && (wpx < arShort(k).length * fs * 0.42 || hpx < fs * 0.9)) return;   // too small to label: it is in the list below
     if (k.c) { const [x, y] = P(k.c[0], k.c[1]).split(','); labels += `<text class="pvl" style="font-size:${fs}px" x="${x}" y="${y}">${esc(arShort(k))}</text>`; }
   });
+  let dotsSvg = '';
   if (dots && dots.length) {
     // every place a dot; names for the bigger ones (and all of them when there are few), the chosen one on top
-    const many = dots.length > 25, R = { town: 9, nb: 6, vil: 5 };
+    const many = preview || dots.length > 25, R = preview ? { town: 7, nb: 4, vil: 3.5 } : { town: 9, nb: 6, vil: 5 };
     let dd = '', ll = '';
     // villages underneath, then neighbourhoods, then towns, the chosen one last (on top)
     const ord = dots.map((p, i) => i).sort((a, b) => (a === stSel) - (b === stSel) || ST_RANK[dots[b].k] - ST_RANK[dots[a].k]);
     ord.forEach((i) => { const p = dots[i];
       if (p.lng < w || p.lng > e || p.lat < s || p.lat > n) return;
-      const g = ST_GROUP[p.k], [x, y] = P(p.lng, p.lat).split(','), on = i === stSel;
-      dd += `<circle class="stDot ${g}${on ? ' on' : ''}" data-st="${i}" cx="${x}" cy="${y}" r="${on ? 12 : R[g]}"/>`;
-      if (on || !many || g === 'town') ll += `<text class="pvl stl${on ? ' on' : ''}" x="${x}" y="${(+y - (on ? 22 : 15)).toFixed(1)}">${esc(p.n)}</text>`;
+      const g = ST_GROUP[p.k], [x, y] = P(p.lng, p.lat).split(','), on = !preview && i === stSel;
+      dd += `<circle class="stDot ${g}${on ? ' on' : ''}${preview ? ' pre' : ''}" ${preview ? '' : `data-st="${i}"`} cx="${x}" cy="${y}" r="${on ? 12 : R[g]}"/>`;
+      if (on || !many || (g === 'town' && !preview)) ll += `<text class="pvl stl${on ? ' on' : ''}" x="${x}" y="${(+y - (on ? 22 : 15)).toFixed(1)}">${esc(p.n)}</text>`;
     });
-    labels = ll; paths += dd;
+    if (preview) { dotsSvg = dd; } else { labels = ll; paths += dd; }
   }
   let meDot = '';
   if (me && me.lng >= w && me.lng <= e && me.lat >= s && me.lat <= n) { const [x, y] = P(me.lng, me.lat).split(','); meDot = `<circle class="pvMe" cx="${x}" cy="${y}" r="9"/>`; }
-  return `<svg id="areaSvg" viewBox="-8 -8 ${W + 16} ${H + 16}" xmlns="http://www.w3.org/2000/svg">${paths}${meDot}${labels}</svg>`;
+  return `<svg id="areaSvg" viewBox="-8 -8 ${W + 16} ${H + 16}" xmlns="http://www.w3.org/2000/svg">${paths}${dotsSvg}${meDot}${labels}</svg>`;
 }
 
 /* ---------------- the fourth level: towns, neighbourhoods and villages of a sub-district ---------------- */
 function stRender(cur, here) {
   const list = arSettle(cur);
-  $('areaMapWrap').innerHTML = arSvg(cur, [], here, list) + (list.length ? '<div class="stLegend"><span><i class="town"></i>مدن وبلدات</span><span><i class="nb"></i>أحياء</span><span><i class="vil"></i>قرى</span></div>' : '');
+  $('areaMapWrap').innerHTML = arSvg(cur, [], here, list) + (list.length ? STL : '');
   const p = stSel != null ? list[stSel] : null;
   if (p) {
     const kind = { city: 'مدينة', town: 'بلدة', suburb: 'حي', neighbourhood: 'حي', quarter: 'حي', village: 'قرية', hamlet: 'قرية صغيرة' }[p.k] || '';
