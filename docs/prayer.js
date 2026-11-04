@@ -229,7 +229,9 @@ function prAdhanCard() {
       ${NATIVE ? `<label class="wxSw"><input type="checkbox" id="adLoud" ${a.loud ? 'checked' : ''}> يُرفع حتى والهاتف على الصامت</label>` : ''}
       <div class="s" style="padding:4px 14px 12px">${!ready ? '⏳ جارٍ تنزيل صوت الأذان (مرة واحدة)… ' : ''}${next}</div>
       ${adhanPushHtml()}
-    </div>`;
+    </div>
+    <label class="wxSw"><input type="checkbox" id="prRoad" ${store.get('prRoadOn', true) ? 'checked' : ''}> 🚗 أثناء القيادة: نبّهني قبل الأذان بجامع على طريقي</label>`;
+  $('prRoad').onchange = () => store.set('prRoadOn', $('prRoad').checked);
   if ($('adPushOn')) $('adPushOn').onclick = () => adhanPushEnable(false);
   if ($('adPushTest')) $('adPushTest').onclick = () => adhanPushEnable(true);
   const save = (ch) => { prCfg.adhan = Object.assign(adhanCfg(), ch); store.set('prCfg', prCfg); adhanSync(true); prAdhanCard(); };

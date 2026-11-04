@@ -1,8 +1,8 @@
 {
-  "versionCode": 74,
-  "versionName": "5.28",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.28/Mallah-Navigator.apk",
+  "versionCode": 75,
+  "versionName": "5.29",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.29/Mallah-Navigator.apk",
   "size": 2626563,
-  "notes": "خريطة «المناطق» بكامل الشاشة والبطاقات في لوحة ترفعها بإصبعك، ولوحة الشاشة الرئيسية تُسحب للأسفل لتكبر الخريطة.",
-  "sha256": "2b323f8e32130764684736e527fa2d6503dce6e9b6f156e974d277901b5ff8f6"
+  "notes": "الصلاة في الطريق: أي أذان يحين وأنت تقود، والجوامع على طريقك، وتنبيه قبل الأذان بأقرب جامع أمامك، وموعد الإفطار في رمضان.",
+  "sha256": "96a1a733bc4f0ab7c3b060b7b050c5554899974e62504141cfdb187534b7f5cd"
 }

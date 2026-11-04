@@ -158,8 +158,127 @@ function routeNote(html, buttons, ms) {
   el.querySelector('[data-x]').onclick = () => el.classList.add('hidden');
   clearTimeout(routeNote.t); routeNote.t = setTimeout(() => el.classList.add('hidden'), ms || 15000);
 }
+/* the prayer times that fall during the trip, each at the place you will be by then */
+function prayersAlong(r, t0) {
+  const out = [], seen = new Set(), cfg = prCfg || { method: 'mwl' };
+  let prev = null;
+  for (let k = 0, next = 0; k <= r.pts.length; k++) {
+    const last = k === r.pts.length;
+    if (!last && r.cum[k] < next) continue;
+    const kk = last ? r.pts.length - 1 : k;
+    next = r.cum[kk] + 5000;
+    const [lat, lng] = r.pts[kk], when = t0 + r.duration * 1000 * (r.cum[kk] / r.total);
+    if (prev) {
+      // a prayer whose time (at this stretch of road) comes between the two moments
+      [new Date(prev.when), new Date(when)].forEach((d) => {
+        const T = prayerTimes(d, lat, lng, cfg);
+        ADHAN_KEYS.forEach((key) => {
+          const t = T[key]; if (!t) return;
+          const id = key + t.toDateString();
+          if (!seen.has(id) && t.getTime() > prev.when && t.getTime() <= when) { seen.add(id); out.push({ k: key, t, lat, lng, along: r.cum[kk] }); }
+        });
+      });
+    }
+    prev = { when };
+    if (last) break;
+  }
+  out.sort((a, b) => a.t - b.t);
+  out.forEach((x) => {
+    const id = typeof dayNearestArea === 'function' ? dayNearestArea(x.lat, x.lng) : null;
+    x.p = id && WX.ar && WX.ar.byId[id] ? arShort(WX.ar.byId[id]) : '';
+    // without the weather areas: the nearest town from the downloaded map
+    if (!x.p && typeof places !== 'undefined' && places) {
+      let bd = 25000;
+      places.forEach((q) => { if ((q.k === 'city' || q.k === 'town') && Math.abs(q.lat - x.lat) < 0.25 && Math.abs(q.lng - x.lng) < 0.3) { const d = hav([q.lat, q.lng], [x.lat, x.lng]); if (d < bd) { bd = d; x.p = q.n; } } });
+    }
+  });
+  return out;
+}
+/* Ramadan: does the trip end before the iftar, or does the maghrib catch you on the road? */
+function iftarLine(r, t0, pa) {
+  const h = hijriParts(new Date(t0)); if (!h || h.m !== 9) return '';
+  const end = r.pts[r.pts.length - 1], arrive = t0 + r.duration * 1000;
+  const onRoad = pa.find((x) => x.k === 'maghrib');
+  if (onRoad) return '🌙 يحين الإفطار (' + prClock(onRoad.t) + ') وأنت على الطريق' + (onRoad.p ? ' قرب ' + esc(onRoad.p) : '');
+  const T = prayerTimes(new Date(arrive), end[0], end[1], prCfg || { method: 'mwl' });
+  if (!T.maghrib || T.maghrib.getTime() < t0) return '';
+  const min = Math.round((T.maghrib - arrive) / 60e3);
+  if (min < 0 || min > 180) return '';
+  return '🌙 تصل قبل الإفطار بـ ' + (min < 60 ? min + ' دقيقة' : Math.floor(min / 60) + ' س ' + (min % 60) + ' د') + ' (المغرب هناك ' + prClock(T.maghrib) + ')';
+}
+/* mosques within ~1.5 km of the road around where each prayer finds you */
+const routeMosq = L.layerGroup().addTo(map);
+async function mosquesNear(pts) {
+  const near = (lat, lng) => pts.some((p) => Math.abs(p[0] - lat) < 0.03 && Math.abs(p[1] - lng) < 0.035 && hav(p, [lat, lng]) < 1500);
+  let hits = [];
+  if (typeof places !== 'undefined' && places) hits = places.filter((p) => p.k === 'mosque' && near(p.lat, p.lng)).map((p) => ({ n: p.n, lat: p.lat, lng: p.lng }));
+  if (!hits.length && typeof poiTile === 'function') {
+    try {
+      const keys = [...new Set(pts.map((p) => poiKey(p[0], p[1])))];
+      const rows = (await Promise.all(keys.map(poiTile))).flat();
+      hits = rows.filter((x) => x[0] === 'mosque' && near(x[2], x[3])).map((x) => ({ n: x[1] || 'جامع', lat: x[2], lng: x[3] }));
+    } catch (e) {}
+  }
+  return hits;
+}
+function routeStretch(r, from, to) {
+  const pts = [];
+  for (let k = 0, next = from; k < r.pts.length; k++) if (r.cum[k] >= next && r.cum[k] <= to) { pts.push(r.pts[k]); next = r.cum[k] + 1500; }
+  return pts;
+}
+async function mosquesAlong(r, pa) {
+  routeMosq.clearLayers();
+  toast('🕌 جارٍ البحث عن الجوامع على الطريق…');
+  let n = 0;
+  for (const x of pa) {
+    // from 15 km before the adhan's place to 25 km after it
+    const hits = await mosquesNear(routeStretch(r, Math.max(0, x.along - 15000), x.along + 25000));
+    hits.slice(0, 40).forEach((h) => {
+      n++;
+      L.marker([h.lat, h.lng], { icon: L.divIcon({ className: '', html: '<div class="nearPin" style="--c:#123a3a">🕌</div>', iconSize: [28, 28], iconAnchor: [14, 14] }) })
+        .bindTooltip(esc(h.n) + ' · ' + PR_NAMES[x.k], { direction: 'top' }).addTo(routeMosq);
+    });
+  }
+  toast(n ? '🕌 ' + n + ' جامع قرب طريقك عند أوقات الصلاة — تظهر على الخريطة' : 'لم أجد جوامع مسجّلة قرب هذه المقاطع من الطريق', 5000);
+  setTimeout(() => routeMosq.clearLayers(), 3 * 3600e3);
+}
+/* while driving: 12 minutes before an adhan, the nearest mosque ahead on the road (said once per prayer) */
+let prRoadSaid = '';
+setInterval(async () => {
+  try {
+    if (typeof navState === 'undefined' || !navState || !navState.r || !me || !store.get('prRoadOn', true)) return;
+    const r = navState.r, now = Date.now(), T = prayerTimes(new Date(), me.lat, me.lng, prCfg || { method: 'mwl' });
+    const key = ADHAN_KEYS.find((k) => T[k] && T[k] - now > 0 && T[k] - now <= 12 * 60e3);
+    if (!key) return;
+    const id = key + T[key].toDateString();
+    if (prRoadSaid === id) return;
+    const remain = r.total - navState.along, left = r.duration * (remain / r.total);
+    if (left < 15 * 60) return;                               // arriving soon anyway
+    prRoadSaid = id;
+    const hits = await mosquesNear(routeStretch(r, navState.along + 500, navState.along + 15000));
+    let best = null;
+    hits.forEach((h) => {
+      // how far along the road the mosque is
+      let bi = 0, bd = 1e9;
+      for (let k = 0; k < r.pts.length; k += 3) { const d = hav(r.pts[k], [h.lat, h.lng]); if (d < bd) { bd = d; bi = k; } }
+      const ahead = r.cum[bi] - navState.along;
+      if (ahead > 300 && (!best || ahead < best.ahead)) best = Object.assign({ ahead }, h);
+    });
+    const tm = Math.max(1, Math.round((T[key] - now) / 60e3));
+    if (best) {
+      const km = best.ahead >= 1000 ? Math.round(best.ahead / 1000) + ' كيلومتر' : Math.round(best.ahead / 100) * 100 + ' متر';
+      routeNote(`<div>🕌 أذان ${PR_NAMES[key]} بعد ${tm} دقيقة — ${esc(best.n)} على طريقك بعد ${km}</div>`,
+        [['📍 أرني', () => { routeMosq.clearLayers(); L.marker([best.lat, best.lng], { icon: L.divIcon({ className: '', html: '<div class="nearPin" style="--c:#123a3a">🕌</div>', iconSize: [28, 28], iconAnchor: [14, 14] }) }).bindTooltip(esc(best.n), { direction: 'top', permanent: true }).addTo(routeMosq); setFollow(false); map.setView([best.lat, best.lng], 16); }]], 30000);
+      say('يقترب أذان ' + PR_NAMES[key] + '. يوجد جامع على طريقك بعد ' + km);
+    } else {
+      routeNote(`<div>🕌 أذان ${PR_NAMES[key]} بعد ${tm} دقيقة</div>`, [], 15000);
+    }
+  } catch (e) {}
+}, 60e3);
 async function routeChecks(r) {
-  if (!r || !r.pts || r.total < 40000) return;
+  if (!r || !r.pts) return;
+  // short trips: only the iftar in Ramadan
+  if (r.total < 40000) { try { const l = iftarLine(r, Date.now(), prayersAlong(r, Date.now())); if (l) routeNote('<div>' + l + '</div>', [], 15000); } catch (e) {} return; }
   const notes = [], btns = [];
   // the weather along the road, at the time you will be there
   try {
@@ -187,6 +306,14 @@ async function routeChecks(r) {
       if (wind) notes.push('💨 رياح قوية (' + wind.k + ' كم/س) على طريقك' + at(wind) + ' — قد تثير الغبار');
       if (storm || rain || wind) btns.push(['🌦 الطقس', () => openWeather()]);
     }
+  } catch (e) {}
+  // the prayers that come while you drive, and in Ramadan the iftar
+  try {
+    const pa = prayersAlong(r, Date.now());
+    pa.forEach((x) => notes.push('🕌 أذان ' + PR_NAMES[x.k] + ' ' + prClock(x.t) + ' وأنت' + (x.p ? ' قرب ' + esc(x.p) : ' على الطريق')));
+    if (pa.length) btns.push(['🕌 جوامع على الطريق', () => mosquesAlong(r, pa)]);
+    const ift = iftarLine(r, Date.now(), pa);
+    if (ift) notes.push(ift);
   } catch (e) {}
   // fuel
   if (r.total >= 300000) {
