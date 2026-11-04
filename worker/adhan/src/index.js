@@ -119,8 +119,19 @@ function cors(req) {
   const o = req.headers.get('Origin') || '';
   return { 'Access-Control-Allow-Origin': o === SITE || o === 'https://appassets.androidplatform.net' || o.startsWith('http://localhost') ? o : SITE, 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type', 'Content-Type': 'application/json' };
 }
+/* map packs for the web version: GitHub release files carry no CORS header, so a web page cannot
+   download them itself; this passes them through (streamed, nothing is stored) with one. */
+async function mapFile(req, url) {
+  const f = url.searchParams.get('f') || '';
+  if (!/^map-\d{8}\/mallah-[a-z0-9_-]{1,40}\.zip$/.test(f)) return new Response('bad file', { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
+  const r = await fetch('https://github.com/mustafasami446-star/mallah/releases/download/' + f, { redirect: 'follow', cf: { cacheEverything: true, cacheTtl: 86400 } });
+  const h = new Headers({ 'Access-Control-Allow-Origin': '*', 'Access-Control-Expose-Headers': 'Content-Length', 'Content-Type': 'application/zip', 'Cache-Control': 'public, max-age=86400' });
+  const len = r.headers.get('content-length'); if (len) h.set('Content-Length', len);
+  return new Response(r.body, { status: r.status, headers: h });
+}
 async function handle(req, env) {
   const h = cors(req), url = new URL(req.url);
+  if (url.pathname === '/map') return mapFile(req, url);
   if (req.method === 'OPTIONS') return new Response(null, { headers: h });
   await ensure(env);
   if (url.pathname === '/key') return new Response(JSON.stringify({ key: (await vapidKeys(env)).pub }), { headers: h });
