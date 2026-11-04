@@ -504,7 +504,7 @@ function setDestination(lat, lng, name, sub, skipRecent) {
     startLocation();
     return;
   }
-  if (navigator.onLine === false) { useSavedOrWarn(); return; }
+  if (navigator.onLine === false && !(typeof roadsReady === 'function' && roadsReady())) { useSavedOrWarn(); return; }
   computeAllModes();
 }
 function useSavedOrWarn() {
@@ -529,6 +529,13 @@ function clearRouteLayer() {
   if (routeCasing) { map.removeLayer(routeCasing); routeCasing = null; }
 }
 async function fetchRoute(m, from, to) {
+  // without internet: the road network saved on the phone
+  const off = typeof roadsReady === 'function' && roadsReady();
+  if (off && navigator.onLine === false) return offlineRoute(m, from, to);
+  try { return await fetchRouteOnline(m, from, to); }
+  catch (e) { if (off && String(e && e.message) !== 'NoRoute') { try { return await offlineRoute(m, from, to); } catch (e2) {} } throw e; }
+}
+async function fetchRouteOnline(m, from, to) {
   const coords = from[1].toFixed(6) + ',' + from[0].toFixed(6) + ';' + to[1].toFixed(6) + ',' + to[0].toFixed(6);
   const q = '?overview=full&geometries=geojson&steps=true&alternatives=false';
   let lastErr = null;
@@ -601,7 +608,8 @@ function showRoute(fit) {
   drawRoute(r);
   const arrive = new Date(Date.now() + r.duration * 1000);
   $('routeInfo').innerHTML = `<span class="big">${fmtDur(r.duration)}</span><span class="small">${fmtDist(r.distance)} · الوصول ${clock(arrive)}</span>`
-    + ((r.gap || 0) > 50 ? `<div class="small warnTxt" style="flex-basis:100%">🧭 آخر ${fmtDist(r.gap)} بدون طريق مرسوم — سيتحوّل التطبيق إلى البوصلة تلقائيًا</div>` : '');
+    + ((r.gap || 0) > 50 ? `<div class="small warnTxt" style="flex-basis:100%">🧭 آخر ${fmtDist(r.gap)} بدون طريق مرسوم — سيتحوّل التطبيق إلى البوصلة تلقائيًا</div>` : '')
+    + (r.offline ? '<div class="small" style="flex-basis:100%;color:var(--muted)">📴 محسوب بدون إنترنت من خريطتك المنزّلة (الوقت تقديري، بدون ازدحام)</div>' : '');
   $('startBtn').disabled = false; $('saveRouteBtn').disabled = false;
   fabsAboveSheet();
   if (fit !== false) {
@@ -714,7 +722,7 @@ function onNavLocation() {
     if (s.r.custom) {
       s.lastReroute = Date.now() + 18000;
       say('أنت خارج المسار المسجل، عد إليه'); toast('خارج المسار المسجل — عد إلى الخط', 4000);
-    } else if (navigator.onLine === false) {
+    } else if (navigator.onLine === false && !(typeof roadsReady === 'function' && roadsReady())) {
       s.lastReroute = Date.now() + 18000; // remind every ~30 s
       say('أنت خارج المسار، عد إلى المسار المحدد'); toast('خارج المسار — لا يوجد اتصال لإعادة الحساب، عد إلى الخط الأزرق', 4000);
     } else reroute();
@@ -1156,7 +1164,8 @@ function shareMenu(title, lat, lng, extra, msgTitle) {
   const text = locText(msgTitle || title, lat, lng, extra);
   actionSheet(title, [
     { label: '↗ مشاركة عبر التطبيقات (واتساب، تيليجرام…)', fn: () => doShare(text) },
-    { label: '✉️ رسالة SMS — تعمل بدون إنترنت', fn: () => doSms(text) }
+    { label: '✉️ رسالة SMS — تعمل بدون إنترنت', fn: () => doSms(text) },
+    { label: '🗺 وصف المكان بالمعالم (للتاكسي والتوصيل)', fn: () => describePlace(lat, lng, msgTitle || title) }
   ]);
 }
 $('shareMe').onclick = () => {

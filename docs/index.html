@@ -227,6 +227,7 @@ body.ui-nav #topBar,body.ui-meas #topBar{display:none}
 #mBtns button:active{background:var(--panel2)}
 #mBtns button.cancel{justify-content:center;color:var(--muted);margin-top:4px;border-top:1px solid var(--line);border-radius:0}
 #mBtns button.danger{color:#fca5a5}
+#mBtns .descTxt{white-space:pre-line;text-align:right;font-size:14px;line-height:1.7;background:var(--panel2);border-radius:12px;padding:10px 12px;width:100%;user-select:text;-webkit-user-select:text}
 /* layer menu night section */
 #layerMenu .sep{border-top:1px solid var(--line);margin:6px 4px;padding-top:8px;color:var(--muted);font-size:12px;padding-right:8px}
 #layerMenu .seg{display:flex;gap:4px;padding:2px 4px 4px}
@@ -411,6 +412,10 @@ body.ui-wx #wxBtn{color:#38bdf8;border-color:#38bdf8}
 .prKaaba{font-size:24px;line-height:30px;text-align:center}
 #tripBar{position:absolute;top:calc(70px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:520;display:flex;align-items:center;gap:8px;max-width:calc(100% - 24px);background:#064e3b;border:1px solid #10b981;color:#d1fae5;border-radius:16px;padding:6px 8px 6px 12px;box-shadow:var(--shadow);font-size:13px}
 #tripBar .g{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#tripBar button{height:30px;padding:0 10px;border-radius:10px;background:rgba(255,255,255,.12);color:#fff;font:inherit;font-size:12.5px;flex:none}
+#arbBar{position:absolute;top:calc(118px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:520;display:flex;align-items:center;gap:8px;max-width:calc(100% - 24px);background:#3b0764;border:1px solid #a855f7;color:#f3e8ff;border-radius:16px;padding:6px 8px 6px 12px;box-shadow:var(--shadow);font-size:13.5px}
+#arbBar .g{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}#arbBar b{color:#fff;font-size:15px}
+#arbBar button{height:32px;padding:0 10px;border-radius:10px;background:rgba(255,255,255,.14);color:#fff;font:inherit;font-size:12.5px;flex:none}
+body.ui-nav #arbBar{top:calc(196px + env(safe-area-inset-top))}
 #tripBar .dot{width:9px;height:9px;border-radius:50%;background:#34d399;flex:none;animation:tripDot 1.4s infinite}
 @keyframes tripDot{50%{opacity:.25}}
 body.ui-nav #tripBar{top:calc(150px + env(safe-area-inset-top))}
@@ -788,7 +793,7 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
     <div class="card" id="areasCard"><h3>الخرائط المنزّلة</h3><div id="areasList"></div></div>
     <button class="btn ghost wide" id="dlView"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" stroke-dasharray="3 3"/><path d="M12 8v7M9 12l3 3 3-3"/></svg>تنزيل المنطقة الظاهرة على الشاشة</button>
     <div class="card"><h3>تنزيل خريطة مدينة</h3><div id="citiesList"></div></div>
-    <div class="note">تُحفظ الخرائط داخل الهاتف وتظهر تلقائيًا عند انقطاع الإنترنت (بطبقة «خريطة الشوارع»). التفاصيل متاحة حتى مستوى الشوارع، والتكبير الأكبر يعرض نفس الخريطة مكبّرة. البحث وحساب المسارات الجديدة ما زالا يحتاجان إنترنت، لذا احفظ مساراتك المهمة مسبقًا.</div>
+    <div class="note">تُحفظ الخرائط داخل الهاتف وتظهر تلقائيًا عند انقطاع الإنترنت (بطبقة «خريطة الشوارع»). التفاصيل متاحة حتى مستوى الشوارع، والتكبير الأكبر يعرض نفس الخريطة مكبّرة. وحساب المسارات بدون إنترنت يعمل مع خرائط المحافظات (أعلى هذه الصفحة).</div>
   </div>
 </div>
 
@@ -953,6 +958,7 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
 <script src="pack-web.js"></script>
 <script src="provinces.js"></script>
 <script src="vector.js"></script>
+<script src="roads.js"></script>
 <script src="vecov.js"></script>
 <script src="appupdate.js"></script>
 <script src="home.js"></script>
@@ -962,6 +968,8 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
 <script src="teambg.js"></script>
 <script src="teamqr.js"></script>
 <script src="trip.js"></script>
+<script src="arbaeen.js"></script>
+<script src="describe.js"></script>
 <script src="prayer.js"></script>
 <script src="extras.js"></script>
 <script src="weather.js"></script>

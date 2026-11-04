@@ -542,6 +542,10 @@ function renderPackCard() {
     h += `<div class="item"><div class="grow"><div class="t">${p.id === FULL_ID ? '🇮🇶' : '🗺'} ${esc(provName(p.id))} <span class="ok">✓</span></div><div class="s">الإصدار ${fmtVer(p.version)} · ${fmtMB(p.size || 0)}${nw ? ' · <span class="warnTxt">يتوفر تحديث</span>' : ''}</div></div>`
       + (nw ? `<button class="chip go" data-pk="upd" data-id="${p.id}">⬇ تحديث</button>` : '') + `<button class="chip" data-pk="more" data-id="${p.id}">⋯</button></div>`;
   });
+  if (packs().length && typeof roadsWanted === 'function') {
+    const ok = roadsReady();
+    h += `<div class="item"><div class="grow s">🧭 حساب المسار بدون إنترنت: ${ok ? '<span class="ok">جاهز ✓</span>' : roadsBusy ? 'جارٍ تنزيل بيانات الطرق…' : 'تُنزَّل بيانات الطرق تلقائيًا عند الاتصال'}</div>${ok || roadsBusy ? '' : '<button class="chip" data-pk="roads">⬇ الآن</button>'}</div>`;
+  }
   h += '<div id="areasInPack"></div>';   // the city street maps downloaded on this phone (filled by renderMaps in app.js)
   if (packQueue.length) h += `<div class="item"><div class="grow s">⏳ في الانتظار: ${packQueue.map((id) => esc(provName(id))).join('، ')}</div></div>`;
   if (!packs().length && !packBusyState) h += '<div class="item"><div class="grow s">نزّل خريطة محافظتك (بين 7 و 23 م.ب) أو العراق كاملًا، لتعمل الخريطة والبحث بأسماء عربية بدون إنترنت.</div></div>';
@@ -561,6 +565,7 @@ function bindPackButtons(root) {
         case 'del': removePack(id); break;
         case 'imp': importPack(); break;
         case 'pick': openPicker(); break;
+        case 'roads': roadsSync(true); renderPackCard(); break;
         case 'show': showProvince(id); break;
         case 'more': actionSheet('خريطة ' + provName(id) + ' — ' + fmtVer((packOf(id) || {}).version), [
           { label: '🔄 البحث عن تحديث', fn: () => checkUpdates(true) },

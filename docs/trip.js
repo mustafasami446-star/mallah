@@ -136,7 +136,8 @@ function tripBar() {
         : [{ label: '📡 رابط مباشر لموقعي — ساعة', fn: () => tripStart(null, 1) }, { label: '📡 رابط مباشر لموقعي — 4 ساعات', fn: () => tripStart(null, 4) }];
     actionSheet(title, live.concat([
       { label: '↗ رسالة بموقعي الآن (واتساب، تيليجرام…)', fn: () => doShare(text) },
-      { label: '✉️ رسالة SMS — تعمل بدون إنترنت', fn: () => doSms(text) }
+      { label: '✉️ رسالة SMS — تعمل بدون إنترنت', fn: () => doSms(text) },
+      { label: '🗺 وصف المكان بالمعالم (للتاكسي والتوصيل)', fn: () => describePlace(lat, lng, msgTitle || title) }
     ]));
   };
 }
