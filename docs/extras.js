@@ -35,7 +35,7 @@ function dayBarEnsure() {
 }
 let dayArea = null;                  // the nearest district / sub-district to the phone, for the temperature
 function dayNearestArea(lat, lng) {
-  if (!WX.ar || !WX.data) return null;
+  if (typeof WX === 'undefined' || !WX.ar || !WX.data) return null;
   let best = null, bd = 1e18;
   for (const id in WX.data.areas) {
     const n = WX.ar.byId[id]; if (!n || !n.c) continue;
@@ -49,7 +49,7 @@ function dayBar() {
   const w = prWhere(), now = new Date();
   // weather now
   let wx = '';
-  if (WX.data && WX.ar) {
+  if (typeof WX !== 'undefined' && WX.data && WX.ar) {   // weather.js may still be loading on a slow connection
     if (!dayArea || !dayBar.at || hav(dayBar.at, [w.lat, w.lng]) > 3000) { dayArea = dayNearestArea(w.lat, w.lng); dayBar.at = [w.lat, w.lng]; }
     const a = dayArea && WX.data.areas[dayArea], i = wxNowIdx();
     if (a && a.h.t[i] != null) {
@@ -77,6 +77,7 @@ function dayBar() {
 }
 /* the forecast for the bar: the saved one when it is fresh, else download (≈150 KB compressed) */
 async function dayWxLoad() {
+  if (typeof WX === 'undefined') { setTimeout(dayWxLoad, 3000); return; }
   try {
     if (!WX.data) { const c = await wxCacheGet(); if (c && c.v === 1) wxSetData(c); }
     if (!WX.data || Date.now() - Date.parse(WX.data.made) > 3 * 3600e3) await wxLoad(true);
@@ -87,7 +88,7 @@ async function dayWxLoad() {
 setTimeout(dayBar, 300);
 setTimeout(dayWxLoad, 5000);
 setInterval(dayBar, 30000);
-setInterval(() => { if (WX.data && Date.now() - Date.parse(WX.data.made) > 3 * 3600e3 && document.visibilityState === 'visible') dayWxLoad(); }, 20 * 60e3);
+setInterval(() => { if (typeof WX !== 'undefined' && WX.data && Date.now() - Date.parse(WX.data.made) > 3 * 3600e3 && document.visibilityState === 'visible') dayWxLoad(); }, 20 * 60e3);
 
 /* ---------------- quick words in the search box ---------------- */
 const QWORDS = [

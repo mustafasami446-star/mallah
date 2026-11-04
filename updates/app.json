@@ -1,8 +1,8 @@
 {
-  "versionCode": 69,
-  "versionName": "5.23",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.23/Mallah-Navigator.apk",
+  "versionCode": 70,
+  "versionName": "5.24",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.24/Mallah-Navigator.apk",
   "size": 2618371,
-  "notes": "«المناطق» صارت تصل إلى الأحياء والقرى داخل كل ناحية، على الخريطة وفي قائمة مرتّبة.",
-  "sha256": "926dc8d6b34cbea2c52c7ea581448eba5c2bfc6a0a43d533e5af53373ade13e7"
+  "notes": "إصلاح عطل نادر في شريط «يومك» عند بطء تحميل الصفحة، مع الأحياء والقرى في «المناطق».",
+  "sha256": "3bad034b566ad9d7eb9707a1637d83522d3dc9051c729b1383740d8fbf0df3c1"
 }
