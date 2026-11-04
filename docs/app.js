@@ -39,6 +39,7 @@ let underLayer = null;
 let baseLayer = null, layerKey = store.get('layer', 'osm');
 const TILE_BASE = (NATIVE && Android.getTileBase) ? Android.getTileBase() : null;
 let OFFLINE_LAYER = 'esri'; const OFFLINE_MAX_Z = 16;
+const RASTER_LAYER = 'esri';   // city/area downloads are always raster street tiles, even when the offline vector map is the offline layer
 /* Tiles: try the phone's offline copy first, then the internet, then a zoomed-in parent tile from the offline copy */
 const CachedLayer = L.TileLayer.extend({
   createTile: function (coords, done) {
@@ -843,29 +844,44 @@ function saveAreas() { store.set('areas', areas); }
   const old = areas.filter((x) => (x.layer || 'voyager') === 'voyager');
   if (!old.length) return;
   if (NATIVE && Android.deleteArea) old.forEach((x) => Android.deleteArea('old' + x.id.replace(/[^A-Za-z0-9]/g, ''), x.s, x.w, x.n, x.e, x.minZ, x.maxZ, 'voyager', ''));
-  old.forEach((x) => { x.layer = OFFLINE_LAYER; x.complete = false; x.bytes = 0; x.tiles = 0; });
+  old.forEach((x) => { x.layer = RASTER_LAYER; x.complete = false; x.bytes = 0; x.tiles = 0; });
   saveAreas();
   setTimeout(() => toast('تم تغيير مصدر الخرائط. افتح «الخرائط بدون إنترنت» واضغط «استئناف» لإعادة تنزيلها.', 6000), 1500);
 })();
+/* areas saved while the vector map was the offline layer got layer 'vec' and never downloaded (5.19 and before) */
+areas.forEach((x) => { if (x.layer !== RASTER_LAYER) { x.layer = RASTER_LAYER; if (!x.bytes) x.complete = false; } });
+saveAreas();
 function queueDownload(a) {
+  if (!a) return;
   if (!NATIVE || !Android.downloadArea) { toast('تنزيل الخرائط متاح داخل تطبيق الهاتف فقط'); return; }
   if (navigator.onLine === false) { toast('تحتاج اتصالًا بالإنترنت لتنزيل الخريطة'); return; }
   let ex = areas.find((x) => x.id === a.id);
-  if (!ex) { ex = Object.assign({ bytes: 0, tiles: 0, failed: 0, complete: false, date: Date.now(), layer: OFFLINE_LAYER }, a); areas.push(ex); }
+  if (!ex) { ex = Object.assign({ bytes: 0, tiles: 0, failed: 0, complete: false, date: Date.now() }, a, { layer: RASTER_LAYER }); areas.push(ex); }
   else { ex.complete = false; }
   saveAreas();
-  if (dlCur && dlCur.id === a.id) return;
+  // a download that stopped reporting (the app was closed mid-way, a lost callback) no longer blocks «استئناف»
+  if (dlCur && Date.now() - (dlCur.seen || 0) > 30e3) dlCur = null;
+  if (dlCur && dlCur.id === a.id) { renderMaps(); return; }
   if (!dlQueue.some((q) => q.id === a.id)) dlQueue.push(ex);
+  toast('⬇ بدأ تنزيل خريطة ' + ex.name);
   tilePump(); renderMaps();
 }
+let pumpTry = 0;
 function tilePump() {
   if (dlCur || !dlQueue.length) return;
-  const a = dlQueue.shift();
-  const L0 = LAYERS[OFFLINE_LAYER];
-  const ok = Android.downloadArea(a.id, a.s, a.w, a.n, a.e, a.minZ, a.maxZ, L0.url, L0.opt.subdomains || '', OFFLINE_LAYER);
-  if (!ok) { dlQueue.unshift(a); setTimeout(tilePump, 1500); return; }
-  dlCur = { id: a.id, name: a.name, done: 0, total: tileCount(a, a.minZ, a.maxZ), failed: 0, bytes: 0 };
-  renderDl();
+  const a = dlQueue[0];
+  const L0 = LAYERS[RASTER_LAYER];
+  let ok = false;
+  try { ok = Android.downloadArea(a.id, +a.s, +a.w, +a.n, +a.e, a.minZ | 0, a.maxZ | 0, L0.url, (L0.opt && L0.opt.subdomains) || '', RASTER_LAYER); }
+  catch (e) { if (typeof diagLog === 'function') diagLog('downloadArea: ' + (e && e.message)); }
+  if (!ok) {
+    // another download is still running on the phone: its progress will take over the card (see onDownloadProgress)
+    if (++pumpTry > 40) { pumpTry = 0; dlQueue.shift(); toast('تعذّر بدء التنزيل — حاول مرة أخرى', 4000); renderMaps(); return; }
+    setTimeout(tilePump, 1500); return;
+  }
+  pumpTry = 0; dlQueue.shift();
+  dlCur = { id: a.id, name: a.name, done: 0, total: tileCount(a, a.minZ, a.maxZ), failed: 0, bytes: 0, seen: Date.now() };
+  renderDl(); renderMaps();
 }
 function renderDl() {
   const c = $('dlCard');
@@ -876,9 +892,20 @@ function renderDl() {
   $('dlInfo').textContent = pct + '% · ' + dlCur.done + ' / ' + dlCur.total + ' مربع · ' + fmtMB(dlCur.bytes) + (dlCur.failed ? ' · فشل ' + dlCur.failed : '');
   $('dlBar').style.width = pct + '%';
 }
+let dlListAt = 0;
 window.onDownloadProgress = function (id, done, total, failed, bytes) {
-  if (!dlCur || dlCur.id !== id) return;
-  Object.assign(dlCur, { done, total, failed, bytes }); renderDl();
+  if (!dlCur || dlCur.id !== id) {
+    // a download the page lost track of (the page reloaded while the phone kept downloading): show it again
+    if (dlCur && Date.now() - (dlCur.seen || 0) < 30e3) return;
+    const a = areas.find((x) => x.id === id);
+    dlCur = { id, name: a ? a.name : 'خريطة' };
+    dlQueue = dlQueue.filter((q) => q.id !== id);
+  }
+  Object.assign(dlCur, { done, total, failed, bytes, seen: Date.now() }); renderDl();
+  const a = areas.find((x) => x.id === id);
+  if (a && bytes > (a.bytes || 0)) { a.bytes = bytes; }
+  // the lists show the growing size every few seconds without re-drawing on every tick
+  if (Date.now() - dlListAt > 3000 && !$('mapsPanel').classList.contains('hidden')) { dlListAt = Date.now(); renderMaps(); }
 };
 function finishDl(id, done, total, failed, bytes, cancelled) {
   const a = areas.find((x) => x.id === id);
@@ -903,7 +930,7 @@ function deleteArea(id) {
   dlQueue = dlQueue.filter((q) => q.id !== id);
   areas = areas.filter((x) => x.id !== id); saveAreas();
   const keep = areas.map((k) => [k.s, k.w, k.n, k.e, k.minZ, k.maxZ].map((v) => (+v).toFixed(6)).join(',')).join(';');
-  if (NATIVE && Android.deleteArea) Android.deleteArea(id, a.s, a.w, a.n, a.e, a.minZ, a.maxZ, a.layer || OFFLINE_LAYER, keep);
+  if (NATIVE && Android.deleteArea) Android.deleteArea(id, a.s, a.w, a.n, a.e, a.minZ, a.maxZ, RASTER_LAYER, keep);
   renderMaps();
 }
 window.onAreaDeleted = (id) => { if (String(id).indexOf('old') === 0) return; toast('تم حذف الخريطة وتحرير المساحة'); if (baseLayer && baseLayer.redraw) baseLayer.redraw(); };
