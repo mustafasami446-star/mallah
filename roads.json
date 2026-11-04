@@ -1,0 +1,260 @@
+{
+ "v": 1,
+ "packs": [
+  {
+   "id": "iraq",
+   "file": "roads-iraq.bin.gz",
+   "size": 27096723,
+   "nodes": 1111527,
+   "edges": 1524080
+  },
+  {
+   "id": "qadisiyah",
+   "file": "roads-qadisiyah.bin.gz",
+   "size": 907062,
+   "nodes": 42492,
+   "edges": 59155,
+   "bbox": [
+    44.206,
+    31.145,
+    45.948,
+    32.568
+   ]
+  },
+  {
+   "id": "anbar",
+   "file": "roads-anbar.bin.gz",
+   "size": 1972871,
+   "nodes": 81826,
+   "edges": 109918,
+   "bbox": [
+    38.643,
+    30.523,
+    44.309,
+    35.26
+   ]
+  },
+  {
+   "id": "babil",
+   "file": "roads-babil.bin.gz",
+   "size": 2034332,
+   "nodes": 98985,
+   "edges": 136754,
+   "bbox": [
+    43.881,
+    31.949,
+    45.307,
+    33.236
+   ]
+  },
+  {
+   "id": "baghdad",
+   "file": "roads-baghdad.bin.gz",
+   "size": 3711916,
+   "nodes": 188638,
+   "edges": 262439,
+   "bbox": [
+    43.695,
+    32.686,
+    45.119,
+    33.925
+   ]
+  },
+  {
+   "id": "basra",
+   "file": "roads-basra.bin.gz",
+   "size": 1734073,
+   "nodes": 85488,
+   "edges": 114332,
+   "bbox": [
+    46.417,
+    28.97,
+    49.257,
+    31.437
+   ]
+  },
+  {
+   "id": "dhiqar",
+   "file": "roads-dhiqar.bin.gz",
+   "size": 935822,
+   "nodes": 39535,
+   "edges": 53426,
+   "bbox": [
+    45.479,
+    30.379,
+    47.289,
+    32.154
+   ]
+  },
+  {
+   "id": "diyala",
+   "file": "roads-diyala.bin.gz",
+   "size": 3705835,
+   "nodes": 165075,
+   "edges": 227237,
+   "bbox": [
+    44.139,
+    32.968,
+    46.158,
+    35.26
+   ]
+  },
+  {
+   "id": "duhok",
+   "file": "roads-duhok.bin.gz",
+   "size": 2139941,
+   "nodes": 72686,
+   "edges": 95487,
+   "bbox": [
+    42.198,
+    36.58,
+    44.251,
+    37.531
+   ]
+  },
+  {
+   "id": "erbil",
+   "file": "roads-erbil.bin.gz",
+   "size": 4250527,
+   "nodes": 152547,
+   "edges": 204393,
+   "bbox": [
+    43.439,
+    35.623,
+    45.221,
+    37.473
+   ]
+  },
+  {
+   "id": "halabja",
+   "file": "roads-halabja.bin.gz",
+   "size": 436332,
+   "nodes": 13494,
+   "edges": 18955,
+   "bbox": [
+    45.648,
+    34.888,
+    46.354,
+    35.611
+   ]
+  },
+  {
+   "id": "karbala",
+   "file": "roads-karbala.bin.gz",
+   "size": 1364133,
+   "nodes": 67862,
+   "edges": 93607,
+   "bbox": [
+    43.107,
+    32.009,
+    44.46,
+    32.997
+   ]
+  },
+  {
+   "id": "kirkuk",
+   "file": "roads-kirkuk.bin.gz",
+   "size": 1883239,
+   "nodes": 72997,
+   "edges": 100131,
+   "bbox": [
+    43.202,
+    34.536,
+    44.948,
+    36.059
+   ]
+  },
+  {
+   "id": "maysan",
+   "file": "roads-maysan.bin.gz",
+   "size": 551595,
+   "nodes": 24033,
+   "edges": 34113,
+   "bbox": [
+    46.172,
+    30.974,
+    48.016,
+    33.018
+   ]
+  },
+  {
+   "id": "muthanna",
+   "file": "roads-muthanna.bin.gz",
+   "size": 512478,
+   "nodes": 19125,
+   "edges": 26029,
+   "bbox": [
+    43.663,
+    28.909,
+    46.899,
+    31.905
+   ]
+  },
+  {
+   "id": "najaf",
+   "file": "roads-najaf.bin.gz",
+   "size": 1096310,
+   "nodes": 53619,
+   "edges": 76323,
+   "bbox": [
+    42.556,
+    29.723,
+    44.919,
+    32.512
+   ]
+  },
+  {
+   "id": "nineveh",
+   "file": "roads-nineveh.bin.gz",
+   "size": 5224200,
+   "nodes": 191921,
+   "edges": 255748,
+   "bbox": [
+    41.061,
+    34.748,
+    44.454,
+    37.206
+   ]
+  },
+  {
+   "id": "salahaddin",
+   "file": "roads-salahaddin.bin.gz",
+   "size": 1672436,
+   "nodes": 65190,
+   "edges": 86389,
+   "bbox": [
+    42.274,
+    33.497,
+    45.095,
+    35.847
+   ]
+  },
+  {
+   "id": "sulaymaniyah",
+   "file": "roads-sulaymaniyah.bin.gz",
+   "size": 3997913,
+   "nodes": 129551,
+   "edges": 181577,
+   "bbox": [
+    44.377,
+    34.395,
+    46.49,
+    36.665
+   ]
+  },
+  {
+   "id": "wasit",
+   "file": "roads-wasit.bin.gz",
+   "size": 858231,
+   "nodes": 37697,
+   "edges": 52231,
+   "bbox": [
+    44.382,
+    31.824,
+    46.715,
+    33.635
+   ]
+  }
+ ],
+ "version": "2026-11-04"
+}
