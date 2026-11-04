@@ -107,14 +107,6 @@ function arEnsure() {
   </div>`;
   document.body.appendChild(el);
   $('areaClose').onclick = () => el.classList.add('hidden');
-  $('areaMapWrap').addEventListener('click', (e) => {
-    const d = e.target.closest('[data-st]');
-    if (d) { stSel = +d.dataset.st; arRender(); return; }
-    const t = e.target.closest('[data-ar]');
-    if (!t) return;
-    if (t.dataset.ar === arSel && (arKids(arSel).length || arSettle(AR.byId[arSel]).length)) arEnter(arSel);
-    else { arSel = t.dataset.ar; arRender(); }
-  });
 }
 function openAreas(startId) {
   arEnsure();
@@ -133,8 +125,8 @@ function openAreas(startId) {
     arRender();
   }).catch(() => { $('areaSel').innerHTML = '<div class="item"><div class="grow s">تعذّر تحميل حدود المناطق</div></div>'; });
 }
-function arEnter(id) { arPath.push(id); arSel = null; stSel = null; arRender(); $('areaBody').scrollTop = 0; }
-function arUp(depth) { stSel = null; arSel = arPath[depth] || null; arPath = arPath.slice(0, depth); arRender(); }
+function arEnter(id) { arPath.push(id); arSel = null; stSel = null; plPick = null; arRender(); $('areaBody').scrollTop = 0; }
+function arUp(depth) { stSel = null; plPick = null; arSel = arPath[depth] || null; arPath = arPath.slice(0, depth); arRender(); }
 function arRender() {
   const cur = arCur(), kids = arKids(cur.id), here = me ? arHere(me.lat, me.lng) : [];
   // breadcrumbs
@@ -148,9 +140,11 @@ function arRender() {
   // a province or district map shows everything inside it: the sub-district borders and every town, neighbourhood and village
   const preview = cur.k !== 'iraq' ? arSettle(cur) : [];
   $('areaMapWrap').innerHTML = arSvg(cur, kids, here, preview, true) + (preview.length ? STL : '');
-  // selected area
+  azAttach();
+  // selected area (or a tapped town / neighbourhood / village)
   const sel = arSel && AR.byId[arSel];
-  $('areaSel').innerHTML = sel ? arCard(sel, here) : arCard(cur, here, true);
+  if (plPick) { $('areaSel').innerHTML = placeCardHtml(plPick, arAreaOf(plPick)); placeCardBind(plPick, () => { plPick = null; arRender(); }); }
+  else $('areaSel').innerHTML = sel ? arCard(sel, here) : arCard(cur, here, true);
   $('areaSel').querySelectorAll('[data-act]').forEach((b) => {
     const n = AR.byId[b.dataset.id];
     b.onclick = () => { if (b.dataset.act === 'show') areaShow(n); else if (b.dataset.act === 'in') arEnter(n.id); else if (b.dataset.act === 'search') areaSearch(n); else areaNear(n); };
@@ -164,7 +158,7 @@ function arRender() {
     return `<div class="res provRow${n.id === arSel ? ' on' : ''}" data-pick="${n.id}"><div class="ic">${n.k === 'p' ? '🗺' : n.k === 'd' ? '🏙' : '📍'}</div><div style="flex:1;min-width:0"><div class="t">${esc(arTitle(n))}${here.includes(n.id) ? ' <span class="hereTag">📍</span>' : ''}</div><div class="s">${subTxt}</div></div>${sub || st.length ? '<div class="s" style="flex:none">‹</div>' : ''}</div>`;
   }).join('');
   $('areaList').querySelectorAll('[data-pick]').forEach((el) => {
-    el.onclick = () => { arSel = el.dataset.pick; arRender(); $('areaBody').scrollTo({ top: 0, behavior: 'smooth' }); };
+    el.onclick = () => { arSel = el.dataset.pick; plPick = null; arRender(); $('areaBody').scrollTo({ top: 0, behavior: 'smooth' }); };
   });
 }
 function arCard(n, here, isCur) {
@@ -185,59 +179,208 @@ function arCard(n, here, isCur) {
     ? '<div class="s" style="margin-top:8px">لعرض أحيائها وقراها: نزّل خريطة المحافظة من «الخرائط بدون إنترنت».</div>' : '';
   return `<div class="areaCard"><div class="t">${esc(arTitle(n))}${inHere ? ' <span class="hereTag">📍 أنت هنا</span>' : ''}</div><div class="s">${bits.join(' · ')}</div><div class="areaBtns">${btns}</div>${noMap}</div>`;
 }
+/* ---------------- the zoomable area map ----------------
+   The shapes are drawn once; dots and names are redrawn at every zoom so they keep the same size on screen.
+   Names appear by zoom: districts and cities first, then sub-districts and towns, then neighbourhoods, then
+   villages, and the English name too when zoomed right in. Names that would overlap wait for a closer zoom. */
+let AZ = null;                 // {id, W, H, base, vb, sc, dots, lbls, me, leaf}
+let plPick = null;             // a town / neighbourhood / village tapped on a province or district map
+const AZ_PXKM = { sub: 3, town: 3, nb: 6, vil: 11, en: 16 };   // screen pixels per km from which each kind gets its name
 function arSvg(cur, kids, here, dots, preview) {
   const W = 600, shapes = kids.length ? kids : [cur];
   if (!shapes[0] || !shapes[0].g) return '';
   let w = 180, e = -180, s = 90, n = -90;
   shapes.forEach((k) => { w = Math.min(w, k.b[0]); s = Math.min(s, k.b[1]); e = Math.max(e, k.b[2]); n = Math.max(n, k.b[3]); });
   const kx = Math.cos((s + n) / 2 * Math.PI / 180), sc = W / Math.max(1e-6, (e - w) * kx), H = Math.max(120, Math.ceil((n - s) * sc));
-  const P = (x, y) => ((x - w) * kx * sc).toFixed(1) + ',' + ((n - y) * sc).toFixed(1);
+  const XY = (x, y) => [(x - w) * kx * sc, (n - y) * sc];
+  const P = (x, y) => XY(x, y).map((v) => v.toFixed(1)).join(',');
   const path = (g) => (g.type === 'MultiPolygon' ? g.coordinates : [g.coordinates]).map((poly) => poly.map((r) => 'M' + r.map((c) => P(c[0], c[1])).join('L') + 'Z').join('')).join('');
-  let paths = '', labels = '';
-  const fs = Math.max(13, Math.min(22, 260 / Math.sqrt(shapes.length + 1)));
+  let paths = '';
+  const lbls = [];
   shapes.forEach((k) => {
     const cls = 'pv' + (k.id === arSel ? ' sel' : '') + (here.includes(k.id) ? ' here' : '');
     paths += `<path class="${cls}" data-ar="${k.id}" d="${path(k.g)}"/>`;
-    const wpx = (k.b[2] - k.b[0]) * kx * sc, hpx = (k.b[3] - k.b[1]) * sc;
-    if (k.c && shapes.length > 1 && (wpx < arShort(k).length * fs * 0.42 || hpx < fs * 0.9)) return;   // too small to label: it is in the list below
-    if (k.c) { const [x, y] = P(k.c[0], k.c[1]).split(','); labels += `<text class="pvl" style="font-size:${fs}px" x="${x}" y="${y}">${esc(arShort(k))}</text>`; }
+    if (k.c) { const [x, y] = XY(k.c[0], k.c[1]); lbls.push({ x, y, t: arShort(k), cls: 'azA', fpx: 15, pr: 0, min: 0 }); }
   });
-  // the sub-districts inside each district, as thin lines (a province map)
-  let subs = '';
-  if (cur.k === 'p') shapes.forEach((k) => arKids(k.id).forEach((c) => { if (c.g) subs += `<path class="pvSub" d="${path(c.g)}"/>`; }));
-  paths += subs;
-  let dotsSvg = '';
-  if (dots && dots.length) {
-    // every place a dot; names for the bigger ones (and all of them when there are few), the chosen one on top
-    const many = preview || dots.length > 25, R = preview ? { town: 7, nb: 4, vil: 3.5 } : { town: 9, nb: 6, vil: 5 };
-    let dd = '', ll = '';
-    // villages underneath, then neighbourhoods, then towns, the chosen one last (on top)
-    const ord = dots.map((p, i) => i).sort((a, b) => (a === stSel) - (b === stSel) || ST_RANK[dots[b].k] - ST_RANK[dots[a].k]);
-    ord.forEach((i) => { const p = dots[i];
-      if (p.lng < w || p.lng > e || p.lat < s || p.lat > n) return;
-      const g = ST_GROUP[p.k], [x, y] = P(p.lng, p.lat).split(','), on = !preview && i === stSel;
-      dd += `<circle class="stDot ${g}${on ? ' on' : ''}${preview ? ' pre' : ''}" ${preview ? '' : `data-st="${i}"`} cx="${x}" cy="${y}" r="${on ? 12 : R[g]}"/>`;
-      if (on || !many || (g === 'town' && !preview)) ll += `<text class="pvl stl${on ? ' on' : ''}" x="${x}" y="${(+y - (on ? 22 : 15)).toFixed(1)}">${esc(p.n)}</text>`;
-    });
-    if (preview) { dotsSvg = dd; } else { labels = ll; paths += dd; }
+  // the sub-districts inside each district, as thin dashed lines with their names when zoomed in (a province map)
+  if (cur.k === 'p') shapes.forEach((k) => arKids(k.id).forEach((c) => {
+    if (!c.g) return;
+    paths += `<path class="pvSub" d="${path(c.g)}"/>`;
+    if (c.c) { const [x, y] = XY(c.c[0], c.c[1]); lbls.push({ x, y, t: arShort(c), cls: 'azS', fpx: 13, pr: 2, min: AZ_PXKM.sub }); }
+  }));
+  const D = [];
+  (dots || []).forEach((p, i) => {
+    if (p.lng < w || p.lng > e || p.lat < s || p.lat > n) return;
+    const [x, y] = XY(p.lng, p.lat), g = ST_GROUP[p.k];
+    D.push({ x, y, g, p, i, rank: ST_RANK[p.k] });
+  });
+  D.sort((a, b) => b.rank - a.rank);          // villages underneath, towns on top
+  const base = { x: -8, y: -8, w: W + 16, h: H + 16 };
+  const keep = AZ && AZ.id === cur.id && AZ.W === W;
+  AZ = { id: cur.id, W, H, base, vb: keep ? AZ.vb : Object.assign({}, base), sc, dots: D, lbls, leaf: !preview, me: null };
+  if (me && me.lng >= w && me.lng <= e && me.lat >= s && me.lat <= n) AZ.me = XY(me.lng, me.lat);
+  const vb = AZ.vb;
+  return `<div id="azBox"><svg id="areaSvg" viewBox="${vb.x} ${vb.y} ${vb.w} ${vb.h}" xmlns="http://www.w3.org/2000/svg">${paths}<g id="azDots"></g><g id="azMe"></g><g id="azLbl"></g></svg>
+    <div id="azBtns"><button data-z="in" aria-label="تكبير">＋</button><button data-z="out" aria-label="تصغير">－</button><button data-z="fit" aria-label="الحجم الكامل">⤢</button></div></div>`;
+}
+/* pixels on screen per unit of the drawing */
+function azK() {
+  const svg = $('areaSvg'); if (!svg || !AZ) return 1;
+  const r = svg.getBoundingClientRect();
+  return Math.min(r.width / AZ.vb.w, r.height / AZ.vb.h) || 1;
+}
+function azDraw() {
+  const svg = $('areaSvg'); if (!svg || !AZ) return;
+  const vb = AZ.vb, k = azK(), pxkm = k * AZ.sc / 111.32;
+  svg.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
+  svg.style.touchAction = vb.w < AZ.base.w * 0.98 ? 'none' : 'pan-y';
+  const inView = (x, y, m) => x >= vb.x - m && x <= vb.x + vb.w + m && y >= vb.y - m && y <= vb.y + vb.h + m;
+  const R = AZ.leaf ? { town: 8, nb: 6, vil: 5 } : { town: 6, nb: 4, vil: 3.5 };
+  const selP = AZ.leaf ? (stSel != null ? AZ.dots.find((d) => d.i === stSel) : null) : (plPick ? AZ.dots.find((d) => d.p === plPick) : null);
+  let dd = '';
+  AZ.dots.forEach((d) => {
+    if (d === selP || !inView(d.x, d.y, 20 / k)) return;
+    dd += `<circle class="stDot ${d.g}" cx="${d.x.toFixed(1)}" cy="${d.y.toFixed(1)}" r="${(R[d.g] / k).toFixed(2)}" style="stroke-width:${(1.4 / k).toFixed(2)}"/>`;
+  });
+  if (selP) dd += `<circle class="stDot on" cx="${selP.x.toFixed(1)}" cy="${selP.y.toFixed(1)}" r="${(10 / k).toFixed(2)}" style="stroke-width:${(4 / k).toFixed(2)}"/>`;
+  $('azDots').innerHTML = dd;
+  $('azMe').innerHTML = AZ.me ? `<circle class="pvMe" cx="${AZ.me[0].toFixed(1)}" cy="${AZ.me[1].toFixed(1)}" r="${(8 / k).toFixed(2)}" style="stroke-width:${(3 / k).toFixed(2)}"/>` : '';
+  // the names that fit at this zoom, most important first; one that would overlap a placed one waits for a closer zoom
+  const cand = [];
+  AZ.lbls.forEach((l) => { if (pxkm >= l.min && inView(l.x, l.y, 0)) cand.push(l); });
+  const en = pxkm >= AZ_PXKM.en;
+  AZ.dots.forEach((d) => {
+    const min = d.p.k === 'city' ? 0 : d.g === 'town' ? AZ_PXKM.town : d.g === 'nb' ? AZ_PXKM.nb : AZ_PXKM.vil;
+    const on = d === selP;
+    if (!on && (pxkm < min || !inView(d.x, d.y, 0))) return;
+    if (!on && pxkm < AZ_PXKM.sub && AZ.lbls.some((l) => l.t === d.p.n)) return;   // the district already carries this name
+    cand.push({ x: d.x, y: d.y, t: d.p.n, e: en || on ? d.p.e : '', cls: 'azP ' + d.g + (on ? ' on' : ''), fpx: on ? 15 : d.g === 'town' ? 14 : 12.5, pr: on ? -1 : d.p.k === 'city' ? 1 : d.g === 'town' ? 3 : d.g === 'nb' ? 4 : 5, dot: R[d.g] + 2 });
+  });
+  cand.sort((a, b) => a.pr - b.pr);
+  const placed = [];
+  let out = '';
+  cand.forEach((l) => {
+    const sx = (l.x - vb.x) * k, sy = (l.y - vb.y) * k;
+    const tw = Math.max(l.t.length * 0.6, l.e ? l.e.length * 0.5 : 0) * l.fpx + 12, th = l.fpx * (l.e ? 2.4 : 1.45);
+    const cy = l.dot ? sy - l.dot - th / 2 : sy;            // place names sit above their dot
+    const box = [sx - tw / 2, cy - th / 2, sx + tw / 2, cy + th / 2];
+    if (l.pr >= 0 && placed.some((b) => box[0] < b[2] && box[2] > b[0] && box[1] < b[3] && box[3] > b[1])) return;
+    placed.push(box);
+    const f = (l.fpx / k).toFixed(2), y0 = vb.y + (cy - (l.e ? l.fpx * 0.45 : 0)) / k;
+    out += `<text class="pvl ${l.cls}" style="font-size:${f}px;stroke-width:${(4 / k).toFixed(2)}px" x="${l.x.toFixed(1)}" y="${y0.toFixed(1)}">${esc(l.t)}</text>`;
+    if (l.e) out += `<text class="pvl azE" style="font-size:${(l.fpx * 0.78 / k).toFixed(2)}px;stroke-width:${(3.5 / k).toFixed(2)}px" x="${l.x.toFixed(1)}" y="${(y0 + l.fpx * 1.05 / k).toFixed(1)}">${esc(l.e)}</text>`;
+  });
+  $('azLbl').innerHTML = out;
+}
+let azRaf = 0;
+function azSoon() { if (!azRaf) azRaf = requestAnimationFrame(() => { azRaf = 0; azDraw(); }); }
+/* zoom by f around a point given in screen pixels inside the map */
+function azZoom(f, cx, cy) {
+  if (!AZ) return;
+  const vb = AZ.vb, k = azK(), b = AZ.base;
+  const nw = Math.min(b.w, Math.max(b.w / 60, vb.w / f)), nh = nw * b.h / b.w;
+  const ux = vb.x + (cx == null ? vb.w / 2 : cx / k), uy = vb.y + (cy == null ? vb.h / 2 : cy / k);
+  const rx = (ux - vb.x) / vb.w, ry = (uy - vb.y) / vb.h;
+  AZ.vb = azClamp({ x: ux - rx * nw, y: uy - ry * nh, w: nw, h: nh });
+  azSoon();
+}
+function azClamp(v) {
+  const b = AZ.base;
+  v.x = Math.min(b.x + b.w - v.w, Math.max(b.x, v.x)); v.y = Math.min(b.y + b.h - v.h, Math.max(b.y, v.y));
+  return v;
+}
+/* touch and mouse: drag to move, two fingers to zoom, double tap / wheel to zoom, a tap selects */
+function azAttach() {
+  const svg = $('areaSvg'); if (!svg) return;
+  azDraw();
+  $('azBtns').onclick = (e) => {
+    const z = e.target.closest('[data-z]'); if (!z) return;
+    if (z.dataset.z === 'fit') { AZ.vb = Object.assign({}, AZ.base); azSoon(); } else azZoom(z.dataset.z === 'in' ? 2 : 0.5);
+  };
+  const pts = new Map();
+  let start = null, moved = false, lastTap = 0, pinch = null;
+  const rel = (e) => { const r = svg.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  svg.addEventListener('pointerdown', (e) => {
+    pts.set(e.pointerId, rel(e));
+    try { svg.setPointerCapture(e.pointerId); } catch (x) {}
+    if (pts.size === 1) { start = { p: rel(e), vb: Object.assign({}, AZ.vb) }; moved = false; }
+    if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), w: AZ.vb.w }; moved = true; }
+  });
+  svg.addEventListener('pointermove', (e) => {
+    if (!pts.has(e.pointerId)) return;
+    pts.set(e.pointerId, rel(e));
+    if (pts.size >= 2 && pinch) {
+      const [a, b] = [...pts.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+      azZoom(AZ.vb.w / (pinch.w * pinch.d / Math.max(10, d)), (a[0] + b[0]) / 2, (a[1] + b[1]) / 2);
+      return;
+    }
+    if (!start) return;
+    const p = rel(e), dx = p[0] - start.p[0], dy = p[1] - start.p[1];
+    if (!moved && Math.hypot(dx, dy) < 7) return;
+    moved = true;
+    const k = azK();
+    AZ.vb = azClamp({ x: start.vb.x - dx / k, y: start.vb.y - dy / k, w: start.vb.w, h: start.vb.h });
+    azSoon();
+  });
+  const up = (e) => {
+    if (!pts.has(e.pointerId)) return;
+    const p = pts.get(e.pointerId);
+    pts.delete(e.pointerId);
+    if (pts.size < 2) pinch = null;
+    if (pts.size) { const q = [...pts.values()][0]; start = { p: q, vb: Object.assign({}, AZ.vb) }; return; }
+    if (e.type === 'pointercancel' || moved) { start = null; return; }
+    start = null;
+    const now = Date.now();
+    if (now - lastTap < 320) { lastTap = 0; azZoom(2, p[0], p[1]); return; }
+    lastTap = now;
+    azTap(p[0], p[1], e.clientX, e.clientY);
+  };
+  svg.addEventListener('pointerup', up); svg.addEventListener('pointercancel', up);
+  svg.addEventListener('wheel', (e) => { e.preventDefault(); const p = rel(e); azZoom(e.deltaY < 0 ? 1.25 : 0.8, p[0], p[1]); }, { passive: false });
+}
+function azTap(sx, sy, cx, cy) {
+  const k = azK(), vb = AZ.vb;
+  // the nearest dot within a finger's reach
+  let best = null, bd = 18;
+  AZ.dots.forEach((d) => { const dd = Math.hypot((d.x - vb.x) * k - sx, (d.y - vb.y) * k - sy); if (dd < bd) { bd = dd; best = d; } });
+  if (best) {
+    if (AZ.leaf) stSel = best.i; else plPick = best.p;
+    arRender(); return;
   }
-  let meDot = '';
-  if (me && me.lng >= w && me.lng <= e && me.lat >= s && me.lat <= n) { const [x, y] = P(me.lng, me.lat).split(','); meDot = `<circle class="pvMe" cx="${x}" cy="${y}" r="9"/>`; }
-  return `<svg id="areaSvg" viewBox="-8 -8 ${W + 16} ${H + 16}" xmlns="http://www.w3.org/2000/svg">${paths}${dotsSvg}${meDot}${labels}</svg>`;
+  const t = document.elementFromPoint(cx, cy), a = t && t.closest && t.closest('[data-ar]');
+  if (!a) { if (plPick) { plPick = null; arRender(); } return; }
+  plPick = null;
+  if (a.dataset.ar === arSel && (arKids(arSel).length || arSettle(AR.byId[arSel]).length)) arEnter(arSel);
+  else { arSel = a.dataset.ar; arRender(); }
+}
+window.addEventListener('resize', () => { if ($('areaSvg')) azSoon(); });
+
+/* the card of a town / neighbourhood / village */
+function placeCardHtml(p, area) {
+  const kind = { city: 'مدينة', town: 'بلدة', suburb: 'حي', neighbourhood: 'حي', quarter: 'حي', village: 'قرية', hamlet: 'قرية صغيرة' }[p.k] || '';
+  return `<div class="areaCard"><div class="t">${ST_HEAD[ST_GROUP[p.k]][0]} ${esc(p.n)}</div><div class="s">${[kind, area ? 'في ' + arTitle(area) : '', p.e].filter(Boolean).map(esc).join(' · ')}</div>
+      <div class="areaBtns"><button class="chip go" data-sa="go">🗺 عرض على الخريطة</button><button class="chip" data-sa="near">🧭 اكتشف حولها</button><button class="chip" data-sa="back">✕</button></div></div>`;
+}
+function placeCardBind(p, back) {
+  $('areaSel').querySelector('[data-sa=go]').onclick = () => stGo(p, false);
+  $('areaSel').querySelector('[data-sa=near]').onclick = () => stGo(p, true);
+  $('areaSel').querySelector('[data-sa=back]').onclick = back;
+}
+/* the deepest area a place is in (for its card) */
+function arAreaOf(p) {
+  let id = 'iraq', last = null;
+  for (;;) { const k = arKids(id).find((n) => inArea(n, p.lat, p.lng)); if (!k) return last; last = k; id = k.id; }
 }
 
 /* ---------------- the fourth level: towns, neighbourhoods and villages of a sub-district ---------------- */
 function stRender(cur, here) {
   const list = arSettle(cur);
   $('areaMapWrap').innerHTML = arSvg(cur, [], here, list) + (list.length ? STL : '');
+  azAttach();
   const p = stSel != null ? list[stSel] : null;
   if (p) {
-    const kind = { city: 'مدينة', town: 'بلدة', suburb: 'حي', neighbourhood: 'حي', quarter: 'حي', village: 'قرية', hamlet: 'قرية صغيرة' }[p.k] || '';
-    $('areaSel').innerHTML = `<div class="areaCard"><div class="t">${ST_HEAD[ST_GROUP[p.k]][0]} ${esc(p.n)}</div><div class="s">${[kind, 'في ' + arTitle(cur), p.e].filter(Boolean).map(esc).join(' · ')}</div>
-      <div class="areaBtns"><button class="chip go" data-sa="go">🗺 عرض على الخريطة</button><button class="chip" data-sa="near">🧭 اكتشف حولها</button><button class="chip" data-sa="back">${esc(arShort(cur))}</button></div></div>`;
-    $('areaSel').querySelector('[data-sa=go]').onclick = () => stGo(p, false);
-    $('areaSel').querySelector('[data-sa=near]').onclick = () => stGo(p, true);
-    $('areaSel').querySelector('[data-sa=back]').onclick = () => { stSel = null; arRender(); };
+    $('areaSel').innerHTML = placeCardHtml(p, cur);
+    placeCardBind(p, () => { stSel = null; arRender(); });
   } else {
     $('areaSel').innerHTML = arCard(cur, here, true);
     $('areaSel').querySelectorAll('[data-act]').forEach((b) => {
@@ -269,10 +412,46 @@ function placesIn(n) {
   if (typeof places === 'undefined' || !places) return [];
   return places.filter((p) => inArea(n, p.lat, p.lng));
 }
+/* on the main map: the chosen area's towns, neighbourhoods and villages with their names — more of them as you zoom in */
+const areaPlLayer = L.layerGroup().addTo(map);
+let areaPlList = [];
+const APL_Z = { city: 0, town: 10, nb: 13, vil: 14, en: 15 };
+function areaPlDraw() {
+  areaPlLayer.clearLayers();
+  if (!areaScope || !areaPlList.length) return;
+  const z = map.getZoom(), b = map.getBounds().pad(0.15), size = map.getSize();
+  const placed = [];
+  let n = 0;
+  for (const p of areaPlList) {             // already in order of importance (cities, towns, neighbourhoods, villages)
+    const g = ST_GROUP[p.k], min = p.k === 'city' ? APL_Z.city : APL_Z[g];
+    if (z < min || !b.contains([p.lat, p.lng])) continue;
+    const pt = map.latLngToContainerPoint([p.lat, p.lng]);
+    const en = z >= APL_Z.en && p.e;
+    const tw = Math.max(p.n.length, en ? p.e.length * 0.8 : 0) * 7.5 + 14, th = en ? 34 : 20;
+    const box = [pt.x - tw / 2, pt.y - th - 6, pt.x + tw / 2, pt.y + 4];
+    if (placed.some((q) => box[0] < q[2] && box[2] > q[0] && box[1] < q[3] && box[3] > q[1])) continue;
+    if (pt.x < -50 || pt.y < -50 || pt.x > size.x + 50 || pt.y > size.y + 50) continue;
+    placed.push(box);
+    const icon = L.divIcon({ className: 'apl apl-' + g, iconSize: [0, 0], html: `<i></i><span>${esc(p.n)}${en ? `<small>${esc(p.e)}</small>` : ''}</span>` });
+    L.marker([p.lat, p.lng], { icon, keyboard: false, zIndexOffset: g === 'town' ? 300 : g === 'nb' ? 200 : 100 })
+      .on('click', () => setDestination(p.lat, p.lng, p.n, [p.a, p.e].filter(Boolean).join(' · '))).addTo(areaPlLayer);
+    if (++n >= 250) break;
+  }
+}
+map.on('zoomend moveend', () => { if (areaScope) areaPlDraw(); });
+function areaPlSet() {
+  areaPlList = areaScope ? arSettle(areaScope).slice() : [];
+  areaPlDraw();
+  if (areaScope && !areaPlList.length && typeof loadPlaces === 'function') {
+    const lp = loadPlaces(), want = areaScope;
+    if (lp && lp.then) lp.then(() => { if (areaScope === want) { areaPlList = arSettle(want).slice(); areaPlDraw(); } });
+  }
+}
 function areaSet(n) {
   areaScope = n && n.k !== 'iraq' ? n : null;
   window.placeFilter = areaScope ? (p) => inArea(areaScope, p.lat, p.lng) : null;
   areaLayer.clearLayers();
+  setTimeout(areaPlSet, 0);
   let chip = $('areaChip');
   if (!areaScope) { if (chip) chip.classList.add('hidden'); document.body.classList.remove('area-on'); qEl.placeholder = 'إلى أين؟'; return; }
   L.geoJSON(areaScope.g, { interactive: false, style: { color: '#38bdf8', weight: 3, opacity: 0.95, dashArray: '9 7', fillColor: '#38bdf8', fillOpacity: 0.06 } }).addTo(areaLayer);
