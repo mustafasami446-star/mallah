@@ -934,9 +934,21 @@ async function deleteArea(id) {
   renderMaps();
 }
 window.onAreaDeleted = (id) => { if (String(id).indexOf('old') === 0) return; toast('تم حذف الخريطة وتحرير المساحة'); if (baseLayer && baseLayer.redraw) baseLayer.redraw(); };
-function renderMaps() {
-  const list = $('areasList');
-  if (!areas.length) list.innerHTML = '<div class="item"><div class="grow s">لا توجد خرائط منزّلة بعد.</div></div>';
+/* the downloaded city street maps: listed in «خرائط العراق بدون إنترنت» with the province maps (or in their own card when that one is absent) */
+function renderAreasList() {
+  const inPack = $('areasInPack'), list = inPack || $('areasList');
+  if (!list) return;
+  $('areasCard').classList.toggle('hidden', !!inPack);
+  if (inPack) {
+    list.innerHTML = areas.map((a) => {
+      const busy = (dlCur && dlCur.id === a.id) || dlQueue.some((q) => q.id === a.id);
+      const pct = busy && dlCur && dlCur.id === a.id && dlCur.total ? ' ' + Math.floor(dlCur.done * 100 / dlCur.total) + '%' : '';
+      const st = busy ? '<span class="warnTxt">⬇ جارٍ التنزيل' + pct + '…</span> · ' : a.complete ? '' : '<span class="warnTxt">غير مكتملة</span> · ';
+      return `<div class="item"><div class="grow"><div class="t">🏙 ${esc(a.name)} ${a.complete && !busy ? '<span class="ok">✓</span>' : ''}</div><div class="s">${st}خريطة الشوارع · ${fmtMB(a.bytes || 0)}</div></div>`
+        + (a.complete || busy ? '' : `<button class="chip go" data-resume="${a.id}">استئناف</button>`)
+        + `<button class="chip" data-amore="${a.id}">⋯</button></div>`;
+    }).join('');
+  } else if (!areas.length) list.innerHTML = '<div class="item"><div class="grow s">لا توجد خرائط منزّلة بعد.</div></div>';
   else {
     const total = areas.reduce((t, a) => t + (a.bytes || 0), 0);
     list.innerHTML = areas.map((a) => {
@@ -948,9 +960,24 @@ function renderMaps() {
         <button class="chip del" data-del="${a.id}">حذف</button></div>`;
     }).join('') + `<div class="item"><div class="grow s">المساحة المستخدمة: ${fmtMB(total)}</div></div>`;
   }
-  list.querySelectorAll('[data-show]').forEach((b) => { b.onclick = () => { const a = areas.find((x) => x.id === b.dataset.show); $('mapsPanel').classList.add('hidden'); setFollow(false); map.fitBounds([[a.s, a.w], [a.n, a.e]]); }; });
+  const show = (id) => { const a = areas.find((x) => x.id === id); $('mapsPanel').classList.add('hidden'); setFollow(false); map.fitBounds([[a.s, a.w], [a.n, a.e]]); };
+  list.querySelectorAll('[data-show]').forEach((b) => { b.onclick = () => show(b.dataset.show); });
   list.querySelectorAll('[data-resume]').forEach((b) => { b.onclick = () => queueDownload(areas.find((x) => x.id === b.dataset.resume)); });
   list.querySelectorAll('[data-del]').forEach((b) => { b.onclick = () => deleteArea(b.dataset.del); });
+  list.querySelectorAll('[data-amore]').forEach((b) => {
+    b.onclick = () => {
+      const a = areas.find((x) => x.id === b.dataset.amore); if (!a) return;
+      const busy = (dlCur && dlCur.id === a.id) || dlQueue.some((q) => q.id === a.id);
+      actionSheet('🏙 ' + a.name + ' — خريطة الشوارع · ' + fmtMB(a.bytes || 0), [
+        { label: '🗺 عرضها على الخريطة', fn: () => show(a.id) },
+        ...(a.complete || busy ? [] : [{ label: '⬇ استئناف التنزيل', fn: () => queueDownload(a) }]),
+        { label: '🗑 حذف الخريطة من الهاتف', cls: 'danger', fn: () => deleteArea(a.id) }
+      ]);
+    };
+  });
+}
+function renderMaps() {
+  renderAreasList();
 
   const items = [IRAQ].concat(CITIES.map((c) => Object.assign({ id: c.id, name: c.name, minZ: CITY_MIN_Z, maxZ: OFFLINE_MAX_Z }, cityBox(c))));
   $('citiesList').innerHTML = items.map((c) => {

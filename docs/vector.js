@@ -542,11 +542,13 @@ function renderPackCard() {
     h += `<div class="item"><div class="grow"><div class="t">${p.id === FULL_ID ? '🇮🇶' : '🗺'} ${esc(provName(p.id))} <span class="ok">✓</span></div><div class="s">الإصدار ${fmtVer(p.version)} · ${fmtMB(p.size || 0)}${nw ? ' · <span class="warnTxt">يتوفر تحديث</span>' : ''}</div></div>`
       + (nw ? `<button class="chip go" data-pk="upd" data-id="${p.id}">⬇ تحديث</button>` : '') + `<button class="chip" data-pk="more" data-id="${p.id}">⋯</button></div>`;
   });
+  h += '<div id="areasInPack"></div>';   // the city street maps downloaded on this phone (filled by renderMaps in app.js)
   if (packQueue.length) h += `<div class="item"><div class="grow s">⏳ في الانتظار: ${packQueue.map((id) => esc(provName(id))).join('، ')}</div></div>`;
   if (!packs().length && !packBusyState) h += '<div class="item"><div class="grow s">نزّل خريطة محافظتك (بين 7 و 23 م.ب) أو العراق كاملًا، لتعمل الخريطة والبحث بأسماء عربية بدون إنترنت.</div></div>';
   h += `<div class="item"><button class="chip go grow" data-pk="pick" style="justify-content:center">🗺 ${packs().length ? 'إضافة محافظة أخرى' : 'اختر محافظتك'}</button><button class="chip" data-pk="imp">📁 من ملف</button></div>`;
   c.innerHTML = h;
   bindPackButtons(c);
+  if (typeof renderAreasList === 'function') renderAreasList();
 }
 function bindPackButtons(root) {
   root.querySelectorAll('[data-pk]').forEach((b) => {
