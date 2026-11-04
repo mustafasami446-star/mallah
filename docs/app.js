@@ -856,14 +856,14 @@ function queueDownload(a) {
   saveAreas();
   if (dlCur && dlCur.id === a.id) return;
   if (!dlQueue.some((q) => q.id === a.id)) dlQueue.push(ex);
-  pumpQueue(); renderMaps();
+  tilePump(); renderMaps();
 }
-function pumpQueue() {
+function tilePump() {
   if (dlCur || !dlQueue.length) return;
   const a = dlQueue.shift();
   const L0 = LAYERS[OFFLINE_LAYER];
   const ok = Android.downloadArea(a.id, a.s, a.w, a.n, a.e, a.minZ, a.maxZ, L0.url, L0.opt.subdomains || '', OFFLINE_LAYER);
-  if (!ok) { dlQueue.unshift(a); setTimeout(pumpQueue, 1500); return; }
+  if (!ok) { dlQueue.unshift(a); setTimeout(tilePump, 1500); return; }
   dlCur = { id: a.id, name: a.name, done: 0, total: tileCount(a, a.minZ, a.maxZ), failed: 0, bytes: 0 };
   renderDl();
 }
@@ -891,7 +891,7 @@ function finishDl(id, done, total, failed, bytes, cancelled) {
   dlCur = null;
   if (cancelled) { dlQueue = []; toast('تم إيقاف التنزيل — يمكنك استئنافه لاحقًا'); }
   else toast(a && a.complete ? 'اكتمل تنزيل خريطة ' + name + ' (' + fmtMB(bytes) + ')' : 'انتهى التنزيل مع بعض النواقص — اضغط «استئناف» لإكماله', 4000);
-  renderDl(); renderMaps(); pumpQueue();
+  renderDl(); renderMaps(); tilePump();
 }
 window.onDownloadDone = (id, d, t, f, b) => finishDl(id, d, t, f, b, false);
 window.onDownloadCancelled = (id, d, t, f, b) => finishDl(id, d, t, f, b, true);
@@ -927,11 +927,13 @@ function renderMaps() {
 
   const items = [IRAQ].concat(CITIES.map((c) => Object.assign({ id: c.id, name: c.name, minZ: CITY_MIN_Z, maxZ: OFFLINE_MAX_Z }, cityBox(c))));
   $('citiesList').innerHTML = items.map((c) => {
-    const have = areas.some((a) => a.id === c.id);
+    const ex = areas.find((a) => a.id === c.id), busy = (dlCur && dlCur.id === c.id) || dlQueue.some((q) => q.id === c.id);
+    const have = !!(ex && ex.complete);
     const n = tileCount(c, c.minZ, c.maxZ);
     const hint = c.id === 'iraq' ? 'مستحسن: يعرض كل العراق عند التصغير' : 'حتى مستوى الشوارع';
+    const lbl = busy ? '⬇ جارٍ…' : have ? '✓ منزّلة' : ex ? 'استئناف' : 'تنزيل';
     return `<div class="item"><div class="grow"><div class="t">${esc(c.name)}</div><div class="s">حوالي ${fmtMB(n * KB_PER_TILE * 1024)} · ${hint}</div></div>
-      <button class="chip ${have ? '' : 'go'}" data-dl="${c.id}" ${have ? 'disabled' : ''}>${have ? '✓ منزّلة' : 'تنزيل'}</button></div>`;
+      <button class="chip ${have || busy ? '' : 'go'}" data-dl="${c.id}" ${have || busy ? 'disabled' : ''}>${lbl}</button></div>`;
   }).join('');
   $('citiesList').querySelectorAll('[data-dl]').forEach((b) => {
     b.onclick = () => { const c = items.find((x) => x.id === b.dataset.dl); queueDownload(c); };
