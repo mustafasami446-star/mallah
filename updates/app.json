@@ -1,8 +1,8 @@
 {
-  "versionCode": 65,
-  "versionName": "5.19",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.19/Mallah-Navigator.apk",
+  "versionCode": 66,
+  "versionName": "5.20",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.20/Mallah-Navigator.apk",
   "size": 2614213,
-  "notes": "إصلاح «تنزيل خريطة مدينة»: كان التنزيل يبقى على «جارٍ التنزيل» دون أن يبدأ.",
+  "notes": "إصلاح تنزيل خرائط المدن: كان الزر يتجمد و«استئناف» لا يستجيب عند وجود خريطة العراق المتجهة. يظهر التقدم الآن مباشرة.",
   "sha256": "6e34c7e673141c1534a09540819164042e1424f4d430d366732bff1465b68e6d"
 }
