@@ -1,8 +1,8 @@
 {
-  "versionCode": 68,
-  "versionName": "5.22",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.22/Mallah-Navigator.apk",
+  "versionCode": 69,
+  "versionName": "5.23",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.23/Mallah-Navigator.apk",
   "size": 2618371,
-  "notes": "خرائط المدن المنزّلة (مثل البصرة) تظهر الآن في «خرائط العراق بدون إنترنت» مع خرائط المحافظات، ونوافذ التطبيق بدل رسائل المتصفح.",
-  "sha256": "8a95502cf22076f7f3002758bed8d4fec7654b003ae7f722b2dbc57f06279a1d"
+  "notes": "«المناطق» صارت تصل إلى الأحياء والقرى داخل كل ناحية، على الخريطة وفي قائمة مرتّبة.",
+  "sha256": "926dc8d6b34cbea2c52c7ea581448eba5c2bfc6a0a43d533e5af53373ade13e7"
 }
