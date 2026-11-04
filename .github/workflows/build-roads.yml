@@ -1,0 +1,48 @@
+name: Build road graphs
+
+# Offline routing: the road network of Iraq and of each province from OpenStreetMap, on the "roads"
+# branch (replaced each time). The app downloads the ones for the maps installed on the phone.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "47 3 3 */3 *"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            tools/roads.py
+            updates/provinces.json
+          sparse-checkout-cone-mode: false
+      - name: Roads from OpenStreetMap
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq osmium-tool
+          pip install -q osmium shapely
+          curl -sfL https://download.geofabrik.de/asia/iraq-latest.osm.pbf -o iraq.osm.pbf
+          osmium tags-filter iraq.osm.pbf w/highway -o roads.osm.pbf --overwrite
+          ls -la roads.osm.pbf
+          /usr/bin/time -v python3 tools/roads.py roads.osm.pbf updates/provinces.json out 2>&1 | tail -40
+          python3 - <<'PY'
+          import json, datetime
+          d = json.load(open('out/roads.json'))
+          d['version'] = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d')
+          json.dump(d, open('out/roads.json', 'w'), indent=1)
+          PY
+          du -sh out; ls -la out
+      - name: Publish
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd out
+          git init -q -b roads
+          git config user.name "github-actions[bot]"
+          git config user.email "41898599+github-actions[bot]@users.noreply.github.com"
+          git add . && git commit -qm "Road graphs $(date -u +%Y-%m-%d)"
+          git push -fq "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" roads
