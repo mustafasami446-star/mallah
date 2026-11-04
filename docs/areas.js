@@ -145,7 +145,8 @@ function arRender() {
   if (arLeaf(cur) && arPath.length) { stRender(cur, here); return; }
   // the map of this level
   const selN = arSel && AR.byId[arSel];
-  const preview = cur.k !== 'iraq' ? arSettle(selN || cur) : [];
+  // a province or district map shows everything inside it: the sub-district borders and every town, neighbourhood and village
+  const preview = cur.k !== 'iraq' ? arSettle(cur) : [];
   $('areaMapWrap').innerHTML = arSvg(cur, kids, here, preview, true) + (preview.length ? STL : '');
   // selected area
   const sel = arSel && AR.byId[arSel];
@@ -201,6 +202,10 @@ function arSvg(cur, kids, here, dots, preview) {
     if (k.c && shapes.length > 1 && (wpx < arShort(k).length * fs * 0.42 || hpx < fs * 0.9)) return;   // too small to label: it is in the list below
     if (k.c) { const [x, y] = P(k.c[0], k.c[1]).split(','); labels += `<text class="pvl" style="font-size:${fs}px" x="${x}" y="${y}">${esc(arShort(k))}</text>`; }
   });
+  // the sub-districts inside each district, as thin lines (a province map)
+  let subs = '';
+  if (cur.k === 'p') shapes.forEach((k) => arKids(k.id).forEach((c) => { if (c.g) subs += `<path class="pvSub" d="${path(c.g)}"/>`; }));
+  paths += subs;
   let dotsSvg = '';
   if (dots && dots.length) {
     // every place a dot; names for the bigger ones (and all of them when there are few), the chosen one on top
