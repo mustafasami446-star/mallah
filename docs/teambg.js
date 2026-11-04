@@ -89,7 +89,8 @@ renderTeam = function () {
       <h3>✉️ رسائل SMS الاحتياطية</h3>
       <div class="frm"><label>رقم أو أرقام الطوارئ (افصل بينها بفاصلة)</label><input type="text" id="tmSmsTo" dir="ltr" inputmode="tel" placeholder="07XXXXXXXXX" value="${esc(teamSms.to || '')}"></div>
       <div class="item"><div class="grow s">${teamSms.on && teamSms.to ? '<span class="ok">● مفعّلة</span> — ' : ''}إذا انقطع الإنترنت 10 دقائق يُرسَل موقعك برسالة SMS كل 15 دقيقة، وعند الاستغاثة تُرسل رسالة فورًا (من رصيدك).</div></div>
-      <div class="btnRow"><button class="chip ${teamSms.on ? '' : 'go'}" id="tmSmsT">${teamSms.on ? 'إيقاف الرسائل' : 'تفعيل الرسائل'}</button><button class="chip" id="tmSmsTest">إرسال رسالة تجربة</button></div>`;
+      <div class="btnRow"><button class="chip ${teamSms.on ? '' : 'go'}" id="tmSmsT">${teamSms.on ? 'إيقاف الرسائل' : 'تفعيل الرسائل'}</button><button class="chip" id="tmSmsTest">إرسال رسالة تجربة</button></div>
+      <div class="item"><div class="grow s">📩 <b>الاستقبال:</b> ${smsInOk() ? '<span class="ok">● مفعّل</span> — ' : ''}عندما تصلك رسالة موقع من زميل بلا إنترنت يضعه الملاح على الخريطة تلقائيًا (وتبقى الرسالة في تطبيق الرسائل).</div>${smsInOk() ? '' : '<button class="chip go" id="tmSmsIn">تفعيل</button>'}</div>`;
   }
   const cards = body.querySelectorAll('.card'); body.insertBefore(card, cards[cards.length - 1] || null);
   if (!BG_OK) return;
@@ -103,6 +104,7 @@ renderTeam = function () {
     if (teamSms.on && !Android.teamCanSms()) Android.teamPerms(true);
     bgSync(true); renderTeam();
   };
+  if ($('tmSmsIn')) $('tmSmsIn').onclick = () => { Android.teamPerms(true); setTimeout(renderTeam, 4000); };
   $('tmSmsTest').onclick = () => {
     saveTo();
     if (!teamSms.to) { toast('اكتب رقم الطوارئ أولًا'); return; }

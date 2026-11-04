@@ -1,8 +1,8 @@
 {
-  "versionCode": 76,
-  "versionName": "5.30",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.30/Mallah-Navigator.apk",
-  "size": 2643135,
-  "notes": "حساب المسار بدون إنترنت، ومشاية الأربعين (عدّ الأعمدة ونقطة لقاء العائلة)، ووصف المكان بالمعالم للتاكسي والتوصيل.",
-  "sha256": "1d01d135415376454d6e250d465254bc2dc41427d30a0de7b761d027eaa8676a"
+  "versionCode": 77,
+  "versionName": "5.31",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.31/Mallah-Navigator.apk",
+  "size": 2647294,
+  "notes": "الفريق بدون إنترنت: رسائل المواقع والاستغاثة التي تصلك من زملائك يضعها الملاح على الخريطة تلقائيًا.",
+  "sha256": "17a5f0a4eca42299f46ed41c9e841a737602ee58aea58d839fb96002257e46d6"
 }

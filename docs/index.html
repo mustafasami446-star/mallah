@@ -227,6 +227,10 @@ body.ui-nav #topBar,body.ui-meas #topBar{display:none}
 #mBtns button:active{background:var(--panel2)}
 #mBtns button.cancel{justify-content:center;color:var(--muted);margin-top:4px;border-top:1px solid var(--line);border-radius:0}
 #mBtns button.danger{color:#fca5a5}
+.smsPin{position:relative}.smsPin i{position:absolute;left:-15px;top:-15px;width:30px;height:30px;border-radius:50%;background:#1e3a8a;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:15px;box-shadow:0 2px 8px rgba(0,0,0,.4)}
+.smsPin span{position:absolute;bottom:18px;left:0;transform:translateX(-50%);white-space:nowrap;background:rgba(15,23,42,.92);color:#fff;border:1px solid #3b82f6;border-radius:10px;padding:3px 8px;font:600 12.5px Plex,system-ui,sans-serif;text-align:center}
+.smsPin span small{display:block;font-weight:400;font-size:11px;color:#bfdbfe}
+.smsPin.sos i{background:#b91c1c;animation:tripDot 1s infinite}.smsPin.sos span{border-color:#ef4444}
 #mBtns .descTxt{white-space:pre-line;text-align:right;font-size:14px;line-height:1.7;background:var(--panel2);border-radius:12px;padding:10px 12px;width:100%;user-select:text;-webkit-user-select:text}
 /* layer menu night section */
 #layerMenu .sep{border-top:1px solid var(--line);margin:6px 4px;padding-top:8px;color:var(--muted);font-size:12px;padding-right:8px}
@@ -967,6 +971,7 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
 <script src="teamchat.js"></script>
 <script src="teambg.js"></script>
 <script src="teamqr.js"></script>
+<script src="teamsms.js"></script>
 <script src="trip.js"></script>
 <script src="arbaeen.js"></script>
 <script src="describe.js"></script>
