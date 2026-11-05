@@ -121,6 +121,33 @@ function speedOf(g, e, mode) {
   return v / 3.6;
 }
 /* the nearest usable road to a point: the edge, how far along it, and the point on it */
+/* the road being driven on: the nearest one that runs the way you are heading */
+function roadAt(g, lat, lng, heading) {
+  const la = Math.round(lat * 1e6), lo = Math.round(lng * 1e6), dLa = 400 / 0.11054, dLo = 400 / (0.1113 * Math.cos(lat * rad));
+  const kx = Math.cos(lat * rad) * 111320, ky = 110540, seen = new Set();
+  let best = null;
+  for (let i = 0, n = g.nodes; i < g.N; i++) {
+    if (Math.abs(n[2 * i] - la) >= dLa || Math.abs(n[2 * i + 1] - lo) >= dLo) continue;
+    for (let k = g.deg[i]; k < g.deg[i + 1]; k++) {
+      const e = g.adj[k] >> 1; if (seen.has(e) || !usable(g, e, 'car')) continue; seen.add(e);
+      const p = epts(g, e);
+      for (let j = 0; j + 3 < p.length; j += 2) {
+        const ax = (p[j + 1] - lng) * kx, ay = (p[j] - lat) * ky, bx = (p[j + 3] - lng) * kx, by = (p[j + 2] - lat) * ky;
+        const dx = bx - ax, dy = by - ay, L = dx * dx + dy * dy, t = L ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / L)) : 0;
+        const d = Math.hypot(ax + t * dx, ay + t * dy);
+        let pen = 0;
+        if (heading != null && L > 4) {
+          const b = (Math.atan2(dx, dy) / rad + 360) % 360;
+          let a = Math.abs(((heading - b) % 360 + 540) % 360 - 180);  // 0..180
+          if (!(g.efl[e] & 1)) a = Math.min(a, 180 - a);                // two-way: either direction
+          pen = a / 90 * 30;
+        }
+        if (!best || d + pen < best.s) best = { s: d + pen, d, e };
+      }
+    }
+  }
+  return best && best.d < 45 ? { ms: g.ems[best.e], cls: g.ecls[best.e], name: nameOf(g, best.e), d: best.d } : null;
+}
 function snap(g, lat, lng, mode) {
   const kx = Math.cos(lat * rad) * 111320, ky = 110540;
   let best = null;
@@ -279,6 +306,7 @@ onmessage = async (ev) => {
     if (m.load) { const r = await load(m.load, m.buf); postMessage({ id: m.id, ok: r }); return; }
     if (m.drop) { delete G[m.drop]; postMessage({ id: m.id, ok: 1 }); return; }
     if (m.has) { postMessage({ id: m.id, ok: !!G[m.has] }); return; }
+    if (m.road) { const g = G[m.graph]; if (!g) throw new Error('no graph'); postMessage({ id: m.id, ok: roadAt(g, m.road[0], m.road[1], m.road[2]) }); return; }
     if (m.near) { const g = G[m.graph]; if (!g) throw new Error('no graph'); const sn = snap(g, m.near[0], m.near[1], 'foot'); postMessage({ id: m.id, ok: sn && sn.d < 90 ? { name: nameOf(g, sn.e), d: sn.d } : null }); return; }
     if (m.route) { const g = G[m.graph]; if (!g) throw new Error('no graph'); postMessage({ id: m.id, ok: route(g, m.route.mode, m.route.from, m.route.to) }); return; }
   } catch (e) { postMessage({ id: m.id, err: String(e && e.message || e) }); }
@@ -330,4 +358,10 @@ async function offlineRoute(m, from, to) {
 async function roadsStreetAt(lat, lng) {
   const id = roadsFor([lat, lng], [lat, lng]); if (!id) return null;
   try { await roadsLoad(id); return await roadsCall({ near: [lat, lng], graph: id }); } catch (e) { return null; }
+}
+
+/* the road under the car (its speed limit), from the saved road network */
+async function roadsRoadAt(lat, lng, heading) {
+  const id = roadsFor([lat, lng], [lat, lng]); if (!id) return null;
+  try { await roadsLoad(id); return await roadsCall({ road: [lat, lng, heading == null ? null : heading], graph: id }); } catch (e) { return null; }
 }

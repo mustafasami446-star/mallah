@@ -1,8 +1,8 @@
 {
-  "versionCode": 77,
-  "versionName": "5.31",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.31/Mallah-Navigator.apk",
-  "size": 2647294,
-  "notes": "الفريق بدون إنترنت: رسائل المواقع والاستغاثة التي تصلك من زملائك يضعها الملاح على الخريطة تلقائيًا.",
-  "sha256": "17a5f0a4eca42299f46ed41c9e841a737602ee58aea58d839fb96002257e46d6"
+  "versionCode": 78,
+  "versionName": "5.32",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.32/Mallah-Navigator.apk",
+  "size": 2655547,
+  "notes": "بلاغات الطريق (حادث، زحام، سيطرة، طريق مغلق، كاميرا…) لكل المستخدمين مع تنبيه صوتي، وحد السرعة مع تنبيه التجاوز، ووضع السيارة.",
+  "sha256": "2222a0377b287bc3cceb65e87d395bb1936f49a783f6f3f24661024891d14524"
 }
