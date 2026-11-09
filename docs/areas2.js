@@ -51,7 +51,7 @@ function axSatDraw(X) {
   }
   while (g.children.length > 1) g.firstChild.remove();       // at most the last set under the new one
   g.appendChild(layer);
-  setTimeout(() => { left = 0; done(); }, 4000);
+  setTimeout(() => { left = 0; done(); }, 12000);
 }
 
 /* ---------------- 2. weather on the areas ---------------- */

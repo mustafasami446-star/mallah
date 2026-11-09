@@ -61,7 +61,9 @@ const CachedLayer = L.TileLayer.extend({
       const pz = z - dz; if (pz < 0) break;
       const qx = x >> dz, qy = y >> dz, size = 256 >> dz, crop = { sx: (x - (qx << dz)) * size, sy: (y - (qy << dz)) * size, size };
       if (have(pz, qx, qy)) c.push(Object.assign({ src: local(pz, qx, qy) }, crop));
-      if (NET || navigator.onLine !== false) c.push(Object.assign({ src: viaNet(L.Util.template(this._url, L.extend({ r: '', s: this._getSubdomain({ x: qx, y: qy }), x: qx, y: qy, z: pz }, this.options)), pz, qx, qy) }, crop));
+      // from the internet, a parent only close in (levels the source may lack), and at most two levels up:
+      // on slow internet each extra try kept a tile — and the ones queued behind it — waiting
+      if ((NET || navigator.onLine !== false) && z >= 16 && dz <= 2) c.push(Object.assign({ src: viaNet(L.Util.template(this._url, L.extend({ r: '', s: this._getSubdomain({ x: qx, y: qy }), x: qx, y: qy, z: pz }, this.options)), pz, qx, qy) }, crop));
     }
     let i = 0, finished = false;
     const finish = (err) => { if (!finished) { finished = true; done(err, tile); } };

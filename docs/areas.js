@@ -262,7 +262,9 @@ function azDraw() {
   const svg = $('areaSvg'); if (!svg || !AZ) return;
   const vb = AZ.vb, X = azXf(), k = X.k, pxkm = k * AZ.sc / 111.32, Ws = vb.w * k, Hs = vb.h * k;
   svg.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
-  azClipShapes(X);
+  svg.style.transform = '';                 // the quick preview ends with the real drawing (also if a layer below fails)
+  AZ.drawn = { vb: Object.assign({}, vb), rot: AZ.rot || 0 };
+  try { azClipShapes(X); } catch (e) { console.error(e); }
   $('azRotG').setAttribute('transform', AZ.rot ? `rotate(${fz(AZ.rot)} ${fz(X.cx)} ${fz(X.cy)})` : '');
   const nb = $('azNorth'); if (nb) { nb.firstElementChild.style.transform = `rotate(${AZ.rot || 0}deg)`; nb.classList.toggle('on', !!AZ.rot); }
   svg.style.touchAction = vb.w < AZ.base.w * 0.98 || AZ.rot ? 'none' : 'pan-y';
@@ -304,9 +306,7 @@ function azDraw() {
     if (l.e) out += `<text class="pvl azE" style="font-size:${fz((l.fpx * 0.78 / k))}px;stroke-width:${fz((3.5 / k))}px" x="${fz(x0)}" y="${fz((y0 + l.fpx * 1.05 / k))}">${esc(l.e)}</text>`;
   });
   $('azLbl').innerHTML = out;
-  if (typeof azExtraDraw === 'function') azExtraDraw(X);
-  AZ.drawn = { vb: Object.assign({}, vb), rot: AZ.rot || 0 };
-  svg.style.transform = '';
+  if (typeof azExtraDraw === 'function') { try { azExtraDraw(X); } catch (e) { console.error(e); } }
 }
 /* close in, the borders are cut to the view: a phone's graphics drop a filled shape whose drawn size gets huge */
 function clipRing(ring, x0, y0, x1, y1) {
@@ -351,14 +351,20 @@ function azClipShapes(X) {
 function azPreview() {
   const svg = $('areaSvg'); if (!svg || !AZ || !AZ.drawn) return;
   const W = svg.clientWidth, d = AZ.drawn, v = AZ.vb;
-  const kr = W / d.vb.w, kc = W / v.w, a = (AZ.rot || 0) * Math.PI / 180;
+  const H = svg.clientHeight || W, kr = Math.min(W / d.vb.w, H / d.vb.h), kc = Math.min(W / v.w, H / v.h), a = (AZ.rot || 0) * Math.PI / 180;
   const dx = (d.vb.x + d.vb.w / 2) - (v.x + v.w / 2), dy = (d.vb.y + d.vb.h / 2) - (v.y + v.h / 2);
   const tx = kc * (dx * Math.cos(a) - dy * Math.sin(a)), ty = kc * (dx * Math.sin(a) + dy * Math.cos(a));
   svg.style.transformOrigin = '50% 50%';
   svg.style.transform = `translate(${tx.toFixed(1)}px,${ty.toFixed(1)}px) rotate(${((AZ.rot || 0) - d.rot).toFixed(2)}deg) scale(${(kc / kr).toFixed(4)})`;
 }
 let azRaf = 0;
-function azSoon() { if (!azRaf) azRaf = requestAnimationFrame(() => { azRaf = 0; if (AZ && AZ.gesture && AZ.drawn) azPreview(); else azDraw(); }); }
+function azSoon() {
+  if (!azRaf) azRaf = requestAnimationFrame(() => {
+    azRaf = 0; if (!AZ) return;
+    if (AZ.gesture && performance.now() - (AZ.gLast || 0) > 900) AZ.gesture = false;   // a lost finger: draw for real
+    if (AZ.gesture && AZ.drawn) { azPreview(); clearTimeout(AZ.gT); AZ.gT = setTimeout(azSoon, 950); } else azDraw();
+  });
+}
 function azGestureEnd() { if (AZ) { AZ.gesture = false; azSoon(); } }
 /* zoom by f (and turn by dr degrees) keeping the point under the fingers where it is */
 function azZoom(f, sx, sy, dr) {
@@ -407,6 +413,8 @@ function azAttach() {
   let start = null, moved = false, lastTap = 0, pinch = null, longT = 0, longDone = false;
   const rel = (e) => { const r = $('azBox').getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
   svg.addEventListener('pointerdown', (e) => {
+    if (e.isPrimary) { pts.clear(); pinch = null; }      // a new touch: forget fingers whose «up» never arrived
+    AZ.gLast = performance.now();
     pts.set(e.pointerId, rel(e));
     try { svg.setPointerCapture(e.pointerId); } catch (x) {}
     AZ.gesture = true;
@@ -419,6 +427,7 @@ function azAttach() {
   });
   svg.addEventListener('pointermove', (e) => {
     if (!pts.has(e.pointerId)) return;
+    AZ.gesture = true; AZ.gLast = performance.now();
     pts.set(e.pointerId, rel(e));
     if (pts.size >= 2 && pinch) {
       // two fingers: spread to zoom, twist to turn (turning starts after a clear twist, so a plain pinch does not tilt the map)
@@ -461,9 +470,9 @@ function azAttach() {
     lastTap = now;
     azTap(p[0], p[1], e.clientX, e.clientY);
   };
-  svg.addEventListener('pointerup', up); svg.addEventListener('pointercancel', up);
+  svg.addEventListener('pointerup', up); svg.addEventListener('pointercancel', up); svg.addEventListener('lostpointercapture', up);
   svg.addEventListener('contextmenu', (e) => e.preventDefault());
-  svg.addEventListener('wheel', (e) => { e.preventDefault(); AZ.gesture = true; clearTimeout(AZ.wt); AZ.wt = setTimeout(azGestureEnd, 200); const p = rel(e); azZoom(e.deltaY < 0 ? 1.25 : 0.8, p[0], p[1]); }, { passive: false });
+  svg.addEventListener('wheel', (e) => { e.preventDefault(); AZ.gesture = true; AZ.gLast = performance.now(); clearTimeout(AZ.wt); AZ.wt = setTimeout(azGestureEnd, 200); const p = rel(e); azZoom(e.deltaY < 0 ? 1.25 : 0.8, p[0], p[1]); }, { passive: false });
 }
 function azTap(sx, sy, cx, cy) {
   const X = azXf();

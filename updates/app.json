@@ -1,8 +1,8 @@
 {
-  "versionCode": 92,
-  "versionName": "5.46",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.46/Mallah-Navigator.apk",
-  "size": 2680311,
-  "notes": "زر «المزيد» ثابت من بداية التشغيل: لا يظهر زر البلاغ ثم يختفي.",
-  "sha256": "47d087a2684f50575e58a190cbfb46a32490742d81e96b9c1ecc936d68efd83c"
+  "versionCode": 93,
+  "versionName": "5.47",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.47/Mallah-Navigator.apk",
+  "size": 2684407,
+  "notes": "خريطة المناطق لا تعلق مصغّرة أو مائلة بعد التكبير بإصبعين، والصور تتحدّث دائمًا. الخريطة الرئيسية: صور القمر الصناعي تصل أسرع على الإنترنت البطيء.",
+  "sha256": "3380af13e2098626a08f45d930167c3e43ae7e35c0707945465c8cbc556e3d13"
 }
