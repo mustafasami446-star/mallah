@@ -169,10 +169,10 @@ body.ui-nav #topBar,body.ui-meas #topBar{display:none}
 .rptPin{width:34px;height:34px;border-radius:50%;background:#fff;border:3px solid #f59e0b;display:grid;place-items:center;font-size:17px;box-shadow:0 2px 8px rgba(0,0,0,.4)}
 .rptPin.k-acc,.rptPin.k-closed{border-color:#ef4444}.rptPin.k-chk{border-color:#3b82f6}.rptPin.k-cam{border-color:#a855f7}.rptPin.k-water{border-color:#06b6d4}
 /* car mode: everything bigger for a phone on a holder */
+body:not(.fabsReady) #fabs,body:not(.fabsReady) #carBar{visibility:hidden}
 #carBar{position:absolute;left:8px;right:8px;bottom:calc(var(--sheetH,0px) + 12px + env(safe-area-inset-bottom));z-index:460;display:flex;gap:8px}
 #carBar button{flex:1;min-height:74px;border-radius:18px;background:var(--panel);border:1px solid var(--line);color:var(--text);font-size:26px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;box-shadow:var(--shadow)}
 #carBar span{font-size:14px;font-weight:700}
-body.car #fabs{bottom:calc(var(--sheetH,0px) + 100px + env(safe-area-inset-bottom))!important}
 body.car .fab{width:62px;height:62px;border-radius:20px}
 body.car #navDist{font-size:40px}body.car #navText{font-size:22px;line-height:1.35}body.car #navArrow{transform:scale(1.35);transform-origin:center}
 body.car #navStats{font-size:19px}body.car #navBottom .btn{min-height:52px;font-size:17px}
