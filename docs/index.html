@@ -496,6 +496,19 @@ body.night .apl span{color:#f1f5f9;text-shadow:0 0 3px #000,0 0 3px #000,0 0 2px
 #azBtns button{width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:rgba(17,28,51,.88);color:var(--text);font-size:19px;line-height:1;display:flex;align-items:center;justify-content:center}
 #azBtns button:active{background:var(--panel2)}
 #azNorth svg{transition:transform .15s}#azNorth.on{border-color:#ef4444}
+#azBtns2{position:absolute;top:10px;right:10px;display:flex;flex-direction:column;gap:6px}
+#azBtns2 button{width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:rgba(17,28,51,.88);font-size:17px;line-height:1;display:flex;align-items:center;justify-content:center}
+#azBtns2 button.on{border-color:#38bdf8;background:#0c4a6e}
+#areaSvg.axSat .pv{fill-opacity:.1}#areaSvg.axSat .pv.sel{fill-opacity:.25}#areaSvg.axSat .pvSub{stroke:#e2e8f0}
+#areaSvg.axWxOn .pv,#areaSvg.axWxOn .pv.sel{fill-opacity:1}#areaSvg.axWxOn .pv.sel{stroke:#fff;stroke-width:3}
+#areaSvg .azRd{fill:none;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;pointer-events:none}
+#areaSvg .azRd.c0{stroke:#f59e0b;stroke-width:3}#areaSvg .azRd.c1{stroke:#fbbf24;stroke-width:2.4}#areaSvg .azRd.c2{stroke:#fde68a;stroke-width:1.6;opacity:.85}#areaSvg .azRd.c3{stroke:#cbd5e1;stroke-width:1.1;opacity:.7}
+#areaSvg .axSvc{fill:#e879f9;stroke:#0b1220;pointer-events:none}
+#areaSvg .axMine{stroke:#fff;pointer-events:none}
+.axInfo{margin-top:8px;border-top:1px solid var(--line);padding-top:8px}.axInfo .s{margin:2px 0}
+.axChips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}.axChip{padding:5px 10px!important;font-size:13px!important}.axChip.on,.areaBtns .chip.on{border-color:#e879f9;background:rgba(232,121,249,.18)}
+.axLine{white-space:normal}
+table.axCmp{width:100%;border-collapse:collapse;font-size:14px;text-align:center}table.axCmp th{text-align:right;color:var(--muted);font-weight:600;padding:6px 4px}table.axCmp td{padding:6px 4px;border-bottom:1px solid var(--line)}
 #areaSvg .pv,#areaSvg .pvSub,#areaSvg .pvSel{vector-effect:non-scaling-stroke}
 #areaSvg .azA{font-weight:700}#areaSvg .azS{fill:#cbd5e1;font-weight:600}
 #areaSvg .azP{font-weight:600}#areaSvg .azP.town{fill:#fde68a}#areaSvg .azP.nb{fill:#bae6fd}#areaSvg .azP.vil{fill:#bbf7d0}#areaSvg .azP.on{fill:#fff}
@@ -1000,6 +1013,7 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
 <script src="teamqr.js"></script>
 <script src="teamsms.js"></script>
 <script src="drive.js"></script>
+<script src="areas2.js"></script>
 <script src="trip.js"></script>
 <script src="arbaeen.js"></script>
 <script src="describe.js"></script>

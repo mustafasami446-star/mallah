@@ -222,9 +222,11 @@ function arSvg(cur, kids, here, dots, preview) {
   const keep = AZ && AZ.id === cur.id && AZ.W === W;
   AZ = { id: cur.id, W, H, content, base: keep ? AZ.base : Object.assign({}, content), vb: keep ? AZ.vb : null, rot: keep ? AZ.rot : (AZ ? AZ.rot : 0) || 0, sc, dots: D, lbls, leaf: !preview, me: null };
   if (!AZ.vb) AZ.vb = Object.assign({}, AZ.base);
+  AZ.geo = { w, n, kx, sc };               // drawing units ⇄ lat/lng (areas2.js)
+  AZ.cur = cur;
   if (me && me.lng >= w && me.lng <= e && me.lat >= s && me.lat <= n) AZ.me = XY(me.lng, me.lat);
   const vb = AZ.vb;
-  return `<div id="azBox"><svg id="areaSvg" viewBox="${vb.x} ${vb.y} ${vb.w} ${vb.h}" xmlns="http://www.w3.org/2000/svg"><g id="azRotG">${paths}<g id="azDots"></g><g id="azMe"></g></g><g id="azLbl"></g></svg>
+  return `<div id="azBox"><svg id="areaSvg" viewBox="${vb.x} ${vb.y} ${vb.w} ${vb.h}" xmlns="http://www.w3.org/2000/svg"><g id="azRotG"><g id="azSat"></g>${paths}<g id="azRoads"></g><g id="azSvc"></g><g id="azMine"></g><g id="azDots"></g><g id="azMe"></g></g><g id="azLbl"></g></svg>
     <div id="azBtns"><button data-z="in" aria-label="تكبير">＋</button><button data-z="out" aria-label="تصغير">－</button><button data-z="fit" aria-label="الحجم الكامل">⤢</button><button data-z="north" aria-label="الشمال للأعلى" id="azNorth"><svg viewBox="0 0 24 24" width="24" height="24"><path d="M12 3l4 9h-8z" fill="#ef4444"/><path d="M12 21l-4-9h8z" fill="#94a3b8"/></svg></button></div></div>`;
 }
 /* pixels on screen per unit of the drawing */
@@ -288,6 +290,7 @@ function azDraw() {
     if (l.e) out += `<text class="pvl azE" style="font-size:${(l.fpx * 0.78 / k).toFixed(2)}px;stroke-width:${(3.5 / k).toFixed(2)}px" x="${x0.toFixed(1)}" y="${(y0 + l.fpx * 1.05 / k).toFixed(1)}">${esc(l.e)}</text>`;
   });
   $('azLbl').innerHTML = out;
+  if (typeof azExtraDraw === 'function') azExtraDraw(X);
 }
 let azRaf = 0;
 function azSoon() { if (!azRaf) azRaf = requestAnimationFrame(() => { azRaf = 0; azDraw(); }); }
@@ -393,6 +396,7 @@ function azTap(sx, sy, cx, cy) {
   // the nearest dot within a finger's reach
   let best = null, bd = 18;
   AZ.dots.forEach((d) => { const p = X.toS(d.x, d.y), dd = Math.hypot(p[0] - sx, p[1] - sy); if (dd < bd) { bd = dd; best = d; } });
+  if (!best && typeof azExtraTap === 'function' && azExtraTap(sx, sy, X)) return;
   if (best) {
     if (AZ.leaf) stSel = best.i; else plPick = best.p;
     arRender(); arSheet('mid'); $('areaSheetBody').scrollTop = 0; return;

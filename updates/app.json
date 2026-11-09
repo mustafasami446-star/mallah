@@ -1,8 +1,8 @@
 {
-  "versionCode": 80,
-  "versionName": "5.34",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.34/Mallah-Navigator.apk",
-  "size": 2655547,
-  "notes": "خريطة «المناطق» صارت تدور بإصبعين، مع زر بوصلة يعيد الشمال للأعلى.",
-  "sha256": "7cc662652235b748cf0f593ad9487314b574285e6952e07415437ad531787e1b"
+  "versionCode": 81,
+  "versionName": "5.35",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.35/Mallah-Navigator.apk",
+  "size": 2667897,
+  "notes": "«المناطق»: قمر صناعي، طقس، طرق رئيسية، بحث، خدمات كل منطقة، المساحة والمسافة، مقارنة، تصدير، وتنزيل الشوارع.",
+  "sha256": "2f81c3d7894c2a481f0fe813977fcaec762d61ab47d84be2c72b3b5922b6b508"
 }

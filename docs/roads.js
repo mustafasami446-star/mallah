@@ -306,6 +306,17 @@ onmessage = async (ev) => {
     if (m.load) { const r = await load(m.load, m.buf); postMessage({ id: m.id, ok: r }); return; }
     if (m.drop) { delete G[m.drop]; postMessage({ id: m.id, ok: 1 }); return; }
     if (m.has) { postMessage({ id: m.id, ok: !!G[m.has] }); return; }
+    if (m.mainIn) {
+      // the main roads inside a box, for drawing on the areas map: [class, lat, lng, lat, lng, …] per road piece
+      const g = G[m.graph]; if (!g) throw new Error('no graph');
+      const [S, W, N, E, maxC] = m.mainIn, out = [], keep = new Set([0, 1, 2, 3, 9, 10, 11].filter((c) => c <= maxC || (c >= 9 && c - 9 <= maxC)));
+      const la0 = S * 1e6, la1 = N * 1e6, lo0 = W * 1e6, lo1 = E * 1e6, inB = (i) => g.nodes[2 * i] >= la0 && g.nodes[2 * i] <= la1 && g.nodes[2 * i + 1] >= lo0 && g.nodes[2 * i + 1] <= lo1;
+      for (let e = 0; e < g.E; e++) {
+        if (!keep.has(g.ecls[e]) || !(inB(g.ea[e]) || inB(g.eb[e]))) continue;
+        const p = epts(g, e); out.push([g.ecls[e] >= 9 ? g.ecls[e] - 9 : g.ecls[e]].concat(p.map((v) => Math.round(v * 1e5) / 1e5)));
+      }
+      postMessage({ id: m.id, ok: out }); return;
+    }
     if (m.road) { const g = G[m.graph]; if (!g) throw new Error('no graph'); postMessage({ id: m.id, ok: roadAt(g, m.road[0], m.road[1], m.road[2]) }); return; }
     if (m.near) { const g = G[m.graph]; if (!g) throw new Error('no graph'); const sn = snap(g, m.near[0], m.near[1], 'foot'); postMessage({ id: m.id, ok: sn && sn.d < 90 ? { name: nameOf(g, sn.e), d: sn.d } : null }); return; }
     if (m.route) { const g = G[m.graph]; if (!g) throw new Error('no graph'); postMessage({ id: m.id, ok: route(g, m.route.mode, m.route.from, m.route.to) }); return; }
@@ -364,4 +375,10 @@ async function roadsStreetAt(lat, lng) {
 async function roadsRoadAt(lat, lng, heading) {
   const id = roadsFor([lat, lng], [lat, lng]); if (!id) return null;
   try { await roadsLoad(id); return await roadsCall({ road: [lat, lng, heading == null ? null : heading], graph: id }); } catch (e) { return null; }
+}
+
+/* the main roads of a box (motorways to secondary roads), from the saved road network */
+async function roadsMainIn(s, w, n, e) {
+  const id = roadsFor([s, w], [n, e]) || roadsFor([(s + n) / 2, (w + e) / 2], [(s + n) / 2, (w + e) / 2]); if (!id) return null;
+  try { await roadsLoad(id); return await roadsCall({ mainIn: [s, w, n, e, 3], graph: id }); } catch (x) { return null; }
 }
