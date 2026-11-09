@@ -31,13 +31,15 @@ function axSatDraw(X) {
   while (z > 4 && (tx(E, z) - tx(W, z) + 1) * (ty(S, z) - ty(N, z) + 1) > 90) z--;
   const x0 = tx(W, z), x1 = tx(E, z), y0 = ty(N, z), y1 = ty(S, z);
   const key = [z, x0, x1, y0, y1].join(',');
-  if (key === AX.satKey) return;
+  if (key === AX.satKey && g.querySelector('image')) return;
   AX.satKey = key;
   const lon = (x) => x / 2 ** z * 360 - 180, lat = (y) => { const n = Math.PI - 2 * Math.PI * y / 2 ** z; return 180 / Math.PI * Math.atan(Math.sinh(n)); };
   // the new pictures go on top of the old ones, which stay until the new ones have come (no blank flash while zooming)
   const NS = 'http://www.w3.org/2000/svg', layer = document.createElementNS(NS, 'g');
   let left = 0;
-  const done = () => { if (--left <= 0) [...g.children].forEach((c) => { if (c !== layer) c.remove(); }); };
+  // when this set has come, the older ones under it go — and a set already replaced by a newer one does nothing
+  // (before, a replaced set finishing late removed everything, newer pictures included: the map went blank)
+  const done = () => { if (--left > 0 || layer.parentNode !== g) return; let c; while ((c = layer.previousSibling)) c.remove(); };
   for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) {
     const [ax, ay] = axXY(lat(y), lon(x)), [bx, by] = axXY(lat(y + 1), lon(x + 1));
     const im = document.createElementNS(NS, 'image');
