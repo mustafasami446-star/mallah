@@ -390,7 +390,14 @@ body.attr-min #attrBtn{opacity:.8;pointer-events:auto}
 .wxFab{position:absolute;top:0;left:62px}
 body.ui-wx #searchWrap,body.ui-wx #areaChip,body.ui-wx #covHint{display:none}
 body.ui-wx #wxBtn{color:#38bdf8;border-color:#38bdf8}
-#wxSheet{z-index:640;padding-top:8px;max-height:58vh;overflow:auto}
+#wxSheet{z-index:640;padding-top:4px;max-height:58vh;overflow:auto;transition:max-height .25s ease}
+#wxSheet .grab{width:48px;height:5px;border-radius:3px;background:var(--line);margin:4px auto 6px;cursor:pointer;box-shadow:0 0 0 12px transparent}
+#wxSheet .wxTop b{cursor:pointer}
+.wxPeek{display:none;padding:2px 16px 10px;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}.wxPeek .big{font-size:17px}
+#wxSheet.s-min{overflow:hidden}#wxSheet.s-min .wxPeek,#wxSheet.s-mid .wxPeek{display:block}
+#wxSheet.s-min > :not(.grab):not(.wxTop):not(.wxPeek){display:none}
+#wxSheet.s-mid > .wxInfo,#wxSheet.s-mid > .wxBtns,#wxSheet.s-mid > .wxSrc{display:none}
+#wxSheet.s-full{max-height:82vh}
 .wxTop{display:flex;align-items:center;gap:8px}.wxTop b{font-size:16px}.wxTop .s{flex:1;color:var(--muted);font-size:12px}
 .wxTabs{display:flex;gap:6px;margin:8px 0 6px;overflow-x:auto}
 .wxTabs button,.wxMode button{flex:1;height:36px;border-radius:12px;background:var(--panel2);color:var(--text);font:inherit;font-size:13.5px;font-weight:600;white-space:nowrap;padding:0 8px}

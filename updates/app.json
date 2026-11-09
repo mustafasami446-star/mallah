@@ -1,8 +1,8 @@
 {
-  "versionCode": 78,
-  "versionName": "5.32",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.32/Mallah-Navigator.apk",
+  "versionCode": 79,
+  "versionName": "5.33",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.33/Mallah-Navigator.apk",
   "size": 2655547,
-  "notes": "بلاغات الطريق (حادث، زحام، سيطرة، طريق مغلق، كاميرا…) لكل المستخدمين مع تنبيه صوتي، وحد السرعة مع تنبيه التجاوز، ووضع السيارة.",
-  "sha256": "2222a0377b287bc3cceb65e87d395bb1936f49a783f6f3f24661024891d14524"
+  "notes": "بطاقة الطقس صارت لوحة منسدلة بثلاثة أحجام لتظهر الخريطة أكثر.",
+  "sha256": "e608a77f4a862c2c35f77e85fb6fc4ababc7e436cc85daa6c612ca9520b83ab3"
 }

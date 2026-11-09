@@ -263,7 +263,7 @@ function placeFabs() {
     placing = false;
     const f = $('fabs'); if (!f) return;
     if (innerWidth >= 760) { f.style.bottom = '24px'; document.body.style.setProperty('--sheetH', '0px'); return; }
-    const ids = ['navBottom', 'measPanel', 'sheet', 'searchWrap'];
+    const ids = ['navBottom', 'measPanel', 'wxSheet', 'sheet', 'searchWrap'];
     let h = 0;
     for (const id of ids) {
       const el = $(id);

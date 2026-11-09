@@ -455,7 +455,8 @@ function wxDrawLabels() {
 function wxEnsure() {
   if ($('wxSheet')) return;
   const el = document.createElement('div'); el.id = 'wxSheet'; el.className = 'sheet hidden';
-  el.innerHTML = `<div class="wxTop"><b>🌦 الطقس</b><span class="s" id="wxMade"></span><button class="iconBtn" id="wxClose" aria-label="إغلاق"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+  el.innerHTML = `<div class="grab" id="wxGrab"></div><div class="wxTop"><b>🌦 الطقس</b><span class="s" id="wxMade"></span><button class="iconBtn" id="wxClose" aria-label="إغلاق"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="wxPeek" id="wxPeek"></div>
     <div class="wxTabs" id="wxTabs"><button data-tab="rain">🌧 المطر</button><button data-tab="wind">💨 الرياح</button><button data-tab="temp">🌡 الحرارة</button><button data-tab="sky">⛅ الحالة</button></div>
     <div class="wxTime"><div class="wxMode" id="wxMode"><button data-m="h">ساعة بساعة</button><button data-m="d">الأيام</button></div><button class="wxPlay" id="wxPlay" aria-label="تشغيل">▶</button></div>
     <div class="wxSlide"><input type="range" id="wxRange" min="0" max="47" step="1" dir="ltr"><div id="wxWhen"></div></div>
@@ -477,6 +478,27 @@ function wxEnsure() {
   $('wxList').onclick = () => openWxList();
   $('wxBell').onclick = () => wxAlertSettings();
   $('wxShare').onclick = () => wxShareCard();
+  wxSheetInit();
+}
+/* the weather card is a sheet over the map: small (a line), middle (the controls), or full (everything);
+   tap the handle or pull it up and down, so the map shows as much as you want */
+const WX_SHEETS = ['min', 'mid', 'full'];
+function wxSheetSet(st) { const el = $('wxSheet'); WX_SHEETS.forEach((k) => el.classList.toggle('s-' + k, k === st)); store.set('wxSheetSt', st); if (typeof placeFabs === 'function') { placeFabs(); setTimeout(placeFabs, 300); } }
+const wxSheetNow = () => WX_SHEETS.find((k) => $('wxSheet').classList.contains('s-' + k)) || 'mid';
+function wxSheetInit() {
+  const el = $('wxSheet');
+  wxSheetSet(store.get('wxSheetSt', 'mid'));
+  $('wxGrab').onclick = () => wxSheetSet({ min: 'mid', mid: 'full', full: 'min' }[wxSheetNow()]);
+  $('wxPeek').onclick = () => wxSheetSet('mid');
+  el.querySelector('.wxTop b').onclick = () => wxSheetSet({ min: 'mid', mid: 'full', full: 'mid' }[wxSheetNow()]);
+  let y0 = null, top0 = true;
+  el.addEventListener('touchstart', (e) => { if (e.target.closest('input[type=range]')) { y0 = null; return; } y0 = e.touches[0].clientY; top0 = el.scrollTop <= 0; }, { passive: true });
+  el.addEventListener('touchend', (e) => {
+    if (y0 == null) return;
+    const dy = e.changedTouches[0].clientY - y0, i = WX_SHEETS.indexOf(wxSheetNow()); y0 = null;
+    if (dy < -40 && i < 2 && (i < 2 || top0)) wxSheetSet(WX_SHEETS[i + 1]);
+    else if (dy > 50 && top0 && i > 0) { wxSheetSet(WX_SHEETS[i - 1]); el.scrollTop = 0; }
+  }, { passive: true });
 }
 function wxStart() {
   const n = WX.mode === 'h' ? WX.data.hours : WX.data.days;
@@ -489,7 +511,7 @@ async function openWeather(areaId) {
   wxEnsure();
   document.querySelectorAll('.panel:not(.hidden)').forEach((p) => p.classList.add('hidden'));
   $('layerMenu').classList.add('hidden');
-  WX.on = true; document.body.classList.add('ui-wx'); $('wxSheet').classList.remove('hidden');
+  WX.on = true; document.body.classList.add('ui-wx'); $('wxSheet').classList.remove('hidden'); if (typeof placeFabs === 'function') setTimeout(placeFabs, 50);
   $('wxInfo').innerHTML = '<div class="s">جارٍ تحميل النشرة…</div>';
   wxAskNotify();
   try {
@@ -510,7 +532,7 @@ async function openWeather(areaId) {
 function closeWeather() {
   WX.on = false; wxStop(); wxpOff(); wxrOff();
   document.body.classList.remove('ui-wx');
-  if ($('wxSheet')) $('wxSheet').classList.add('hidden');
+  if ($('wxSheet')) $('wxSheet').classList.add('hidden'); if (typeof placeFabs === 'function') placeFabs();
   if (WX.overlay) { map.removeLayer(WX.overlay); WX.overlay = null; }
   map.removeLayer(WX.labels);
 }
@@ -570,6 +592,7 @@ function wxRenderInfo() {
   const n = WX.sel && WX.ar && WX.ar.byId[WX.sel];
   if (!n) { $('wxInfo').innerHTML = '<div class="s">اضغط رقمًا على الخريطة أو «كل المناطق» لترى تفاصيل منطقة</div>'; return; }
   const fol = wxCfg.follow.includes(n.id);
+  $('wxPeek').innerHTML = `<b>${esc(arShort(n))}</b> · ${wxLine(wxValues(n.id), false)}`;
   $('wxInfo').innerHTML = `<div class="wxName"><b>${esc(arTitle(n))}</b>${n.k !== 'p' && n.up && WX.ar.byId[n.up] ? '<span class="s"> — ' + esc(arShort(WX.ar.byId[n.up])) + '</span>' : ''}<button class="wxFol${fol ? ' on' : ''}" id="wxFol" title="متابعة">${fol ? '⭐ متابَعة' : '☆ متابعة'}</button></div><div class="wxVals">${wxLine(wxValues(n.id), true)}</div>${wxWeekHtml(n.id)}${n.c && typeof sunMoonLine === 'function' ? '<div class="wxSun">' + sunMoonLine(n.c[1], n.c[0]) + '</div>' : ''}`;
   $('wxFol').onclick = () => wxToggleFollow(n.id);
   $('wxInfo').querySelectorAll('[data-wd]').forEach((b) => { b.onclick = () => { wxStop(); WX.mode = 'd'; WX.idx = +b.dataset.wd; wxRender(); }; });
