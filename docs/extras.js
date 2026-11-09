@@ -140,7 +140,7 @@ function tipShow() {
   if (store.get('tipHide', '') === today) { const t = $('dayTip'); if (t) t.remove(); return; }
   const n = Math.floor(Date.now() / 86400e3) % TIPS.length, tip = TIPS[n];
   let el = $('dayTip');
-  if (!el) { el = document.createElement('div'); el.id = 'dayTip'; $('homeChips').after(el); }
+  if (!el) { el = document.createElement('div'); el.id = 'dayTip'; $('homeMore').prepend(el); }   // in the opened sheet, not over the map
   el.innerHTML = `<span class="tl">💡 هل تعلم؟</span><span class="tt">${esc(tip[0])}</span><button class="tx" aria-label="إخفاء">✕</button>`;
   el.classList.toggle('act', !!tip[1]);
   el.onclick = (e) => { if (e.target.closest('.tx')) { store.set('tipHide', today); el.remove(); return; } if (tip[1]) tip[1](); };

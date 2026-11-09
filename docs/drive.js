@@ -194,14 +194,15 @@ function carSet(on) {
 function carBar() {
   let b = $('carBar');
   if (!carOn) { if (b) b.remove(); if (typeof placeFabs === 'function') placeFabs(); return; }
-  if (!b) { b = document.createElement('div'); b.id = 'carBar'; document.body.appendChild(b); if (window.ResizeObserver) new ResizeObserver(() => placeFabs()).observe(b); }
+  if (!b) { b = document.createElement('div'); b.id = 'carBar'; $('homeGrab').after(b); }
   b.innerHTML = `<button data-c="voice">🎤<span>إلى أين؟</span></button><button data-c="home">⌂<span>البيت</span></button><button data-c="work">▣<span>العمل</span></button><button data-c="fav">★<span>المفضلة</span></button><button data-c="rpt">⚠️<span>بلاغ</span></button>`;
   b.onclick = async (e) => {
     const c = e.target.closest('[data-c]'); if (!c) return;
     const k = c.dataset.c;
     if (k === 'rpt') { rptMenu(); return; }
     if (k === 'voice') {
-      const t = await voiceAsk('إلى أين تريد الذهاب؟'); if (!t) return;
+      const t = await voiceAsk('إلى أين تريد الذهاب؟');
+      if (!t) { homeExpand(true); qEl.focus(); return; }
       homeExpand(true); qEl.value = t; qEl.dispatchEvent(new Event('input', { bubbles: true })); return;
     }
     if (k === 'fav') { $('openSaved') ? $('openSaved').click() : homeExpand(true); return; }
@@ -225,4 +226,4 @@ function carBar() {
     r.onclick = () => { $('menuDrop').classList.add('hidden'); store.set('spdAlert', !spdAlertOn()); r.innerHTML = lab2(); toast(spdAlertOn() ? 'تنبيه تجاوز السرعة يعمل' : 'أوقفتَ تنبيه تجاوز السرعة'); };
   }
 }
-if (carOn) { document.body.classList.add('car'); carBar(); }
+if (carOn) { document.body.classList.add('car'); carBar(); if (typeof homeMini === 'function') homeMini(true); }

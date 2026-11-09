@@ -270,9 +270,7 @@ function placeFabs() {
       if (el && !el.classList.contains('hidden') && getComputedStyle(el).display !== 'none') { h = el.offsetHeight; break; }
     }
     document.body.style.setProperty('--sheetH', h + 'px');
-    // car mode: the big buttons sit on the sheet, the map buttons above them
-    const cb = $('carBar'), car = cb && getComputedStyle(cb).display !== 'none' ? cb.offsetHeight + 12 : 0;
-    const v = (h ? h + 14 + car : 24 + car) + 'px';
+    const v = (h ? h + 14 : 24) + 'px';
     if (f.style.bottom !== v) f.style.bottom = v;
   });
 }
@@ -286,7 +284,7 @@ addEventListener('resize', placeFabs);
   // shown once the sheet has kept the same height for a moment (its day bar and tips arrive a little after the page)
   let last = -1, same = 0;
   const wait = setInterval(() => {
-    const h = homeEl.offsetHeight + ($('carBar') ? $('carBar').offsetHeight : 0);
+    const h = homeEl.offsetHeight;
     same = h === last ? same + 1 : 0; last = h;
     placeFabs();
     if (same >= 3) { clearInterval(wait); requestAnimationFrame(() => requestAnimationFrame(() => document.body.classList.add('fabsReady'))); }

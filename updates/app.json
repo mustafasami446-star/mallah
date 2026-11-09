@@ -1,8 +1,8 @@
 {
-  "versionCode": 88,
-  "versionName": "5.42",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.42/Mallah-Navigator.apk",
-  "size": 2680249,
-  "notes": "خريطة المناطق: لا تختفي عند التكبير الكبير مع القمر الصناعي أو الشوارع.",
-  "sha256": "369e1fe5d4842d697f89fc4c5e3ce6095eb816fc96efc89d5f32ebd80505f861"
+  "versionCode": 89,
+  "versionName": "5.43",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.43/Mallah-Navigator.apk",
+  "size": 2680311,
+  "notes": "مساحة أكبر للخريطة: لمسة على الخريطة تُخفي الأزرار، وزر «المزيد» يجمع الكاميرا والفريق والبلاغ، والطقس داخل زر الطبقات، ووضع السيارة صفّ أزرار واحد.",
+  "sha256": "758b24c488992fdaf8b9ef33697f2aa9da89af485dbcc217cdc323e8196073d3"
 }

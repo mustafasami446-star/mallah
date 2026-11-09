@@ -45,12 +45,12 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 #menuDrop button{display:flex;align-items:center;gap:10px;width:100%;text-align:right;padding:12px;border-radius:10px;font-size:15px}
 #menuDrop button:active{background:var(--panel2)}
 #menuDrop svg{width:20px;height:20px;color:var(--accent)}
-#layerMenu{left:0!important;top:62px;bottom:auto!important}
+#layerMenu{left:0!important;top:56px;bottom:auto!important}
 
 /* home sheet */
 #searchWrap{position:absolute;left:0;right:0;bottom:0;z-index:500;background:var(--panel);border-top:1px solid var(--line);border-radius:24px 24px 0 0;padding:8px 14px calc(12px + env(safe-area-inset-bottom));box-shadow:0 -10px 30px rgba(0,0,0,.35);max-height:78vh;overflow:auto;transition:max-height .25s}
 #searchWrap .grab{width:44px;height:5px;border-radius:3px;background:var(--line);margin:2px auto 10px;cursor:pointer}
-#searchWrap.mini:not(.expanded) > :not(.grab):not(#searchBar){display:none}
+#searchWrap.mini:not(.expanded) > :not(.grab):not(#searchBar):not(#carBar){display:none}
 #searchWrap.mini:not(.expanded) .grab{width:56px;background:var(--muted);margin:2px auto 8px}
 #searchBar{display:flex;align-items:center;gap:6px;background:#0b1222;border:1px solid var(--line);border-radius:18px;padding:6px 8px}
 #searchBar input{flex:1;min-width:0;background:transparent;border:0;outline:0;color:var(--text);font-size:17px;padding:10px 4px}
@@ -116,7 +116,7 @@ body.ui-nav #topBar,body.ui-meas #topBar{display:none}
 
 /* floating buttons */
 #fabs{position:absolute;left:12px;bottom:calc(24px + env(safe-area-inset-bottom));z-index:450;display:flex;flex-direction:column;gap:10px;transition:bottom .25s}
-.fab{width:52px;height:52px;border-radius:16px;background:var(--panel);border:1px solid var(--line);display:grid;place-items:center;box-shadow:var(--shadow)}
+.fab{width:48px;height:48px;border-radius:15px;background:var(--panel);border:1px solid var(--line);display:grid;place-items:center;box-shadow:var(--shadow)}
 .fab svg{width:24px;height:24px}
 .fab.on{color:var(--accent)}
 #layerMenu{position:absolute;left:72px;bottom:0;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:6px;box-shadow:var(--shadow);min-width:150px}
@@ -169,17 +169,38 @@ body.ui-nav #topBar,body.ui-meas #topBar{display:none}
 .rptPin{width:34px;height:34px;border-radius:50%;background:#fff;border:3px solid #f59e0b;display:grid;place-items:center;font-size:17px;box-shadow:0 2px 8px rgba(0,0,0,.4)}
 .rptPin.k-acc,.rptPin.k-closed{border-color:#ef4444}.rptPin.k-chk{border-color:#3b82f6}.rptPin.k-cam{border-color:#a855f7}.rptPin.k-water{border-color:#06b6d4}
 /* car mode: everything bigger for a phone on a holder */
-body:not(.fabsReady) #fabs,body:not(.fabsReady) #carBar{visibility:hidden}
-#carBar{position:absolute;left:8px;right:8px;bottom:calc(var(--sheetH,0px) + 12px + env(safe-area-inset-bottom));z-index:460;display:flex;gap:8px}
-#carBar button{flex:1;min-height:74px;border-radius:18px;background:var(--panel);border:1px solid var(--line);color:var(--text);font-size:26px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;box-shadow:var(--shadow)}
-#carBar span{font-size:14px;font-weight:700}
-body.car .fab{width:62px;height:62px;border-radius:20px}
+body:not(.fabsReady) #fabs{visibility:hidden}
+/* the car buttons are the folded home sheet itself: one row, no second bar over the map */
+#carBar{display:flex;gap:6px;margin:0 0 8px}
+#carBar button{flex:1;min-width:0;min-height:58px;border-radius:16px;background:var(--panel2);border:1px solid var(--line);color:var(--text);font-size:21px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+#carBar span{font-size:12.5px;font-weight:700;white-space:nowrap}
+@media (min-width:460px){#carBar button{flex-direction:row;gap:6px;font-size:20px}#carBar span{font-size:14px}}
+body.car #searchWrap.mini:not(.expanded) > #searchBar,body.car #searchWrap.expanded #carBar,body.car #homeChips,body.car #dayTip{display:none}
+body.car .fab{width:56px;height:56px;border-radius:18px}
 body.car #navDist{font-size:40px}body.car #navText{font-size:22px;line-height:1.35}body.car #navArrow{transform:scale(1.35);transform-origin:center}
 body.car #navStats{font-size:19px}body.car #navBottom .btn{min-height:52px;font-size:17px}
 body.car #speed{width:84px;height:84px;font-size:28px}body.car #spdLim{width:70px;height:70px;font-size:25px;bottom:calc(200px + env(safe-area-inset-bottom))}
 body.ui-nav #carBar,body.ui-dest #carBar,body.ui-meas #carBar{display:none}
 body.car:not(.ui-nav) #rptBtn{display:none}
 body.car #searchWrap .grab{width:72px;height:7px}
+/* the rarely used map buttons wait behind «المزيد» */
+#fabs .fab.fgHide{display:none!important}
+#moreBtn{position:relative}
+#moreBtn.on{color:var(--accent);border-color:var(--accent)}
+#moreBtn i{position:absolute;top:-3px;left:-3px;width:12px;height:12px;border-radius:50%;background:#22c55e;border:2px solid var(--panel)}
+#moreBtn i.msg{background:#38bdf8}
+#fabs.open .fab:not(#moreBtn):not(#locBtn):not(#northBtn){animation:fgIn .16s ease-out}
+@keyframes fgIn{from{opacity:0;transform:translateY(10px) scale(.9)}}
+/* a tap on the map hides the buttons (and folds the sheet away); another tap brings them back */
+#topBar,#fabs{transition:opacity .2s}
+#searchWrap{transition:max-height .25s,transform .25s}
+body.calm #topBar,body.calm #fabs{opacity:0;pointer-events:none}
+body.calm #topBar>*{pointer-events:none}
+body.calm:not(.ui-nav) #searchWrap{transform:translateY(calc(100% + 40px))}
+body.calm #routeNote{display:none}
+/* while the map is dragged, the buttons step back */
+body.mapMove #topBar,body.mapMove #fabs{opacity:.25}
+#wxBtn{display:none}
 
 /* steps panel */
 #stepsPanel{position:absolute;inset:0;z-index:900;background:var(--bg);display:flex;flex-direction:column}
@@ -454,7 +475,7 @@ body.ui-nav #tripBar{top:calc(150px + env(safe-area-inset-top))}
 #dayBar{display:flex;gap:8px;margin:0 0 8px}
 #dayBar .db{flex:1;min-width:0;display:flex;align-items:center;gap:6px;height:38px;padding:0 10px;border-radius:12px;background:var(--panel2);color:var(--text);font:inherit;font-size:13px;white-space:nowrap;overflow:hidden}
 #dayBar .di{font-size:17px}#dayBar b{font-size:14.5px}#dayBar .dt{color:var(--muted);overflow:hidden;text-overflow:ellipsis}
-#dayTip{display:flex;align-items:center;gap:8px;margin-top:10px;padding:8px 10px;border-radius:12px;background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.22);font-size:12.5px;line-height:1.55}
+#dayTip{display:flex;align-items:center;gap:8px;margin:0 0 12px;padding:8px 10px;border-radius:12px;background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.22);font-size:12.5px;line-height:1.55}
 #dayTip .tl{color:#7dd3fc;font-weight:700;white-space:nowrap}#dayTip .tt{flex:1}#dayTip.act{cursor:pointer}#dayTip .tx{color:var(--muted);font-size:14px;padding:0 4px}
 .quickRes{background:rgba(14,165,233,.12);cursor:pointer}.quickRes .ic{background:#0369a1}
 #routeNote{position:absolute;top:calc(160px + env(safe-area-inset-top));left:12px;right:12px;z-index:700;background:#1e293b;border:1px solid #38bdf8;border-radius:16px;padding:10px 12px;box-shadow:var(--shadow);font-size:13.5px;line-height:1.7}
@@ -1033,6 +1054,7 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
 <script src="drive.js"></script>
 <script src="areas2.js"></script>
 <script src="areasnav.js"></script>
+<script src="layout.js"></script>
 <script src="trip.js"></script>
 <script src="arbaeen.js"></script>
 <script src="describe.js"></script>
