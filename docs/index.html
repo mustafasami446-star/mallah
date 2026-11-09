@@ -496,6 +496,21 @@ body.night .apl span{color:#f1f5f9;text-shadow:0 0 3px #000,0 0 3px #000,0 0 2px
 #azBtns button{width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:rgba(17,28,51,.88);color:var(--text);font-size:19px;line-height:1;display:flex;align-items:center;justify-content:center}
 #azBtns button:active{background:var(--panel2)}
 #azNorth svg{transition:transform .15s}#azNorth.on{border-color:#ef4444}
+#areaSvg .axnCase{fill:none;stroke:#0b3a8a;stroke-width:10;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;opacity:.7;pointer-events:none}
+#areaSvg .axnLine{fill:none;stroke:#3b82f6;stroke-width:6;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;pointer-events:none}#areaSvg .axnLine.foot{stroke:#a78bfa;stroke-dasharray:2 9}
+#areaSvg .axnStart{fill:#22c55e;stroke:#fff;pointer-events:none}#areaSvg .axnEnd{fill:#ef4444;stroke:#fff;pointer-events:none}
+#areaSvg .axnArrow{fill:#3b82f6;stroke:#fff}#areaSvg .axnHalo{fill:rgba(59,130,246,.22)}
+#axnBar{position:absolute;left:10px;right:58px;bottom:10px;background:rgba(15,23,42,.95);border:1px solid var(--line);border-radius:16px;padding:10px 12px;box-shadow:var(--shadow);font-size:13.5px;display:flex;flex-direction:column;gap:5px}
+#axnBar .axnTop{display:flex;align-items:center;gap:8px}#axnBar .axnTop b{flex:1;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#axnBar .axnTop button{width:30px;height:30px;border-radius:10px;background:var(--panel2);color:var(--text)}
+#axnBar .axnModes{display:flex;align-items:center;gap:6px}#axnBar .axnModes button{width:40px;height:34px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);font-size:17px}#axnBar .axnModes button.on{border-color:#3b82f6;background:#1e3a8a}
+#axnBar .axnSum{margin-inline-start:6px;font-size:14px}#axnBar .axnSum b{font-size:17px}
+#axnBar .axnGo{background:#2563eb;color:#fff;border-radius:12px;padding:10px;font-weight:700;font-size:15px;margin-top:2px}
+body.azLive #areaPanel .panelHead,body.azLive #areaCrumbs,body.azLive #areaSheet,body.azLive #azBtns2{display:none}
+body.azLive #areaMapWrap{margin-bottom:0}
+body.azLive #navTop,body.azLive #navBottom,body.azLive #speed,body.azLive #spdLim,body.azLive #toast{z-index:1400}
+body.azLive #azBtns{top:calc(130px + env(safe-area-inset-top))}
+#axnLiveBtns{position:fixed;top:calc(128px + env(safe-area-inset-top));right:12px;z-index:1400;display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+#axnLiveBtns button{background:rgba(15,23,42,.92);color:#fff;border:1px solid var(--line);border-radius:14px;padding:9px 12px;font:inherit;font-size:13.5px;font-weight:600;box-shadow:var(--shadow)}
 #azBtns2{position:absolute;top:10px;right:10px;display:flex;flex-direction:column;gap:6px}
 #azBtns2 button{width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:rgba(17,28,51,.88);font-size:17px;line-height:1;display:flex;align-items:center;justify-content:center}
 #azBtns2 button.on{border-color:#38bdf8;background:#0c4a6e}
@@ -1014,6 +1029,7 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
 <script src="teamsms.js"></script>
 <script src="drive.js"></script>
 <script src="areas2.js"></script>
+<script src="areasnav.js"></script>
 <script src="trip.js"></script>
 <script src="arbaeen.js"></script>
 <script src="describe.js"></script>

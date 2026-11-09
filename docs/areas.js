@@ -226,7 +226,7 @@ function arSvg(cur, kids, here, dots, preview) {
   AZ.cur = cur;
   if (me && me.lng >= w && me.lng <= e && me.lat >= s && me.lat <= n) AZ.me = XY(me.lng, me.lat);
   const vb = AZ.vb;
-  return `<div id="azBox"><svg id="areaSvg" viewBox="${vb.x} ${vb.y} ${vb.w} ${vb.h}" xmlns="http://www.w3.org/2000/svg"><g id="azRotG"><g id="azSat"></g>${paths}<g id="azRoads"></g><g id="azSvc"></g><g id="azMine"></g><g id="azDots"></g><g id="azMe"></g></g><g id="azLbl"></g></svg>
+  return `<div id="azBox"><svg id="areaSvg" viewBox="${vb.x} ${vb.y} ${vb.w} ${vb.h}" xmlns="http://www.w3.org/2000/svg"><g id="azRotG"><g id="azSat"></g>${paths}<g id="azRoads"></g><g id="azRoute"></g><g id="azSvc"></g><g id="azMine"></g><g id="azDots"></g><g id="azMe"></g></g><g id="azLbl"></g></svg>
     <div id="azBtns"><button data-z="in" aria-label="تكبير">＋</button><button data-z="out" aria-label="تصغير">－</button><button data-z="fit" aria-label="الحجم الكامل">⤢</button><button data-z="north" aria-label="الشمال للأعلى" id="azNorth"><svg viewBox="0 0 24 24" width="24" height="24"><path d="M12 3l4 9h-8z" fill="#ef4444"/><path d="M12 21l-4-9h8z" fill="#94a3b8"/></svg></button></div></div>`;
 }
 /* pixels on screen per unit of the drawing */
@@ -437,10 +437,11 @@ function arSheetInit() {
 function placeCardHtml(p, area) {
   const kind = { city: 'مدينة', town: 'بلدة', suburb: 'حي', neighbourhood: 'حي', quarter: 'حي', village: 'قرية', hamlet: 'قرية صغيرة' }[p.k] || '';
   return `<div class="areaCard"><div class="t">${ST_HEAD[ST_GROUP[p.k]][0]} ${esc(p.n)}</div><div class="s">${[kind, area ? 'في ' + arTitle(area) : '', p.e].filter(Boolean).map(esc).join(' · ')}</div>
-      <div class="areaBtns"><button class="chip go" data-sa="go">🗺 عرض على الخريطة</button><button class="chip" data-sa="near">🧭 اكتشف حولها</button><button class="chip" data-sa="back">✕</button></div></div>`;
+      <div class="areaBtns"><button class="chip go" data-sa="route">🧭 المسار إليه</button><button class="chip" data-sa="go">🗺 عرض على الخريطة</button><button class="chip" data-sa="near">🧭 اكتشف حولها</button><button class="chip" data-sa="back">✕</button></div></div>`;
 }
 function placeCardBind(p, back) {
   $('areaSel').querySelector('[data-sa=go]').onclick = () => stGo(p, false);
+  $('areaSel').querySelector('[data-sa=route]').onclick = () => axnRoute({ lat: p.lat, lng: p.lng, name: p.n });
   $('areaSel').querySelector('[data-sa=near]').onclick = () => stGo(p, true);
   $('areaSel').querySelector('[data-sa=back]').onclick = back;
 }

@@ -155,6 +155,7 @@ function axMineCount(n) {
 let axPts = [];      // what can be tapped: {x, y, kind, obj}
 function azExtraDraw(X) {
   axSatDraw(X);
+  if (typeof axnDraw === 'function') axnDraw(X);
   if (AZ.roadsDrawnFor !== AZ.id + '|' + AX.roads) { AZ.roadsDrawnFor = AZ.id + '|' + AX.roads; axRoadsDraw(); }
   const k = X.k, vb = AZ.vb, Ws = vb.w * k, Hs = vb.h * k;
   axPts = [];
@@ -184,9 +185,9 @@ function azExtraTap(sx, sy) {
   const o = best.obj;
   if (best.kind === 'svc') {
     const kind = AX_SVC.find((s) => s[0] === axSvcKind(o.k));
-    actionSheet((kind ? kind[1] + ' ' : '') + o.n, [{ label: '🧭 اذهب إليه', fn: () => { $('areaPanel').classList.add('hidden'); setDestination(o.lat, o.lng, o.n, o.e || ''); } }]);
+    actionSheet((kind ? kind[1] + ' ' : '') + o.n, [{ label: '🧭 المسار إليه هنا', fn: () => axnRoute({ lat: o.lat, lng: o.lng, name: o.n }) }, { label: '🗺 اذهب إليه على الخريطة', fn: () => { $('areaPanel').classList.add('hidden'); setDestination(o.lat, o.lng, o.n, o.e || ''); } }]);
   } else {
-    actionSheet(AX_MINE[o.k][0] + ' ' + o.n + (o.sub ? ' · ' + o.sub : ''), [{ label: '🧭 اذهب إليه', fn: () => { $('areaPanel').classList.add('hidden'); setDestination(o.lat, o.lng, o.n, AX_MINE[o.k][1]); } }]);
+    actionSheet(AX_MINE[o.k][0] + ' ' + o.n + (o.sub ? ' · ' + o.sub : ''), [{ label: '🧭 المسار إليه هنا', fn: () => axnRoute({ lat: o.lat, lng: o.lng, name: o.n }) }, { label: '🗺 اذهب إليه على الخريطة', fn: () => { $('areaPanel').classList.add('hidden'); setDestination(o.lat, o.lng, o.n, AX_MINE[o.k][1]); } }]);
   }
   return true;
 }
@@ -365,7 +366,7 @@ async function axDownload(n) {
       ${axWxLine(n)}
       ${chips ? '<div class="axChips">' + chips + '</div>' : ''}
       ${mine ? '<div class="s axLine">📌 مواقعك هنا: ' + mine + '</div>' : ''}
-      <div class="areaBtns"><button class="chip${AX.cmp === n.id ? ' on' : ''}" data-x="cmp" data-id="${n.id}">⚖ ${AX.cmp && AX.cmp !== n.id ? 'قارن مع ' + esc(arShort(AR.byId[AX.cmp])) : AX.cmp === n.id ? 'اختر منطقة ثانية…' : 'قارن'}</button><button class="chip" data-x="exp" data-id="${n.id}">📤 تصدير</button>${NATIVE ? `<button class="chip" data-x="dl" data-id="${n.id}">⬇ شوارعها بدون إنترنت</button>` : ''}</div>
+      <div class="areaBtns"><button class="chip go" data-x="route" data-id="${n.id}">🧭 المسار إليها</button><button class="chip${AX.cmp === n.id ? ' on' : ''}" data-x="cmp" data-id="${n.id}">⚖ ${AX.cmp && AX.cmp !== n.id ? 'قارن مع ' + esc(arShort(AR.byId[AX.cmp])) : AX.cmp === n.id ? 'اختر منطقة ثانية…' : 'قارن'}</button><button class="chip" data-x="exp" data-id="${n.id}">📤 تصدير</button>${NATIVE ? `<button class="chip" data-x="dl" data-id="${n.id}">⬇ شوارعها بدون إنترنت</button>` : ''}</div>
     </div>`;
     return html.replace(/<\/div>$/, extra + '</div>');
   };
@@ -373,12 +374,14 @@ async function axDownload(n) {
   arRender = function () {
     _render.apply(this, arguments);
     axButtons();
+    if (typeof axnAfterRender === 'function') axnAfterRender();
     const sel = $('areaSel');
     sel.querySelectorAll('[data-x]').forEach((b) => {
       b.onclick = () => {
         const n = b.dataset.id && AR.byId[b.dataset.id];
         if (b.dataset.x === 'svc') { AX.svc = AX.svc === b.dataset.k ? null : b.dataset.k; arRender(); if (AX.svc) toast('تظهر على الخريطة كمربعات — اضغط أيًّا منها', 2500); }
         else if (b.dataset.x === 'cmp') axCompare(n);
+        else if (b.dataset.x === 'route') axnRoute(axnTargetOf(n));
         else if (b.dataset.x === 'exp') axExport(n);
         else if (b.dataset.x === 'dl') axDownload(n);
       };
