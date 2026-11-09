@@ -904,7 +904,8 @@ function diagText(extra) {
     'الرسم: ' + (liteMode() ? 'أخف' : 'عادي') + ' · دقة ' + glPixelRatio() + ' · معالجات ' + (navigator.hardwareConcurrency || '?') + ' · ذاكرة ' + (navigator.deviceMemory || '?') + ' ج.ب',
     'البلاط: طلبات ' + VD.req + ' · نجح ' + VD.hit + ' · فارغ ' + VD.empty + ' · أخطاء ' + VD.err,
     'الخرائط المحفوظة تلقائيًا (من التصفح): ' + (NATIVE && Android.netCacheSize ? fmtMB(Android.netCacheSize()) : '—'),
-    'تنزيل أجزاء الخريطة من الإنترنت: ' + (() => { try { const s = JSON.parse(Android.netStats()); if (!s.n) return 'لا شيء بعد · من المحفوظ ' + s.hits; return s.n + ' جزء · متوسط ' + (s.ms / s.n / 1000).toFixed(1) + ' ث للجزء · السرعة ' + Math.round(s.bytes / Math.max(1, s.ms)) + ' ك.ب/ث · فشل ' + s.fail + ' · من المحفوظ ' + s.hits; } catch (e) { return '—'; } })(),
+    'صور الخريطة على الشاشة: ' + (Object.keys(TSTAT).map((k) => { const s = TSTAT[k]; return k + ' طُلب ' + s.req + ' · وصل ' + s.ok + ' · فشل ' + s.err + ' · لم يكتمل (ينتظر أو أُلغي) ' + (s.req - s.ok - s.err) + (s.ok ? ' · ' + (s.ms / s.ok / 1000).toFixed(1) + ' ث' : ''); }).join(' | ') || 'لا شيء'),
+    'تنزيل أجزاء الخريطة من الإنترنت: ' + (() => { try { const s = JSON.parse(Android.netStats()); if (!s.n) return 'لا شيء بعد · بدأ ' + (s.start || 0) + ' · جارٍ ' + (s.live || 0) + (s.err ? ' · آخر خطأ ' + s.err : '') + ' · من المحفوظ ' + s.hits; return s.n + ' جزء · متوسط ' + (s.ms / s.n / 1000).toFixed(1) + ' ث للجزء · السرعة ' + Math.round(s.bytes / Math.max(1, s.ms)) + ' ك.ب/ث · فشل ' + s.fail + ' · جارٍ ' + (s.live || 0) + (s.err ? ' · آخر خطأ ' + s.err : '') + ' · من المحفوظ ' + s.hits; } catch (e) { return '—'; } })(),
     'الإنترنت: ' + (navigator.onLine === false ? 'غير متصل' : 'متصل') + ' · الموقع: ' + (me ? me.lat.toFixed(4) + ', ' + me.lng.toFixed(4) + ' ±' + Math.round(me.acc) + 'م' : '—'),
   ];
   if (VD.lastErr) L.push('آخر خطأ في القراءة: ' + VD.lastErr);

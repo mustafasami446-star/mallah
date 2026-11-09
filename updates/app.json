@@ -1,8 +1,8 @@
 {
-  "versionCode": 93,
-  "versionName": "5.47",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.47/Mallah-Navigator.apk",
+  "versionCode": 94,
+  "versionName": "5.48",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.48/Mallah-Navigator.apk",
   "size": 2684407,
-  "notes": "خريطة المناطق لا تعلق مصغّرة أو مائلة بعد التكبير بإصبعين، والصور تتحدّث دائمًا. الخريطة الرئيسية: صور القمر الصناعي تصل أسرع على الإنترنت البطيء.",
-  "sha256": "3380af13e2098626a08f45d930167c3e43ae7e35c0707945465c8cbc556e3d13"
+  "notes": "تشخيص الخريطة يعرض تفاصيل وصول صور القمر الصناعي من الإنترنت.",
+  "sha256": "39f6781ea418452d57b9308aa09160926b4552322de6c23eb39d84964cf9d93d"
 }

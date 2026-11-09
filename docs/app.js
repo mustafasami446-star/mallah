@@ -41,6 +41,8 @@ const TILE_BASE = (NATIVE && Android.getTileBase) ? Android.getTileBase() : null
 let OFFLINE_LAYER = 'esri'; const OFFLINE_MAX_Z = 16;
 const RASTER_LAYER = 'esri';   // city/area downloads are always raster street tiles, even when the offline vector map is the offline layer
 /* Tiles: try the phone's offline copy first, then the internet, then a zoomed-in parent tile from the offline copy */
+/* what the map's tiles did, for «تشخيص الخريطة»: per layer, how many were asked of the internet, came, failed, still waiting */
+const TSTAT = {};
 const CachedLayer = L.TileLayer.extend({
   createTile: function (coords, done) {
     // a plain <img> tile (Leaflet keeps the previous zoom level visible until these load, so no blank squares)
@@ -71,8 +73,10 @@ const CachedLayer = L.TileLayer.extend({
       if (i >= c.length) { finish(new Error('no tile')); return; }
       const t = c[i++];
       if (!t.size) {                      // a whole tile: load it straight into the <img>
-        tile.onload = () => finish(null);
-        tile.onerror = next;
+        const net = !(TILE_BASE && t.src.startsWith(TILE_BASE)), S = net && (TSTAT[key + (z <= 9 ? '·خفيف' : '')] = TSTAT[key + (z <= 9 ? '·خفيف' : '')] || { req: 0, ok: 0, err: 0, ms: 0 }), t0 = Date.now();
+        if (S) S.req++;
+        tile.onload = () => { if (S) { S.ok++; S.ms += Date.now() - t0; } finish(null); };
+        tile.onerror = () => { if (S) S.err++; next(); };
         tile.src = t.src;
         return;
       }
