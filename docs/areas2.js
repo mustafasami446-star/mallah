@@ -20,8 +20,7 @@ function axSatDraw(X) {
   const g = $('azSat'); if (!g) return;
   $('areaSvg').classList.toggle('axSat', AX.sat);
   if (!AX.sat) { if (g.innerHTML) g.innerHTML = ''; AX.satKey = ''; return; }
-  const vb = AZ.vb, Ws = vb.w * X.k, Hs = vb.h * X.k;
-  const cs = [[0, 0], [Ws, 0], [0, Hs], [Ws, Hs]].map(([a, b]) => { const u = X.toU(a, b); return axLL(u[0], u[1]); });
+  const cs = azCorners(X).map((u) => axLL(u[0], u[1]));
   const S = Math.min(...cs.map((c) => c[0])), N = Math.max(...cs.map((c) => c[0])), W = Math.min(...cs.map((c) => c[1])), E = Math.max(...cs.map((c) => c[1]));
   // device pixels per degree of longitude: sharp on high-density screens
   const ppd = X.k * AZ.geo.kx * AZ.geo.sc * Math.min(2, window.devicePixelRatio || 1);
@@ -138,8 +137,7 @@ async function axRoadsLoad(cur) {
 }
 /* the map's view as a lat/lng box, padded by a share of its size */
 function axViewBox(X, pad) {
-  const vb = AZ.vb, Ws = vb.w * X.k, Hs = vb.h * X.k;
-  const cs = [[0, 0], [Ws, 0], [0, Hs], [Ws, Hs]].map(([a, b]) => { const u = X.toU(a, b); return axLL(u[0], u[1]); });
+  const cs = azCorners(X).map((u) => axLL(u[0], u[1]));
   const S = Math.min(...cs.map((c) => c[0])), N = Math.max(...cs.map((c) => c[0])), W = Math.min(...cs.map((c) => c[1])), E = Math.max(...cs.map((c) => c[1]));
   const pa = (N - S) * pad, po = (E - W) * pad;
   return [S - pa, W - po, N + pa, E + po];

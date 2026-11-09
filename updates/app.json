@@ -1,8 +1,8 @@
 {
-  "versionCode": 90,
-  "versionName": "5.44",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.44/Mallah-Navigator.apk",
+  "versionCode": 91,
+  "versionName": "5.45",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.45/Mallah-Navigator.apk",
   "size": 2680311,
-  "notes": "خريطة المناطق: صور القمر الصناعي لا تختفي بعد التكبير والتصغير المتتالي.",
-  "sha256": "9081cbbaffb0c52bf8c1f7960120a79827e770b2e4ae7b8f1550a94cde9b0904"
+  "notes": "القمر الصناعي عند التصغير: يغطي كامل خريطة المناطق، وفي الخريطة الرئيسية تظهر صورة قمر صناعي أخف بدل رقعة فوق خريطة الشوارع حتى تصل الصور الواضحة.",
+  "sha256": "bfcfdd42e89229c3b3295b89c9e536fd4c960bf2cf9d439c30d2873087b2cdd0"
 }

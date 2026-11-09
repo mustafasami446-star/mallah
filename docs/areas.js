@@ -251,6 +251,13 @@ function azXf() {
     toU: (sx, sy) => { const dx = (sx - hw) / k, dy = (sy - hh) / k; return [cx + dx * c + dy * sn, cy - dx * sn + dy * c]; }
   };
 }
+/* the four corners of the whole visible map (the screen), in drawing units — not just the viewBox:
+   the map area is taller than the area's own box, and turned when rotated */
+function azCorners(X) {
+  const svg = $('areaSvg'), vb = AZ.vb, Ws = vb.w * X.k, Hs = vb.h * X.k;
+  const cw = (svg && svg.clientWidth) || Ws, ch = (svg && svg.clientHeight) || Hs, ox = Math.max(0, (cw - Ws) / 2), oy = Math.max(0, (ch - Hs) / 2);
+  return [[-ox, -oy], [Ws + ox, -oy], [-ox, Hs + oy], [Ws + ox, Hs + oy]].map(([a, b]) => X.toU(a, b));
+}
 function azDraw() {
   const svg = $('areaSvg'); if (!svg || !AZ) return;
   const vb = AZ.vb, X = azXf(), k = X.k, pxkm = k * AZ.sc / 111.32, Ws = vb.w * k, Hs = vb.h * k;
@@ -326,8 +333,7 @@ function azClipShapes(X) {
     if (AZ.clipKey) { AZ.clipKey = ''; svg.querySelectorAll('path[data-gi]').forEach((p) => { if (p.dataset.d0) { p.setAttribute('d', p.dataset.d0); delete p.dataset.d0; } }); }
     return;
   }
-  const vb = AZ.vb, Ws = vb.w * X.k, Hs = vb.h * X.k;
-  const us = [[0, 0], [Ws, 0], [0, Hs], [Ws, Hs]].map(([a, b]) => X.toU(a, b));
+  const vb = AZ.vb, us = azCorners(X);
   const pw = vb.w * 0.6;
   const x0 = Math.min(...us.map((u) => u[0])) - pw, x1 = Math.max(...us.map((u) => u[0])) + pw, y0 = Math.min(...us.map((u) => u[1])) - pw, y1 = Math.max(...us.map((u) => u[1])) + pw;
   const key = [x0, y0, x1, y1].map((v) => v.toFixed(4)).join(',');

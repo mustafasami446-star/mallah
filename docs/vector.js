@@ -393,7 +393,8 @@ function syncUnder() {
   if (want && !vecUnder) {
     vecUnder = new VecLayer({ under: true }); vecUnder.addTo(map);
     document.body.classList.add('vec-under');
-    if (underLayer) underLayer.setOpacity(0);
+    // satellite keeps its own softer picture underneath: a patch of satellite over street lines looked broken
+    if (underLayer && layerKey !== 'sat') underLayer.setOpacity(0);
   } else if (!want && vecUnder) {
     map.removeLayer(vecUnder); vecUnder = null;
     document.body.classList.remove('vec-under');
