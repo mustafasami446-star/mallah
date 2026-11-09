@@ -132,18 +132,40 @@ async function axRoadsLoad(cur) {
   shapes.forEach((k) => { w = Math.min(w, k.b[0]); s = Math.min(s, k.b[1]); e = Math.max(e, k.b[2]); n = Math.max(n, k.b[3]); });
   const list = await roadsMainIn(s, w, n, e);
   AX.roadsFor[cur.id] = list || [];
-  if (AZ && AZ.id === cur.id) axRoadsDraw();
+  if (AZ && AZ.id === cur.id) { AZ.roadsKey = ''; axRoadsDraw(); }
 }
-function axRoadsDraw() {
+/* the map's view as a lat/lng box, padded by a share of its size */
+function axViewBox(X, pad) {
+  const vb = AZ.vb, Ws = vb.w * X.k, Hs = vb.h * X.k;
+  const cs = [[0, 0], [Ws, 0], [0, Hs], [Ws, Hs]].map(([a, b]) => { const u = X.toU(a, b); return axLL(u[0], u[1]); });
+  const S = Math.min(...cs.map((c) => c[0])), N = Math.max(...cs.map((c) => c[0])), W = Math.min(...cs.map((c) => c[1])), E = Math.max(...cs.map((c) => c[1]));
+  const pa = (N - S) * pad, po = (E - W) * pad;
+  return [S - pa, W - po, N + pa, E + po];
+}
+/* a path of the roads that cross a box (keeps the drawing small when zoomed in — a huge path makes the phone drop the whole map) */
+function axRoadPath(list, box, keep) {
+  const [S, W, N, E] = box || [], out = {};
+  list.forEach((r) => {
+    if (!keep(r[0])) return;
+    if (!r.bb) { let s = 90, w = 180, n = -90, e = -180; for (let k = 1; k + 1 < r.length && typeof r[k] === 'number'; k += 2) { s = Math.min(s, r[k]); n = Math.max(n, r[k]); w = Math.min(w, r[k + 1]); e = Math.max(e, r[k + 1]); } r.bb = [s, w, n, e]; }
+    if (box && (r.bb[2] < S || r.bb[0] > N || r.bb[3] < W || r.bb[1] > E)) return;
+    let d = '';
+    for (let k = 1; k + 1 < r.length && typeof r[k] === 'number'; k += 2) { const [x, y] = axXY(r[k], r[k + 1]); d += (k === 1 ? 'M' : 'L') + fz(x) + ',' + fz(y); }
+    const c = Math.min(4, r[0]); (out[c] = out[c] || []).push(d);
+  });
+  return out;
+}
+const axBoxKey = (b) => b.map((v) => v.toFixed(3)).join(',');
+function axRoadsDraw(X) {
   const g = $('azRoads'); if (!g || !AZ) return;
   const list = AX.roads && Array.isArray(AX.roadsFor[AZ.id]) ? AX.roadsFor[AZ.id] : [];
-  const by = [[], [], [], []];
-  list.forEach((r) => {
-    let d = '';
-    for (let k = 1; k + 1 < r.length; k += 2) { const [x, y] = axXY(r[k], r[k + 1]); d += (k === 1 ? 'M' : 'L') + fz(x) + ',' + fz(y); }
-    by[Math.min(3, r[0])].push(d);
-  });
-  g.innerHTML = by.map((ds, c) => ds.length ? `<path class="azRd c${c}" d="${ds.join('')}"/>` : '').join('');
+  X = X || azXf();
+  const pxkm = X.k * AZ.sc / 111.32, box = pxkm >= 15 ? axViewBox(X, 0.5) : null;
+  const key = AZ.id + '|' + list.length + '|' + (box ? axBoxKey(box.map((v) => Math.round(v * 200) / 200)) : 'all');
+  if (key === AZ.roadsKey) return;
+  AZ.roadsKey = key;
+  const by = axRoadPath(list, box, (c) => c <= 3);
+  g.innerHTML = [0, 1, 2, 3].map((c) => by[c] ? `<path class="azRd c${c}" d="${by[c].join('')}"/>` : '').join('');
 }
 
 /* ---------------- 8. your places ---------------- */
@@ -170,29 +192,26 @@ AX.st = { key: '', list: null, drawn: '', busy: false, t: 0 };
 function axStreets(X) {
   const g = $('azStreets'); if (!g) return;
   const pxkm = X.k * AZ.sc / 111.32;
-  if (!AX.roads || pxkm < 18 || typeof roadsReady !== 'function' || !roadsReady()) { if (g.innerHTML) g.innerHTML = ''; AX.st.drawn = ''; return; }
-  const vb = AZ.vb, Ws = vb.w * X.k, Hs = vb.h * X.k;
-  const cs = [[0, 0], [Ws, 0], [0, Hs], [Ws, Hs]].map(([a, b]) => { const u = X.toU(a, b); return axLL(u[0], u[1]); });
-  let S = Math.min(...cs.map((c) => c[0])), N = Math.max(...cs.map((c) => c[0])), W = Math.min(...cs.map((c) => c[1])), E = Math.max(...cs.map((c) => c[1]));
-  const q = 0.01, padLa = (N - S) * 0.3, padLo = (E - W) * 0.3;
-  S = Math.floor((S - padLa) / q) * q; N = Math.ceil((N + padLa) / q) * q; W = Math.floor((W - padLo) / q) * q; E = Math.ceil((E + padLo) / q) * q;
-  const key = [S, W, N, E].map((v) => fz(v)).join(',');
-  const have = AX.st.key && (() => { const [s0, w0, n0, e0] = AX.st.key.split(',').map(Number); return S >= s0 - 1e-9 && W >= w0 - 1e-9 && N <= n0 + 1e-9 && E <= e0 + 1e-9; })();
-  if (!have && !AX.st.busy) {
+  if (!AX.roads || pxkm < 40 || typeof roadsReady !== 'function' || !roadsReady()) { if (g.innerHTML) g.innerHTML = ''; AX.st.drawn = ''; return; }
+  const view = axViewBox(X, 0.25), want = axViewBox(X, 0.6);
+  const area = (b) => (b[2] - b[0]) * (b[3] - b[1]);
+  const c = AX.st.box;
+  const fits = c && view[0] >= c[0] && view[1] >= c[1] && view[2] <= c[2] && view[3] <= c[3] && area(c) <= area(want) * 6;
+  if (!fits && !AX.st.busy) {
     AX.st.busy = true;
     clearTimeout(AX.st.t);
     AX.st.t = setTimeout(async () => {
-      const list = await roadsMainIn(S, W, N, E, true);
-      AX.st.busy = false; AX.st.key = key; AX.st.list = list || []; AX.st.drawn = '';
+      const list = await roadsMainIn(want[0], want[1], want[2], want[3], true);
+      AX.st.busy = false; AX.st.box = want; AX.st.list = list || []; AX.st.drawn = '';
       azSoon();
-    }, 250);
+    }, 200);
   }
-  if (AX.st.list && AX.st.drawn !== AX.st.key + '|' + AZ.id) {
-    AX.st.drawn = AX.st.key + '|' + AZ.id;
-    let d = '';
-    AX.st.list.forEach((r) => { if (r[0] < 4) return; let k = 1; d += 'M'; for (; k + 1 < r.length && typeof r[k] === 'number'; k += 2) { const [x, y] = axXY(r[k], r[k + 1]); d += (k === 1 ? '' : 'L') + fz(x) + ',' + fz(y); } });
-    g.innerHTML = d ? `<path class="azSt" d="${d}"/>` : '';
-  }
+  if (!AX.st.list) return;
+  const key = AZ.id + '|' + axBoxKey(view.map((v) => Math.round(v * 500) / 500)) + '|' + AX.st.list.length;
+  if (AX.st.drawn === key) return;
+  AX.st.drawn = key;
+  const by = axRoadPath(AX.st.list, view, (cl) => cl >= 4);
+  g.innerHTML = by[4] ? `<path class="azSt" d="${by[4].join('')}"/>` : '';
 }
 /* a long press on the areas map: the route to that point, like on the main map */
 let axPin = null;
@@ -214,7 +233,7 @@ function azExtraDraw(X) {
   axSatDraw(X);
   axStreets(X);
   if (typeof axnDraw === 'function') axnDraw(X);
-  if (AZ.roadsDrawnFor !== AZ.id + '|' + AX.roads) { AZ.roadsDrawnFor = AZ.id + '|' + AX.roads; axRoadsDraw(); }
+  axRoadsDraw(X);
   const k = X.k, vb = AZ.vb, Ws = vb.w * k, Hs = vb.h * k;
   axPts = [];
   let h = '';

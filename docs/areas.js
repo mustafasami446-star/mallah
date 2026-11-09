@@ -200,17 +200,20 @@ function arSvg(cur, kids, here, dots, preview) {
   const XY = (x, y) => [(x - w) * kx * sc, (n - y) * sc];
   const P = (x, y) => XY(x, y).map((v) => v.toFixed(3)).join(',');
   const path = (g) => (g.type === 'MultiPolygon' ? g.coordinates : [g.coordinates]).map((poly) => poly.map((r) => 'M' + r.map((c) => P(c[0], c[1])).join('L') + 'Z').join('')).join('');
+  // the rings in drawing units, for clipping to the view when zoomed in close (see azClipShapes)
+  const rings = (g) => [].concat(...(g.type === 'MultiPolygon' ? g.coordinates : [g.coordinates])).map((r) => r.map((c) => XY(c[0], c[1])));
+  const geo = [];
   let paths = '';
   const lbls = [];
   shapes.forEach((k) => {
     const cls = 'pv' + (k.id === arSel ? ' sel' : '') + (here.includes(k.id) ? ' here' : '');
-    paths += `<path class="${cls}" data-ar="${k.id}" d="${path(k.g)}"/>`;
+    paths += `<path class="${cls}" data-ar="${k.id}" data-gi="${geo.length}" d="${path(k.g)}"/>`; geo.push(rings(k.g));
     if (k.c) { const [x, y] = XY(k.c[0], k.c[1]); lbls.push({ x, y, t: arShort(k), cls: 'azA', fpx: 15, pr: 0, min: 0 }); }
   });
   // the sub-districts inside each district, as thin dashed lines with their names when zoomed in (a province map)
   if (cur.k === 'p') shapes.forEach((k) => arKids(k.id).forEach((c) => {
     if (!c.g) return;
-    paths += `<path class="pvSub" d="${path(c.g)}"/>`;
+    paths += `<path class="pvSub" data-gi="${geo.length}" d="${path(c.g)}"/>`; geo.push(rings(c.g));
     if (c.c) { const [x, y] = XY(c.c[0], c.c[1]); lbls.push({ x, y, t: arShort(c), cls: 'azS', fpx: 13, pr: 2, min: AZ_PXKM.sub }); }
   }));
   const D = [];
@@ -224,7 +227,8 @@ function arSvg(cur, kids, here, dots, preview) {
   const keep = AZ && AZ.id === cur.id && AZ.W === W;
   AZ = { id: cur.id, W, H, content, base: keep ? AZ.base : Object.assign({}, content), vb: keep ? AZ.vb : null, rot: keep ? AZ.rot : (AZ ? AZ.rot : 0) || 0, sc, dots: D, lbls, leaf: !preview, me: null };
   if (!AZ.vb) AZ.vb = Object.assign({}, AZ.base);
-  AZ.geo = { w, n, kx, sc };               // drawing units ⇄ lat/lng (areas2.js)
+  AZ.geo = { w, n, kx, sc };
+  AZ.rings = geo; AZ.clipKey = '';               // drawing units ⇄ lat/lng (areas2.js)
   AZ.cur = cur;
   if (me && me.lng >= w && me.lng <= e && me.lat >= s && me.lat <= n) AZ.me = XY(me.lng, me.lat);
   const vb = AZ.vb;
@@ -251,6 +255,7 @@ function azDraw() {
   const svg = $('areaSvg'); if (!svg || !AZ) return;
   const vb = AZ.vb, X = azXf(), k = X.k, pxkm = k * AZ.sc / 111.32, Ws = vb.w * k, Hs = vb.h * k;
   svg.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
+  azClipShapes(X);
   $('azRotG').setAttribute('transform', AZ.rot ? `rotate(${fz(AZ.rot)} ${fz(X.cx)} ${fz(X.cy)})` : '');
   const nb = $('azNorth'); if (nb) { nb.firstElementChild.style.transform = `rotate(${AZ.rot || 0}deg)`; nb.classList.toggle('on', !!AZ.rot); }
   svg.style.touchAction = vb.w < AZ.base.w * 0.98 || AZ.rot ? 'none' : 'pan-y';
@@ -296,6 +301,46 @@ function azDraw() {
   AZ.drawn = { vb: Object.assign({}, vb), rot: AZ.rot || 0 };
   svg.style.transform = '';
 }
+/* close in, the borders are cut to the view: a phone's graphics drop a filled shape whose drawn size gets huge */
+function clipRing(ring, x0, y0, x1, y1) {
+  let pts = ring;
+  const edges = [[(p) => p[0] >= x0, (a, b) => [x0, a[1] + (b[1] - a[1]) * (x0 - a[0]) / (b[0] - a[0])]],
+    [(p) => p[0] <= x1, (a, b) => [x1, a[1] + (b[1] - a[1]) * (x1 - a[0]) / (b[0] - a[0])]],
+    [(p) => p[1] >= y0, (a, b) => [a[0] + (b[0] - a[0]) * (y0 - a[1]) / (b[1] - a[1]), y0]],
+    [(p) => p[1] <= y1, (a, b) => [a[0] + (b[0] - a[0]) * (y1 - a[1]) / (b[1] - a[1]), y1]]];
+  for (const [inside, cut] of edges) {
+    const out = [];
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i], b = pts[(i + 1) % pts.length], ia = inside(a), ib = inside(b);
+      if (ia) out.push(a);
+      if (ia !== ib) out.push(cut(a, b));
+    }
+    pts = out; if (!pts.length) break;
+  }
+  return pts;
+}
+function azClipShapes(X) {
+  if (!AZ.rings) return;
+  const zoom = AZ.base.w / AZ.vb.w, svg = $('areaSvg');
+  if (zoom < 25) {
+    if (AZ.clipKey) { AZ.clipKey = ''; svg.querySelectorAll('path[data-gi]').forEach((p) => { if (p.dataset.d0) { p.setAttribute('d', p.dataset.d0); delete p.dataset.d0; } }); }
+    return;
+  }
+  const vb = AZ.vb, Ws = vb.w * X.k, Hs = vb.h * X.k;
+  const us = [[0, 0], [Ws, 0], [0, Hs], [Ws, Hs]].map(([a, b]) => X.toU(a, b));
+  const pw = vb.w * 0.6;
+  const x0 = Math.min(...us.map((u) => u[0])) - pw, x1 = Math.max(...us.map((u) => u[0])) + pw, y0 = Math.min(...us.map((u) => u[1])) - pw, y1 = Math.max(...us.map((u) => u[1])) + pw;
+  const key = [x0, y0, x1, y1].map((v) => v.toFixed(4)).join(',');
+  if (key === AZ.clipKey) return;
+  AZ.clipKey = key;
+  svg.querySelectorAll('path[data-gi]').forEach((p) => {
+    if (!p.dataset.d0) p.dataset.d0 = p.getAttribute('d');
+    const rs = AZ.rings[+p.dataset.gi] || [];
+    let d = '';
+    rs.forEach((r) => { const c = clipRing(r, x0, y0, x1, y1); if (c.length > 2) d += 'M' + c.map((q) => fz(q[0]) + ',' + fz(q[1])).join('L') + 'Z'; });
+    p.setAttribute('d', d || 'M0,0Z');
+  });
+}
 /* while a finger moves the map, only a quick transform of what is drawn; the full drawing follows when it stops */
 function azPreview() {
   const svg = $('areaSvg'); if (!svg || !AZ || !AZ.drawn) return;
@@ -315,7 +360,7 @@ function azZoom(f, sx, sy, dr) {
   const vb = AZ.vb, b = AZ.base, X = azXf(), Ws = vb.w * X.k, Hs = vb.h * X.k;
   if (sx == null) { sx = Ws / 2; sy = Hs / 2; }
   const u = X.toU(sx, sy);
-  const nw = Math.min(b.w, Math.max(b.w / 3000, vb.w / f)), nh = nw * b.h / b.w, k2 = X.k * vb.w / nw;
+  const nw = Math.min(b.w, Math.max(b.w / 1500, vb.w / f)), nh = nw * b.h / b.w, k2 = X.k * vb.w / nw;
   if (dr) AZ.rot = ((AZ.rot || 0) + dr + 540) % 360 - 180;
   const a = (AZ.rot || 0) * Math.PI / 180, c = Math.cos(a), sn = Math.sin(a);
   const dx = (sx - Ws / 2) / k2, dy = (sy - Hs / 2) / k2;

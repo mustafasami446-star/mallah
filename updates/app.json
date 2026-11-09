@@ -1,8 +1,8 @@
 {
-  "versionCode": 87,
-  "versionName": "5.41",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.41/Mallah-Navigator.apk",
-  "size": 2676153,
-  "notes": "أزرار الخريطة لا تتراكب عند بدء التشغيل، وفي وضع السيارة تأخذ مكانها فوق الأزرار الكبيرة.",
-  "sha256": "7fe6c3542aeabf2b54d9f1cd806ed01879763e86d2385eb1672a0b30dfed17e7"
+  "versionCode": 88,
+  "versionName": "5.42",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.42/Mallah-Navigator.apk",
+  "size": 2680249,
+  "notes": "خريطة المناطق: لا تختفي عند التكبير الكبير مع القمر الصناعي أو الشوارع.",
+  "sha256": "369e1fe5d4842d697f89fc4c5e3ce6095eb816fc96efc89d5f32ebd80505f861"
 }
