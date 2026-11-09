@@ -1,8 +1,8 @@
 {
-  "versionCode": 83,
-  "versionName": "5.37",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.37/Mallah-Navigator.apk",
+  "versionCode": 84,
+  "versionName": "5.38",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.38/Mallah-Navigator.apk",
   "size": 2676153,
-  "notes": "خريطة المناطق: تكبير حتى الشوارع مع رسم كل الشوارع، والضغط المطوّل لرسم المسار إلى أي نقطة.",
-  "sha256": "bc24a3862d8312412dd85474bcf3318d26bc2a2f50db69ce67bcaf17f7fe07b5"
+  "notes": "وضع السيارة: زر البلاغ يظهر مرة واحدة.",
+  "sha256": "71e4916f8762eb7622bcd9bf7600f91eba7be1e7a6d1e3ee22e1c9580f52c7a2"
 }
