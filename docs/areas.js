@@ -359,12 +359,29 @@ function azPreview() {
 }
 let azRaf = 0;
 function azSoon() {
-  if (!azRaf) azRaf = requestAnimationFrame(() => {
+  if (azRaf && performance.now() - azRafT > 1000) { cancelAnimationFrame(azRaf); azRaf = 0; }   // a frame that never came
+  if (!azRaf) { azRafT = performance.now(); azRaf = requestAnimationFrame(() => {
     azRaf = 0; if (!AZ) return;
     if (AZ.gesture && performance.now() - (AZ.gLast || 0) > 900) AZ.gesture = false;   // a lost finger: draw for real
-    if (AZ.gesture && AZ.drawn) { azPreview(); clearTimeout(AZ.gT); AZ.gT = setTimeout(azSoon, 950); } else azDraw();
-  });
+    try {
+      if (AZ.gesture && AZ.drawn) { azPreview(); clearTimeout(AZ.gT); AZ.gT = setTimeout(azSoon, 950); } else azDraw();
+    } catch (e) { azErr(e); }
+  }); }
 }
+let azRafT = 0;
+/* what went wrong on the areas map, for «تشخيص الخريطة» */
+let azLastErr = '';
+function azErr(e) { azLastErr = new Date().toTimeString().slice(0, 8) + ' ' + String(e && e.message || e).slice(0, 120); try { if (typeof diagLog === 'function') diagLog('areas: ' + azLastErr); } catch (x) {} }
+/* a safety net: the map must never stay in the quick «moving» picture once the fingers are off it */
+setInterval(() => {
+  const svg = $('areaSvg');
+  if (!svg || !AZ || !svg.style.transform || !svg.isConnected) return;
+  if (performance.now() - (AZ.gLast || 0) < 1200 || (azPts && azPts.size && performance.now() - (AZ.gLast || 0) < 4000)) return;
+  AZ.gesture = false; if (azPts) azPts.clear();
+  try { azDraw(); } catch (e) { azErr(e); svg.style.transform = ''; }
+  azStuck++;
+}, 700);
+let azPts = null, azStuck = 0;
 function azGestureEnd() { if (AZ) { AZ.gesture = false; azSoon(); } }
 /* zoom by f (and turn by dr degrees) keeping the point under the fingers where it is */
 function azZoom(f, sx, sy, dr) {
@@ -409,7 +426,7 @@ function azAttach() {
     else if (z.dataset.z === 'north') { const r = AZ.rot || 0; if (r) azZoom(1, null, null, -r); }
     else azZoom(z.dataset.z === 'in' ? 2 : 0.5);
   };
-  const pts = new Map();
+  const pts = new Map(); azPts = pts;
   let start = null, moved = false, lastTap = 0, pinch = null, longT = 0, longDone = false;
   const rel = (e) => { const r = $('azBox').getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
   svg.addEventListener('pointerdown', (e) => {
