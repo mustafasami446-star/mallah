@@ -1,8 +1,8 @@
 {
-  "versionCode": 79,
-  "versionName": "5.33",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.33/Mallah-Navigator.apk",
+  "versionCode": 80,
+  "versionName": "5.34",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.34/Mallah-Navigator.apk",
   "size": 2655547,
-  "notes": "بطاقة الطقس صارت لوحة منسدلة بثلاثة أحجام لتظهر الخريطة أكثر.",
-  "sha256": "e608a77f4a862c2c35f77e85fb6fc4ababc7e436cc85daa6c612ca9520b83ab3"
+  "notes": "خريطة «المناطق» صارت تدور بإصبعين، مع زر بوصلة يعيد الشمال للأعلى.",
+  "sha256": "7cc662652235b748cf0f593ad9487314b574285e6952e07415437ad531787e1b"
 }

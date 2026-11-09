@@ -220,12 +220,12 @@ function arSvg(cur, kids, here, dots, preview) {
   D.sort((a, b) => b.rank - a.rank);          // villages underneath, towns on top
   const content = { x: -8, y: -8, w: W + 16, h: H + 16 };
   const keep = AZ && AZ.id === cur.id && AZ.W === W;
-  AZ = { id: cur.id, W, H, content, base: keep ? AZ.base : Object.assign({}, content), vb: keep ? AZ.vb : null, sc, dots: D, lbls, leaf: !preview, me: null };
+  AZ = { id: cur.id, W, H, content, base: keep ? AZ.base : Object.assign({}, content), vb: keep ? AZ.vb : null, rot: keep ? AZ.rot : (AZ ? AZ.rot : 0) || 0, sc, dots: D, lbls, leaf: !preview, me: null };
   if (!AZ.vb) AZ.vb = Object.assign({}, AZ.base);
   if (me && me.lng >= w && me.lng <= e && me.lat >= s && me.lat <= n) AZ.me = XY(me.lng, me.lat);
   const vb = AZ.vb;
-  return `<div id="azBox"><svg id="areaSvg" viewBox="${vb.x} ${vb.y} ${vb.w} ${vb.h}" xmlns="http://www.w3.org/2000/svg">${paths}<g id="azDots"></g><g id="azMe"></g><g id="azLbl"></g></svg>
-    <div id="azBtns"><button data-z="in" aria-label="تكبير">＋</button><button data-z="out" aria-label="تصغير">－</button><button data-z="fit" aria-label="الحجم الكامل">⤢</button></div></div>`;
+  return `<div id="azBox"><svg id="areaSvg" viewBox="${vb.x} ${vb.y} ${vb.w} ${vb.h}" xmlns="http://www.w3.org/2000/svg"><g id="azRotG">${paths}<g id="azDots"></g><g id="azMe"></g></g><g id="azLbl"></g></svg>
+    <div id="azBtns"><button data-z="in" aria-label="تكبير">＋</button><button data-z="out" aria-label="تصغير">－</button><button data-z="fit" aria-label="الحجم الكامل">⤢</button><button data-z="north" aria-label="الشمال للأعلى" id="azNorth"><svg viewBox="0 0 24 24" width="24" height="24"><path d="M12 3l4 9h-8z" fill="#ef4444"/><path d="M12 21l-4-9h8z" fill="#94a3b8"/></svg></button></div></div>`;
 }
 /* pixels on screen per unit of the drawing */
 function azK() {
@@ -233,23 +233,36 @@ function azK() {
   const r = svg.getBoundingClientRect();
   return Math.min(r.width / AZ.vb.w, r.height / AZ.vb.h) || 1;
 }
+/* the map turns around the middle of the view: from drawing units to screen pixels and back */
+function azXf() {
+  const vb = AZ.vb, k = azK(), a = (AZ.rot || 0) * Math.PI / 180, c = Math.cos(a), sn = Math.sin(a);
+  const cx = vb.x + vb.w / 2, cy = vb.y + vb.h / 2, hw = vb.w * k / 2, hh = vb.h * k / 2;
+  return {
+    k, cx, cy,
+    toS: (x, y) => { const dx = x - cx, dy = y - cy; return [(dx * c - dy * sn) * k + hw, (dx * sn + dy * c) * k + hh]; },
+    toU: (sx, sy) => { const dx = (sx - hw) / k, dy = (sy - hh) / k; return [cx + dx * c + dy * sn, cy - dx * sn + dy * c]; }
+  };
+}
 function azDraw() {
   const svg = $('areaSvg'); if (!svg || !AZ) return;
-  const vb = AZ.vb, k = azK(), pxkm = k * AZ.sc / 111.32;
+  const vb = AZ.vb, X = azXf(), k = X.k, pxkm = k * AZ.sc / 111.32, Ws = vb.w * k, Hs = vb.h * k;
   svg.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
-  svg.style.touchAction = vb.w < AZ.base.w * 0.98 ? 'none' : 'pan-y';
-  const inView = (x, y, m) => x >= vb.x - m && x <= vb.x + vb.w + m && y >= vb.y - m && y <= vb.y + vb.h + m;
+  $('azRotG').setAttribute('transform', AZ.rot ? `rotate(${AZ.rot.toFixed(2)} ${X.cx.toFixed(2)} ${X.cy.toFixed(2)})` : '');
+  const nb = $('azNorth'); if (nb) { nb.firstElementChild.style.transform = `rotate(${AZ.rot || 0}deg)`; nb.classList.toggle('on', !!AZ.rot); }
+  svg.style.touchAction = vb.w < AZ.base.w * 0.98 || AZ.rot ? 'none' : 'pan-y';
+  const inView = (x, y, m) => { const p = X.toS(x, y); return p[0] >= -m && p[0] <= Ws + m && p[1] >= -m && p[1] <= Hs + m; };
   const R = AZ.leaf ? { town: 8, nb: 6, vil: 5 } : { town: 6, nb: 4, vil: 3.5 };
   const selP = AZ.leaf ? (stSel != null ? AZ.dots.find((d) => d.i === stSel) : null) : (plPick ? AZ.dots.find((d) => d.p === plPick) : null);
   let dd = '';
   AZ.dots.forEach((d) => {
-    if (d === selP || !inView(d.x, d.y, 20 / k)) return;
+    if (d === selP || !inView(d.x, d.y, 20)) return;
     dd += `<circle class="stDot ${d.g}" cx="${d.x.toFixed(1)}" cy="${d.y.toFixed(1)}" r="${(R[d.g] / k).toFixed(2)}" style="stroke-width:${(1.4 / k).toFixed(2)}"/>`;
   });
   if (selP) dd += `<circle class="stDot on" cx="${selP.x.toFixed(1)}" cy="${selP.y.toFixed(1)}" r="${(10 / k).toFixed(2)}" style="stroke-width:${(4 / k).toFixed(2)}"/>`;
   $('azDots').innerHTML = dd;
   $('azMe').innerHTML = AZ.me ? `<circle class="pvMe" cx="${AZ.me[0].toFixed(1)}" cy="${AZ.me[1].toFixed(1)}" r="${(8 / k).toFixed(2)}" style="stroke-width:${(3 / k).toFixed(2)}"/>` : '';
-  // the names that fit at this zoom, most important first; one that would overlap a placed one waits for a closer zoom
+  // the names that fit at this zoom, most important first; one that would overlap a placed one waits for a closer zoom.
+  // Names stay upright however the map is turned.
   const cand = [];
   AZ.lbls.forEach((l) => { if (pxkm >= l.min && inView(l.x, l.y, 0)) cand.push(l); });
   const en = pxkm >= AZ_PXKM.en;
@@ -264,33 +277,40 @@ function azDraw() {
   const placed = [];
   let out = '';
   cand.forEach((l) => {
-    const sx = (l.x - vb.x) * k, sy = (l.y - vb.y) * k;
+    const [sx, sy] = X.toS(l.x, l.y);
     const tw = Math.max(l.t.length * 0.6, l.e ? l.e.length * 0.5 : 0) * l.fpx + 12, th = l.fpx * (l.e ? 2.4 : 1.45);
     const cy = l.dot ? sy - l.dot - th / 2 : sy;            // place names sit above their dot
     const box = [sx - tw / 2, cy - th / 2, sx + tw / 2, cy + th / 2];
     if (l.pr >= 0 && placed.some((b) => box[0] < b[2] && box[2] > b[0] && box[1] < b[3] && box[3] > b[1])) return;
     placed.push(box);
-    const f = (l.fpx / k).toFixed(2), y0 = vb.y + (cy - (l.e ? l.fpx * 0.45 : 0)) / k;
-    out += `<text class="pvl ${l.cls}" style="font-size:${f}px;stroke-width:${(4 / k).toFixed(2)}px" x="${l.x.toFixed(1)}" y="${y0.toFixed(1)}">${esc(l.t)}</text>`;
-    if (l.e) out += `<text class="pvl azE" style="font-size:${(l.fpx * 0.78 / k).toFixed(2)}px;stroke-width:${(3.5 / k).toFixed(2)}px" x="${l.x.toFixed(1)}" y="${(y0 + l.fpx * 1.05 / k).toFixed(1)}">${esc(l.e)}</text>`;
+    const f = (l.fpx / k).toFixed(2), x0 = vb.x + sx / k, y0 = vb.y + (cy - (l.e ? l.fpx * 0.45 : 0)) / k;
+    out += `<text class="pvl ${l.cls}" style="font-size:${f}px;stroke-width:${(4 / k).toFixed(2)}px" x="${x0.toFixed(1)}" y="${y0.toFixed(1)}">${esc(l.t)}</text>`;
+    if (l.e) out += `<text class="pvl azE" style="font-size:${(l.fpx * 0.78 / k).toFixed(2)}px;stroke-width:${(3.5 / k).toFixed(2)}px" x="${x0.toFixed(1)}" y="${(y0 + l.fpx * 1.05 / k).toFixed(1)}">${esc(l.e)}</text>`;
   });
   $('azLbl').innerHTML = out;
 }
 let azRaf = 0;
 function azSoon() { if (!azRaf) azRaf = requestAnimationFrame(() => { azRaf = 0; azDraw(); }); }
-/* zoom by f around a point given in screen pixels inside the map */
-function azZoom(f, cx, cy) {
+/* zoom by f (and turn by dr degrees) keeping the point under the fingers where it is */
+function azZoom(f, sx, sy, dr) {
   if (!AZ) return;
-  const vb = AZ.vb, k = azK(), b = AZ.base;
-  const nw = Math.min(b.w, Math.max(b.w / 60, vb.w / f)), nh = nw * b.h / b.w;
-  const ux = vb.x + (cx == null ? vb.w / 2 : cx / k), uy = vb.y + (cy == null ? vb.h / 2 : cy / k);
-  const rx = (ux - vb.x) / vb.w, ry = (uy - vb.y) / vb.h;
-  AZ.vb = azClamp({ x: ux - rx * nw, y: uy - ry * nh, w: nw, h: nh });
+  const vb = AZ.vb, b = AZ.base, X = azXf(), Ws = vb.w * X.k, Hs = vb.h * X.k;
+  if (sx == null) { sx = Ws / 2; sy = Hs / 2; }
+  const u = X.toU(sx, sy);
+  const nw = Math.min(b.w, Math.max(b.w / 60, vb.w / f)), nh = nw * b.h / b.w, k2 = X.k * vb.w / nw;
+  if (dr) AZ.rot = ((AZ.rot || 0) + dr + 540) % 360 - 180;
+  const a = (AZ.rot || 0) * Math.PI / 180, c = Math.cos(a), sn = Math.sin(a);
+  const dx = (sx - Ws / 2) / k2, dy = (sy - Hs / 2) / k2;
+  const cx = u[0] - (dx * c + dy * sn), cy = u[1] - (-dx * sn + dy * c);
+  AZ.vb = azClamp({ x: cx - nw / 2, y: cy - nh / 2, w: nw, h: nh });
   azSoon();
 }
+/* keep the middle of the view over the map */
 function azClamp(v) {
   const b = AZ.base;
-  v.x = Math.min(b.x + b.w - v.w, Math.max(b.x, v.x)); v.y = Math.min(b.y + b.h - v.h, Math.max(b.y, v.y));
+  if (!AZ.rot && v.w >= b.w - 1e-6) { v.x = b.x; v.y = b.y; return v; }
+  const cx = Math.min(b.x + b.w, Math.max(b.x, v.x + v.w / 2)), cy = Math.min(b.y + b.h, Math.max(b.y, v.y + v.h / 2));
+  v.x = cx - v.w / 2; v.y = cy - v.h / 2;
   return v;
 }
 /* touch and mouse: drag to move, two fingers to zoom, double tap / wheel to zoom, a tap selects */
@@ -310,7 +330,9 @@ function azAttach() {
   azDraw();
   $('azBtns').onclick = (e) => {
     const z = e.target.closest('[data-z]'); if (!z) return;
-    if (z.dataset.z === 'fit') { AZ.vb = Object.assign({}, AZ.base); azSoon(); } else azZoom(z.dataset.z === 'in' ? 2 : 0.5);
+    if (z.dataset.z === 'fit') { AZ.vb = Object.assign({}, AZ.base); AZ.rot = 0; azSoon(); }
+    else if (z.dataset.z === 'north') { const r = AZ.rot || 0; if (r) azZoom(1, null, null, -r); }
+    else azZoom(z.dataset.z === 'in' ? 2 : 0.5);
   };
   const pts = new Map();
   let start = null, moved = false, lastTap = 0, pinch = null;
@@ -319,22 +341,35 @@ function azAttach() {
     pts.set(e.pointerId, rel(e));
     try { svg.setPointerCapture(e.pointerId); } catch (x) {}
     if (pts.size === 1) { start = { p: rel(e), vb: Object.assign({}, AZ.vb) }; moved = false; }
-    if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), w: AZ.vb.w }; moved = true; }
+    if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), ang: Math.atan2(b[1] - a[1], b[0] - a[0]), m: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], turning: false }; moved = true; }
   });
   svg.addEventListener('pointermove', (e) => {
     if (!pts.has(e.pointerId)) return;
     pts.set(e.pointerId, rel(e));
     if (pts.size >= 2 && pinch) {
-      const [a, b] = [...pts.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]);
-      azZoom(AZ.vb.w / (pinch.w * pinch.d / Math.max(10, d)), (a[0] + b[0]) / 2, (a[1] + b[1]) / 2);
+      // two fingers: spread to zoom, twist to turn (turning starts after a clear twist, so a plain pinch does not tilt the map)
+      const [a, b] = [...pts.values()], d = Math.max(10, Math.hypot(a[0] - b[0], a[1] - b[1])), ang = Math.atan2(b[1] - a[1], b[0] - a[0]);
+      let da = (ang - pinch.ang) * 180 / Math.PI; da = ((da + 540) % 360) - 180;
+      let turn = 0;
+      if (pinch.turning) turn = da; else { pinch.tw = (pinch.tw || 0) + da; if (Math.abs(pinch.tw) > 12) { pinch.turning = true; turn = pinch.tw; } }
+      const m = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+      // move with the fingers' middle, then zoom and turn around it
+      if (Math.hypot(m[0] - pinch.m[0], m[1] - pinch.m[1]) > 0.5) {
+        const X = azXf(), u0 = X.toU(pinch.m[0], pinch.m[1]), u1 = X.toU(m[0], m[1]);
+        AZ.vb = azClamp({ x: AZ.vb.x + u0[0] - u1[0], y: AZ.vb.y + u0[1] - u1[1], w: AZ.vb.w, h: AZ.vb.h });
+      }
+      azZoom(d / pinch.d, m[0], m[1], turn);
+      pinch.d = d; pinch.ang = ang; pinch.m = m;
       return;
     }
     if (!start) return;
     const p = rel(e), dx = p[0] - start.p[0], dy = p[1] - start.p[1];
     if (!moved && Math.hypot(dx, dy) < 7) return;
     moved = true;
-    const k = azK();
-    AZ.vb = azClamp({ x: start.vb.x - dx / k, y: start.vb.y - dy / k, w: start.vb.w, h: start.vb.h });
+    // drag: the map follows the finger, also when turned
+    const k = azK(), a = (AZ.rot || 0) * Math.PI / 180, c = Math.cos(a), sn = Math.sin(a);
+    const ux = (dx * c + dy * sn) / k, uy = (-dx * sn + dy * c) / k;
+    AZ.vb = azClamp({ x: start.vb.x - ux, y: start.vb.y - uy, w: start.vb.w, h: start.vb.h });
     azSoon();
   });
   const up = (e) => {
@@ -354,10 +389,10 @@ function azAttach() {
   svg.addEventListener('wheel', (e) => { e.preventDefault(); const p = rel(e); azZoom(e.deltaY < 0 ? 1.25 : 0.8, p[0], p[1]); }, { passive: false });
 }
 function azTap(sx, sy, cx, cy) {
-  const k = azK(), vb = AZ.vb;
+  const X = azXf();
   // the nearest dot within a finger's reach
   let best = null, bd = 18;
-  AZ.dots.forEach((d) => { const dd = Math.hypot((d.x - vb.x) * k - sx, (d.y - vb.y) * k - sy); if (dd < bd) { bd = dd; best = d; } });
+  AZ.dots.forEach((d) => { const p = X.toS(d.x, d.y), dd = Math.hypot(p[0] - sx, p[1] - sy); if (dd < bd) { bd = dd; best = d; } });
   if (best) {
     if (AZ.leaf) stSel = best.i; else plPick = best.p;
     arRender(); arSheet('mid'); $('areaSheetBody').scrollTop = 0; return;
