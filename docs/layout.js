@@ -19,7 +19,9 @@ const fabMore = (() => {
   const direct = (b) => b.id === 'rptBtn' && B.classList.contains('ui-nav');
   function set(el, cls, on) { if (el.classList.contains(cls) !== on) el.classList.toggle(cls, on); }
   function sync() {
-    const g = kids().filter((b) => avail(b) && !direct(b)), grouped = g.length > 1;
+    // always behind «المزيد», even one alone: the camera button appears a moment after start (once the
+    // sensors answer), and a lone report button turning into «المزيد» looked like a jump
+    const g = kids().filter((b) => avail(b) && !direct(b)), grouped = g.length > 0;
     if (!grouped && open) open = false;
     kids().forEach((b) => set(b, 'fgHide', grouped && !open && g.includes(b)));
     set(more, 'hidden', !grouped); set(more, 'on', open); set(fabs, 'open', open);
