@@ -186,6 +186,8 @@ function arCard(n, here, isCur) {
    The shapes are drawn once; dots and names are redrawn at every zoom so they keep the same size on screen.
    Names appear by zoom: districts and cities first, then sub-districts and towns, then neighbourhoods, then
    villages, and the English name too when zoomed right in. Names that would overlap wait for a closer zoom. */
+/* numbers for the drawing: enough digits for a street-level zoom (toFixed would round tiny sizes to 0) */
+const fz = (v) => +(+v).toPrecision(6);
 let AZ = null;                 // {id, W, H, base, vb, sc, dots, lbls, me, leaf}
 let plPick = null;             // a town / neighbourhood / village tapped on a province or district map
 const AZ_PXKM = { sub: 3, town: 3, nb: 6, vil: 11, en: 16 };   // screen pixels per km from which each kind gets its name
@@ -196,7 +198,7 @@ function arSvg(cur, kids, here, dots, preview) {
   shapes.forEach((k) => { w = Math.min(w, k.b[0]); s = Math.min(s, k.b[1]); e = Math.max(e, k.b[2]); n = Math.max(n, k.b[3]); });
   const kx = Math.cos((s + n) / 2 * Math.PI / 180), sc = W / Math.max(1e-6, (e - w) * kx), H = Math.max(120, Math.ceil((n - s) * sc));
   const XY = (x, y) => [(x - w) * kx * sc, (n - y) * sc];
-  const P = (x, y) => XY(x, y).map((v) => v.toFixed(1)).join(',');
+  const P = (x, y) => XY(x, y).map((v) => v.toFixed(3)).join(',');
   const path = (g) => (g.type === 'MultiPolygon' ? g.coordinates : [g.coordinates]).map((poly) => poly.map((r) => 'M' + r.map((c) => P(c[0], c[1])).join('L') + 'Z').join('')).join('');
   let paths = '';
   const lbls = [];
@@ -249,7 +251,7 @@ function azDraw() {
   const svg = $('areaSvg'); if (!svg || !AZ) return;
   const vb = AZ.vb, X = azXf(), k = X.k, pxkm = k * AZ.sc / 111.32, Ws = vb.w * k, Hs = vb.h * k;
   svg.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
-  $('azRotG').setAttribute('transform', AZ.rot ? `rotate(${AZ.rot.toFixed(2)} ${X.cx.toFixed(2)} ${X.cy.toFixed(2)})` : '');
+  $('azRotG').setAttribute('transform', AZ.rot ? `rotate(${fz(AZ.rot)} ${fz(X.cx)} ${fz(X.cy)})` : '');
   const nb = $('azNorth'); if (nb) { nb.firstElementChild.style.transform = `rotate(${AZ.rot || 0}deg)`; nb.classList.toggle('on', !!AZ.rot); }
   svg.style.touchAction = vb.w < AZ.base.w * 0.98 || AZ.rot ? 'none' : 'pan-y';
   const inView = (x, y, m) => { const p = X.toS(x, y); return p[0] >= -m && p[0] <= Ws + m && p[1] >= -m && p[1] <= Hs + m; };
@@ -258,11 +260,11 @@ function azDraw() {
   let dd = '';
   AZ.dots.forEach((d) => {
     if (d === selP || !inView(d.x, d.y, 20)) return;
-    dd += `<circle class="stDot ${d.g}" cx="${d.x.toFixed(1)}" cy="${d.y.toFixed(1)}" r="${(R[d.g] / k).toFixed(2)}" style="stroke-width:${(1.4 / k).toFixed(2)}"/>`;
+    dd += `<circle class="stDot ${d.g}" cx="${fz(d.x)}" cy="${fz(d.y)}" r="${fz((R[d.g] / k))}" style="stroke-width:${fz((1.4 / k))}"/>`;
   });
-  if (selP) dd += `<circle class="stDot on" cx="${selP.x.toFixed(1)}" cy="${selP.y.toFixed(1)}" r="${(10 / k).toFixed(2)}" style="stroke-width:${(4 / k).toFixed(2)}"/>`;
+  if (selP) dd += `<circle class="stDot on" cx="${fz(selP.x)}" cy="${fz(selP.y)}" r="${fz((10 / k))}" style="stroke-width:${fz((4 / k))}"/>`;
   $('azDots').innerHTML = dd;
-  $('azMe').innerHTML = AZ.me ? `<circle class="pvMe" cx="${AZ.me[0].toFixed(1)}" cy="${AZ.me[1].toFixed(1)}" r="${(8 / k).toFixed(2)}" style="stroke-width:${(3 / k).toFixed(2)}"/>` : '';
+  $('azMe').innerHTML = AZ.me ? `<circle class="pvMe" cx="${fz(AZ.me[0])}" cy="${fz(AZ.me[1])}" r="${fz((8 / k))}" style="stroke-width:${fz((3 / k))}"/>` : '';
   // the names that fit at this zoom, most important first; one that would overlap a placed one waits for a closer zoom.
   // Names stay upright however the map is turned.
   const cand = [];
@@ -285,9 +287,9 @@ function azDraw() {
     const box = [sx - tw / 2, cy - th / 2, sx + tw / 2, cy + th / 2];
     if (l.pr >= 0 && placed.some((b) => box[0] < b[2] && box[2] > b[0] && box[1] < b[3] && box[3] > b[1])) return;
     placed.push(box);
-    const f = (l.fpx / k).toFixed(2), x0 = vb.x + sx / k, y0 = vb.y + (cy - (l.e ? l.fpx * 0.45 : 0)) / k;
-    out += `<text class="pvl ${l.cls}" style="font-size:${f}px;stroke-width:${(4 / k).toFixed(2)}px" x="${x0.toFixed(1)}" y="${y0.toFixed(1)}">${esc(l.t)}</text>`;
-    if (l.e) out += `<text class="pvl azE" style="font-size:${(l.fpx * 0.78 / k).toFixed(2)}px;stroke-width:${(3.5 / k).toFixed(2)}px" x="${x0.toFixed(1)}" y="${(y0 + l.fpx * 1.05 / k).toFixed(1)}">${esc(l.e)}</text>`;
+    const f = fz((l.fpx / k)), x0 = vb.x + sx / k, y0 = vb.y + (cy - (l.e ? l.fpx * 0.45 : 0)) / k;
+    out += `<text class="pvl ${l.cls}" style="font-size:${f}px;stroke-width:${fz((4 / k))}px" x="${fz(x0)}" y="${fz(y0)}">${esc(l.t)}</text>`;
+    if (l.e) out += `<text class="pvl azE" style="font-size:${fz((l.fpx * 0.78 / k))}px;stroke-width:${fz((3.5 / k))}px" x="${fz(x0)}" y="${fz((y0 + l.fpx * 1.05 / k))}">${esc(l.e)}</text>`;
   });
   $('azLbl').innerHTML = out;
   if (typeof azExtraDraw === 'function') azExtraDraw(X);

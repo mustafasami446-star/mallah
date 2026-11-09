@@ -140,7 +140,7 @@ function axRoadsDraw() {
   const by = [[], [], [], []];
   list.forEach((r) => {
     let d = '';
-    for (let k = 1; k + 1 < r.length; k += 2) { const [x, y] = axXY(r[k], r[k + 1]); d += (k === 1 ? 'M' : 'L') + x.toFixed(1) + ',' + y.toFixed(1); }
+    for (let k = 1; k + 1 < r.length; k += 2) { const [x, y] = axXY(r[k], r[k + 1]); d += (k === 1 ? 'M' : 'L') + fz(x) + ',' + fz(y); }
     by[Math.min(3, r[0])].push(d);
   });
   g.innerHTML = by.map((ds, c) => ds.length ? `<path class="azRd c${c}" d="${ds.join('')}"/>` : '').join('');
@@ -176,7 +176,7 @@ function axStreets(X) {
   let S = Math.min(...cs.map((c) => c[0])), N = Math.max(...cs.map((c) => c[0])), W = Math.min(...cs.map((c) => c[1])), E = Math.max(...cs.map((c) => c[1]));
   const q = 0.01, padLa = (N - S) * 0.3, padLo = (E - W) * 0.3;
   S = Math.floor((S - padLa) / q) * q; N = Math.ceil((N + padLa) / q) * q; W = Math.floor((W - padLo) / q) * q; E = Math.ceil((E + padLo) / q) * q;
-  const key = [S, W, N, E].map((v) => v.toFixed(2)).join(',');
+  const key = [S, W, N, E].map((v) => fz(v)).join(',');
   const have = AX.st.key && (() => { const [s0, w0, n0, e0] = AX.st.key.split(',').map(Number); return S >= s0 - 1e-9 && W >= w0 - 1e-9 && N <= n0 + 1e-9 && E <= e0 + 1e-9; })();
   if (!have && !AX.st.busy) {
     AX.st.busy = true;
@@ -190,7 +190,7 @@ function axStreets(X) {
   if (AX.st.list && AX.st.drawn !== AX.st.key + '|' + AZ.id) {
     AX.st.drawn = AX.st.key + '|' + AZ.id;
     let d = '';
-    AX.st.list.forEach((r) => { if (r[0] < 4) return; let k = 1; d += 'M'; for (; k + 1 < r.length && typeof r[k] === 'number'; k += 2) { const [x, y] = axXY(r[k], r[k + 1]); d += (k === 1 ? '' : 'L') + x.toFixed(1) + ',' + y.toFixed(1); } });
+    AX.st.list.forEach((r) => { if (r[0] < 4) return; let k = 1; d += 'M'; for (; k + 1 < r.length && typeof r[k] === 'number'; k += 2) { const [x, y] = axXY(r[k], r[k + 1]); d += (k === 1 ? '' : 'L') + fz(x) + ',' + fz(y); } });
     g.innerHTML = d ? `<path class="azSt" d="${d}"/>` : '';
   }
 }
@@ -222,7 +222,7 @@ function azExtraDraw(X) {
   const svc = axSvcPts(cur);
   svc.forEach((p) => {
     const [x, y] = axXY(p.lat, p.lng), s = X.toS(x, y); if (s[0] < -20 || s[1] < -20 || s[0] > Ws + 20 || s[1] > Hs + 20) return;
-    h += `<rect class="axSvc" x="${(x - 5 / k).toFixed(2)}" y="${(y - 5 / k).toFixed(2)}" width="${(10 / k).toFixed(2)}" height="${(10 / k).toFixed(2)}" rx="${(2 / k).toFixed(2)}" style="stroke-width:${(1.5 / k).toFixed(2)}"/>`;
+    h += `<rect class="axSvc" x="${fz((x - 5 / k))}" y="${fz((y - 5 / k))}" width="${fz((10 / k))}" height="${fz((10 / k))}" rx="${fz((2 / k))}" style="stroke-width:${fz((1.5 / k))}"/>`;
     axPts.push({ s, kind: 'svc', obj: p });
   });
   $('azSvc').innerHTML = h;
@@ -230,12 +230,12 @@ function azExtraDraw(X) {
   axMine(cur).forEach((m) => {
     const [x, y] = axXY(m.lat, m.lng), s = X.toS(x, y); if (s[0] < -20 || s[1] < -20 || s[0] > Ws + 20 || s[1] > Hs + 20) return;
     const r = 6 / k;
-    h += `<path class="axMine" d="M${x.toFixed(2)},${(y - r * 1.4).toFixed(2)}L${(x + r).toFixed(2)},${y.toFixed(2)}L${x.toFixed(2)},${(y + r * 1.4).toFixed(2)}L${(x - r).toFixed(2)},${y.toFixed(2)}Z" style="fill:${AX_MINE[m.k][2]};stroke-width:${(1.5 / k).toFixed(2)}"/>`;
+    h += `<path class="axMine" d="M${fz(x)},${fz((y - r * 1.4))}L${fz((x + r))},${fz(y)}L${fz(x)},${fz((y + r * 1.4))}L${fz((x - r))},${fz(y)}Z" style="fill:${AX_MINE[m.k][2]};stroke-width:${fz((1.5 / k))}"/>`;
     axPts.push({ s, kind: 'mine', obj: m });
   });
   if (axPin) {
     const [x, y] = axXY(axPin.lat, axPin.lng), r = 9 / k;
-    h += `<g transform="translate(${x.toFixed(2)} ${y.toFixed(2)})"><path class="axPin" d="M0,0 L${(-r * 0.7).toFixed(2)},${(-r * 1.6).toFixed(2)} A${(r * 0.8).toFixed(2)},${(r * 0.8).toFixed(2)} 0 1 1 ${(r * 0.7).toFixed(2)},${(-r * 1.6).toFixed(2)} Z" style="stroke-width:${(1.5 / k).toFixed(2)}"/></g>`;
+    h += `<g transform="translate(${fz(x)} ${fz(y)})"><path class="axPin" d="M0,0 L${fz((-r * 0.7))},${fz((-r * 1.6))} A${fz((r * 0.8))},${fz((r * 0.8))} 0 1 1 ${fz((r * 0.7))},${fz((-r * 1.6))} Z" style="stroke-width:${fz((1.5 / k))}"/></g>`;
   }
   $('azMine').innerHTML = h;
   axWxFill();

@@ -1,8 +1,8 @@
 {
-  "versionCode": 85,
-  "versionName": "5.39",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.39/Mallah-Navigator.apk",
+  "versionCode": 86,
+  "versionName": "5.40",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.40/Mallah-Navigator.apk",
   "size": 2676153,
-  "notes": "خريطة المناطق: تكبير وتحريك سلس، وصور قمر صناعي أوضح بلا وميض، والشوارع لا تختفي أثناء الحركة.",
-  "sha256": "8e2fcfaa34a7578d6f7ea578e0aafdd9b1e81a745078091e1b6f370c33eb01c3"
+  "notes": "خريطة المناطق: الشوارع والمسارات والنقاط في مواضعها الدقيقة عند التكبير الكبير، فوق القمر الصناعي بشكل أخف.",
+  "sha256": "76c3c1cb8c8e9fde9c104cb08ed92a1c69353e25b49e6636aafddf34f214ac7f"
 }

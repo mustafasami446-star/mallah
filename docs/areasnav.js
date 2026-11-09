@@ -114,17 +114,17 @@ function axnDraw(X) {
     let d = '', started = false;
     for (let i = 0; i < r.pts.length; i++) {
       if (r.cum[i + 1] != null && r.cum[i + 1] < from) continue;
-      const [x, y] = axXY(r.pts[i][0], r.pts[i][1]); d += (started ? 'L' : 'M') + x.toFixed(1) + ',' + y.toFixed(1); started = true;
+      const [x, y] = axXY(r.pts[i][0], r.pts[i][1]); d += (started ? 'L' : 'M') + fz(x) + ',' + fz(y); started = true;
     }
     const end = r.pts[r.pts.length - 1], [ex, ey] = axXY(end[0], end[1]), [sx, sy] = axXY(r.pts[0][0], r.pts[0][1]);
     g.innerHTML = `<path class="axnCase" d="${d}"/><path class="axnLine${AXN.mode === 'foot' && !AXN.live ? ' foot' : ''}" d="${d}"/>`
-      + (AXN.live ? '' : `<circle class="axnStart" cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="1"/>`) + `<circle class="axnEnd" cx="${ex.toFixed(1)}" cy="${ey.toFixed(1)}" r="1"/>`;
+      + (AXN.live ? '' : `<circle class="axnStart" cx="${fz(sx)}" cy="${fz(sy)}" r="1"/>`) + `<circle class="axnEnd" cx="${fz(ex)}" cy="${fz(ey)}" r="1"/>`;
   }
-  g.querySelectorAll('circle').forEach((c) => { c.setAttribute('r', ((c.classList.contains('axnEnd') ? 9 : 6) / k).toFixed(2)); c.style.strokeWidth = (3 / k).toFixed(2); });
+  g.querySelectorAll('circle').forEach((c) => { c.setAttribute('r', ((c.classList.contains('axnEnd') ? 9 : 6) / k).toFixed(2)); c.style.strokeWidth = fz((3 / k)); });
   // in the live view: an arrow for you, pointing where you go
   if (AXN.live && me) {
     const [x, y] = axXY(me.lat, me.lng), s = 13 / k, h = me.heading != null ? me.heading : 0;
-    $('azMe').innerHTML = `<g transform="translate(${x.toFixed(2)} ${y.toFixed(2)}) rotate(${h.toFixed(1)})"><circle r="${(s * 1.25).toFixed(2)}" class="axnHalo"/><path class="axnArrow" d="M0,${(-s).toFixed(2)} L${(s * 0.75).toFixed(2)},${(s * 0.8).toFixed(2)} L0,${(s * 0.35).toFixed(2)} L${(-s * 0.75).toFixed(2)},${(s * 0.8).toFixed(2)}Z" style="stroke-width:${(2 / k).toFixed(2)}"/></g>`;
+    $('azMe').innerHTML = `<g transform="translate(${fz(x)} ${fz(y)}) rotate(${fz(h)})"><circle r="${fz((s * 1.25))}" class="axnHalo"/><path class="axnArrow" d="M0,${fz((-s))} L${fz((s * 0.75))},${fz((s * 0.8))} L0,${fz((s * 0.35))} L${fz((-s * 0.75))},${fz((s * 0.8))}Z" style="stroke-width:${fz((2 / k))}"/></g>`;
   }
 }
 function axnAfterRender() { axnBar(); }
