@@ -494,7 +494,8 @@ body.fs-xl #searchWrap,body.fs-xl .panel,body.fs-xl .sheet,body.fs-xl #navTop,bo
 #areaCrumbs .sep{color:var(--muted)}
 #areaBody{position:relative;overflow:hidden;display:flex;flex-direction:column;padding:0}
 #areaMapWrap{flex:1;min-height:0;padding:0;margin-bottom:112px;position:relative}
-#areaMapWrap #azBox{position:absolute;inset:0}
+#areaMapWrap #azBox{position:absolute;inset:0;overflow:hidden}
+#areaPanel #azBox #areaSvg{overflow:visible}
 #areaPanel #areaSvg{width:100%;height:100%;max-height:none}
 #areaSheet{position:absolute;left:0;right:0;bottom:0;z-index:5;background:var(--panel);border-top:1px solid var(--line);border-radius:22px 22px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.4);
   display:flex;flex-direction:column;max-height:112px;transition:max-height .25s ease;padding-bottom:env(safe-area-inset-bottom)}

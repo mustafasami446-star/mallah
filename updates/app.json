@@ -1,8 +1,8 @@
 {
-  "versionCode": 96,
-  "versionName": "5.50",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.50/Mallah-Navigator.apk",
+  "versionCode": 97,
+  "versionName": "5.51",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.51/Mallah-Navigator.apk",
   "size": 2684407,
-  "notes": "خريطة المناطق: حارس يعيد رسمها تلقائيًا إن بقيت مصغّرة أو مائلة، وتشخيص يسجّل السبب.",
-  "sha256": "7f12087b9e0537c040608bbe287fb6a4b8bc6fd9ca7b88c9cdb7b0859d43d980"
+  "notes": "خريطة المناطق: عند التصغير بإصبعين يظهر ما حول المنطقة مباشرة بدل مستطيل صغير.",
+  "sha256": "0250bf9cd66dd7ba9dda5559863eb816d8172a3d21e6b80a78a5a52b738b29a3"
 }

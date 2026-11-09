@@ -253,11 +253,15 @@ function azXf() {
 }
 /* the four corners of the whole visible map (the screen), in drawing units — not just the viewBox:
    the map area is taller than the area's own box, and turned when rotated */
-function azCorners(X) {
+function azCorners(X, pad) {
   const svg = $('areaSvg'), vb = AZ.vb, Ws = vb.w * X.k, Hs = vb.h * X.k;
-  const cw = (svg && svg.clientWidth) || Ws, ch = (svg && svg.clientHeight) || Hs, ox = Math.max(0, (cw - Ws) / 2), oy = Math.max(0, (ch - Hs) / 2);
+  const cw = (svg && svg.clientWidth) || Ws, ch = (svg && svg.clientHeight) || Hs;
+  const ox = Math.max(0, (cw - Ws) / 2) + cw * (pad || 0), oy = Math.max(0, (ch - Hs) / 2) + ch * (pad || 0);
   return [[-ox, -oy], [Ws + ox, -oy], [-ox, Hs + oy], [Ws + ox, Hs + oy]].map(([a, b]) => X.toU(a, b));
 }
+/* how much is drawn around the view (a share of its width on each side): the map paints past its frame
+   (clipped by the box around it), so a two-finger zoom-out shows the surroundings, not a shrinking rectangle */
+const AZ_OVER = 0.5;
 function azDraw() {
   const svg = $('areaSvg'); if (!svg || !AZ) return;
   const vb = AZ.vb, X = azXf(), k = X.k, pxkm = k * AZ.sc / 111.32, Ws = vb.w * k, Hs = vb.h * k;
@@ -273,7 +277,7 @@ function azDraw() {
   const selP = AZ.leaf ? (stSel != null ? AZ.dots.find((d) => d.i === stSel) : null) : (plPick ? AZ.dots.find((d) => d.p === plPick) : null);
   let dd = '';
   AZ.dots.forEach((d) => {
-    if (d === selP || !inView(d.x, d.y, 20)) return;
+    if (d === selP || !inView(d.x, d.y, AZ_OVER * Ws)) return;
     dd += `<circle class="stDot ${d.g}" cx="${fz(d.x)}" cy="${fz(d.y)}" r="${fz((R[d.g] / k))}" style="stroke-width:${fz((1.4 / k))}"/>`;
   });
   if (selP) dd += `<circle class="stDot on" cx="${fz(selP.x)}" cy="${fz(selP.y)}" r="${fz((10 / k))}" style="stroke-width:${fz((4 / k))}"/>`;
@@ -282,12 +286,12 @@ function azDraw() {
   // the names that fit at this zoom, most important first; one that would overlap a placed one waits for a closer zoom.
   // Names stay upright however the map is turned.
   const cand = [];
-  AZ.lbls.forEach((l) => { if (pxkm >= l.min && inView(l.x, l.y, 0)) cand.push(l); });
+  AZ.lbls.forEach((l) => { if (pxkm >= l.min && inView(l.x, l.y, AZ_OVER * Ws * 0.6)) cand.push(l); });
   const en = pxkm >= AZ_PXKM.en;
   AZ.dots.forEach((d) => {
     const min = d.p.k === 'city' ? 0 : d.g === 'town' ? AZ_PXKM.town : d.g === 'nb' ? AZ_PXKM.nb : AZ_PXKM.vil;
     const on = d === selP;
-    if (!on && (pxkm < min || !inView(d.x, d.y, 0))) return;
+    if (!on && (pxkm < min || !inView(d.x, d.y, AZ_OVER * Ws * 0.6))) return;
     if (!on && pxkm < AZ_PXKM.sub && AZ.lbls.some((l) => l.t === d.p.n)) return;   // the district already carries this name
     cand.push({ x: d.x, y: d.y, t: d.p.n, e: en || on ? d.p.e : '', cls: 'azP ' + d.g + (on ? ' on' : ''), fpx: on ? 15 : d.g === 'town' ? 14 : 12.5, pr: on ? -1 : d.p.k === 'city' ? 1 : d.g === 'town' ? 3 : d.g === 'nb' ? 4 : 5, dot: R[d.g] + 2 });
   });

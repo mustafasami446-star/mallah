@@ -20,14 +20,14 @@ function axSatDraw(X) {
   const g = $('azSat'); if (!g) return;
   $('areaSvg').classList.toggle('axSat', AX.sat);
   if (!AX.sat) { if (g.innerHTML) g.innerHTML = ''; AX.satKey = ''; return; }
-  const cs = azCorners(X).map((u) => axLL(u[0], u[1]));
+  const cs = azCorners(X, AZ_OVER * 0.7).map((u) => axLL(u[0], u[1]));
   const S = Math.min(...cs.map((c) => c[0])), N = Math.max(...cs.map((c) => c[0])), W = Math.min(...cs.map((c) => c[1])), E = Math.max(...cs.map((c) => c[1]));
   // device pixels per degree of longitude: sharp on high-density screens
   const ppd = X.k * AZ.geo.kx * AZ.geo.sc * Math.min(2, window.devicePixelRatio || 1);
   let z = Math.max(4, Math.min(19, Math.ceil(Math.log2(360 * ppd / 256) - 0.25)));
   const tx = (lng, zz) => Math.floor((lng + 180) / 360 * 2 ** zz);
   const ty = (lat, zz) => { const r = lat * Math.PI / 180; return Math.floor((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * 2 ** zz); };
-  while (z > 4 && (tx(E, z) - tx(W, z) + 1) * (ty(S, z) - ty(N, z) + 1) > 90) z--;
+  while (z > 4 && (tx(E, z) - tx(W, z) + 1) * (ty(S, z) - ty(N, z) + 1) > 150) z--;
   const x0 = tx(W, z), x1 = tx(E, z), y0 = ty(N, z), y1 = ty(S, z);
   const key = [z, x0, x1, y0, y1].join(',');
   if (key === AX.satKey && g.querySelector('image')) return;
@@ -160,7 +160,7 @@ function axRoadsDraw(X) {
   const g = $('azRoads'); if (!g || !AZ) return;
   const list = AX.roads && Array.isArray(AX.roadsFor[AZ.id]) ? AX.roadsFor[AZ.id] : [];
   X = X || azXf();
-  const pxkm = X.k * AZ.sc / 111.32, box = pxkm >= 15 ? axViewBox(X, 0.5) : null;
+  const pxkm = X.k * AZ.sc / 111.32, box = pxkm >= 15 ? axViewBox(X, 0.9) : null;
   const key = AZ.id + '|' + list.length + '|' + (box ? axBoxKey(box.map((v) => Math.round(v * 200) / 200)) : 'all');
   if (key === AZ.roadsKey) return;
   AZ.roadsKey = key;
@@ -193,7 +193,7 @@ function axStreets(X) {
   const g = $('azStreets'); if (!g) return;
   const pxkm = X.k * AZ.sc / 111.32;
   if (!AX.roads || pxkm < 40 || typeof roadsReady !== 'function' || !roadsReady()) { if (g.innerHTML) g.innerHTML = ''; AX.st.drawn = ''; return; }
-  const view = axViewBox(X, 0.25), want = axViewBox(X, 0.6);
+  const view = axViewBox(X, 0.7), want = axViewBox(X, 1.0);
   const area = (b) => (b[2] - b[0]) * (b[3] - b[1]);
   const c = AX.st.box;
   const fits = c && view[0] >= c[0] && view[1] >= c[1] && view[2] <= c[2] && view[3] <= c[3] && area(c) <= area(want) * 6;
