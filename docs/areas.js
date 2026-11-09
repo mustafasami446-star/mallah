@@ -232,8 +232,8 @@ function arSvg(cur, kids, here, dots, preview) {
 /* pixels on screen per unit of the drawing */
 function azK() {
   const svg = $('areaSvg'); if (!svg || !AZ) return 1;
-  const r = svg.getBoundingClientRect();
-  return Math.min(r.width / AZ.vb.w, r.height / AZ.vb.h) || 1;
+  // the layout size (not the on-screen box, which a gesture's quick preview transforms)
+  return Math.min(svg.clientWidth / AZ.vb.w, svg.clientHeight / AZ.vb.h) || 1;
 }
 /* the map turns around the middle of the view: from drawing units to screen pixels and back */
 function azXf() {
@@ -291,9 +291,22 @@ function azDraw() {
   });
   $('azLbl').innerHTML = out;
   if (typeof azExtraDraw === 'function') azExtraDraw(X);
+  AZ.drawn = { vb: Object.assign({}, vb), rot: AZ.rot || 0 };
+  svg.style.transform = '';
+}
+/* while a finger moves the map, only a quick transform of what is drawn; the full drawing follows when it stops */
+function azPreview() {
+  const svg = $('areaSvg'); if (!svg || !AZ || !AZ.drawn) return;
+  const W = svg.clientWidth, d = AZ.drawn, v = AZ.vb;
+  const kr = W / d.vb.w, kc = W / v.w, a = (AZ.rot || 0) * Math.PI / 180;
+  const dx = (d.vb.x + d.vb.w / 2) - (v.x + v.w / 2), dy = (d.vb.y + d.vb.h / 2) - (v.y + v.h / 2);
+  const tx = kc * (dx * Math.cos(a) - dy * Math.sin(a)), ty = kc * (dx * Math.sin(a) + dy * Math.cos(a));
+  svg.style.transformOrigin = '50% 50%';
+  svg.style.transform = `translate(${tx.toFixed(1)}px,${ty.toFixed(1)}px) rotate(${((AZ.rot || 0) - d.rot).toFixed(2)}deg) scale(${(kc / kr).toFixed(4)})`;
 }
 let azRaf = 0;
-function azSoon() { if (!azRaf) azRaf = requestAnimationFrame(() => { azRaf = 0; azDraw(); }); }
+function azSoon() { if (!azRaf) azRaf = requestAnimationFrame(() => { azRaf = 0; if (AZ && AZ.gesture && AZ.drawn) azPreview(); else azDraw(); }); }
+function azGestureEnd() { if (AZ) { AZ.gesture = false; azSoon(); } }
 /* zoom by f (and turn by dr degrees) keeping the point under the fingers where it is */
 function azZoom(f, sx, sy, dr) {
   if (!AZ) return;
@@ -319,7 +332,7 @@ function azClamp(v) {
 /* touch and mouse: drag to move, two fingers to zoom, double tap / wheel to zoom, a tap selects */
 function azFit() {
   const svg = $('areaSvg'); if (!svg || !AZ) return;
-  const r = svg.getBoundingClientRect(); if (!r.width || !r.height) return;
+  const r = { width: svg.clientWidth, height: svg.clientHeight }; if (!r.width || !r.height) return;
   const R = r.width / r.height, c = AZ.content, b = { x: c.x, y: c.y, w: c.w, h: c.h };
   if (c.w / c.h < R) { b.w = c.h * R; b.x = c.x - (b.w - c.w) / 2; } else { b.h = c.w / R; b.y = c.y - (b.h - c.h) / 2; }
   const z = AZ.vb && AZ.base ? AZ.base.w / AZ.vb.w : 1, cx = AZ.vb ? AZ.vb.x + AZ.vb.w / 2 : b.x + b.w / 2, cy = AZ.vb ? AZ.vb.y + AZ.vb.h / 2 : b.y + b.h / 2;
@@ -339,10 +352,11 @@ function azAttach() {
   };
   const pts = new Map();
   let start = null, moved = false, lastTap = 0, pinch = null, longT = 0, longDone = false;
-  const rel = (e) => { const r = svg.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  const rel = (e) => { const r = $('azBox').getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
   svg.addEventListener('pointerdown', (e) => {
     pts.set(e.pointerId, rel(e));
     try { svg.setPointerCapture(e.pointerId); } catch (x) {}
+    AZ.gesture = true;
     if (pts.size === 1) {
       start = { p: rel(e), vb: Object.assign({}, AZ.vb) }; moved = false; longDone = false;
       clearTimeout(longT); const at = rel(e);
@@ -385,6 +399,7 @@ function azAttach() {
     pts.delete(e.pointerId);
     if (pts.size < 2) pinch = null;
     if (pts.size) { const q = [...pts.values()][0]; start = { p: q, vb: Object.assign({}, AZ.vb) }; return; }
+    azGestureEnd();
     clearTimeout(longT);
     if (e.type === 'pointercancel' || moved || longDone) { start = null; longDone = false; return; }
     start = null;
@@ -395,7 +410,7 @@ function azAttach() {
   };
   svg.addEventListener('pointerup', up); svg.addEventListener('pointercancel', up);
   svg.addEventListener('contextmenu', (e) => e.preventDefault());
-  svg.addEventListener('wheel', (e) => { e.preventDefault(); const p = rel(e); azZoom(e.deltaY < 0 ? 1.25 : 0.8, p[0], p[1]); }, { passive: false });
+  svg.addEventListener('wheel', (e) => { e.preventDefault(); AZ.gesture = true; clearTimeout(AZ.wt); AZ.wt = setTimeout(azGestureEnd, 200); const p = rel(e); azZoom(e.deltaY < 0 ? 1.25 : 0.8, p[0], p[1]); }, { passive: false });
 }
 function azTap(sx, sy, cx, cy) {
   const X = azXf();

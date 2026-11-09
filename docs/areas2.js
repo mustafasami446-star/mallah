@@ -23,22 +23,34 @@ function axSatDraw(X) {
   const vb = AZ.vb, Ws = vb.w * X.k, Hs = vb.h * X.k;
   const cs = [[0, 0], [Ws, 0], [0, Hs], [Ws, Hs]].map(([a, b]) => { const u = X.toU(a, b); return axLL(u[0], u[1]); });
   const S = Math.min(...cs.map((c) => c[0])), N = Math.max(...cs.map((c) => c[0])), W = Math.min(...cs.map((c) => c[1])), E = Math.max(...cs.map((c) => c[1]));
-  const ppd = X.k * AZ.geo.kx * AZ.geo.sc;                       // screen pixels per degree of longitude
-  let z = Math.max(4, Math.min(18, Math.round(Math.log2(360 * ppd / 256))));
+  // device pixels per degree of longitude: sharp on high-density screens
+  const ppd = X.k * AZ.geo.kx * AZ.geo.sc * Math.min(2, window.devicePixelRatio || 1);
+  let z = Math.max(4, Math.min(19, Math.ceil(Math.log2(360 * ppd / 256) - 0.25)));
   const tx = (lng, zz) => Math.floor((lng + 180) / 360 * 2 ** zz);
   const ty = (lat, zz) => { const r = lat * Math.PI / 180; return Math.floor((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * 2 ** zz); };
-  while (z > 4 && (tx(E, z) - tx(W, z) + 1) * (ty(S, z) - ty(N, z) + 1) > 48) z--;
+  while (z > 4 && (tx(E, z) - tx(W, z) + 1) * (ty(S, z) - ty(N, z) + 1) > 90) z--;
   const x0 = tx(W, z), x1 = tx(E, z), y0 = ty(N, z), y1 = ty(S, z);
   const key = [z, x0, x1, y0, y1].join(',');
   if (key === AX.satKey) return;
   AX.satKey = key;
   const lon = (x) => x / 2 ** z * 360 - 180, lat = (y) => { const n = Math.PI - 2 * Math.PI * y / 2 ** z; return 180 / Math.PI * Math.atan(Math.sinh(n)); };
-  let h = '';
+  // the new pictures go on top of the old ones, which stay until the new ones have come (no blank flash while zooming)
+  const NS = 'http://www.w3.org/2000/svg', layer = document.createElementNS(NS, 'g');
+  let left = 0;
+  const done = () => { if (--left <= 0) [...g.children].forEach((c) => { if (c !== layer) c.remove(); }); };
   for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) {
     const [ax, ay] = axXY(lat(y), lon(x)), [bx, by] = axXY(lat(y + 1), lon(x + 1));
-    h += `<image href="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}" x="${ax.toFixed(2)}" y="${ay.toFixed(2)}" width="${(bx - ax + 0.3).toFixed(2)}" height="${(by - ay + 0.3).toFixed(2)}" preserveAspectRatio="none"/>`;
+    const im = document.createElementNS(NS, 'image');
+    im.setAttribute('href', `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`);
+    im.setAttribute('x', ax.toFixed(3)); im.setAttribute('y', ay.toFixed(3));
+    im.setAttribute('width', (bx - ax).toFixed(3)); im.setAttribute('height', (by - ay).toFixed(3));
+    im.setAttribute('preserveAspectRatio', 'none');
+    left++; im.addEventListener('load', done); im.addEventListener('error', done);
+    layer.appendChild(im);
   }
-  g.innerHTML = h;
+  while (g.children.length > 1) g.firstChild.remove();       // at most the last set under the new one
+  g.appendChild(layer);
+  setTimeout(() => { left = 0; done(); }, 4000);
 }
 
 /* ---------------- 2. weather on the areas ---------------- */
@@ -158,11 +170,11 @@ AX.st = { key: '', list: null, drawn: '', busy: false, t: 0 };
 function axStreets(X) {
   const g = $('azStreets'); if (!g) return;
   const pxkm = X.k * AZ.sc / 111.32;
-  if (!AX.roads || pxkm < 12 || typeof roadsReady !== 'function' || !roadsReady()) { if (g.innerHTML) g.innerHTML = ''; AX.st.drawn = ''; return; }
+  if (!AX.roads || pxkm < 18 || typeof roadsReady !== 'function' || !roadsReady()) { if (g.innerHTML) g.innerHTML = ''; AX.st.drawn = ''; return; }
   const vb = AZ.vb, Ws = vb.w * X.k, Hs = vb.h * X.k;
   const cs = [[0, 0], [Ws, 0], [0, Hs], [Ws, Hs]].map(([a, b]) => { const u = X.toU(a, b); return axLL(u[0], u[1]); });
   let S = Math.min(...cs.map((c) => c[0])), N = Math.max(...cs.map((c) => c[0])), W = Math.min(...cs.map((c) => c[1])), E = Math.max(...cs.map((c) => c[1]));
-  const q = 0.01, padLa = (N - S) * 0.4, padLo = (E - W) * 0.4;
+  const q = 0.01, padLa = (N - S) * 0.3, padLo = (E - W) * 0.3;
   S = Math.floor((S - padLa) / q) * q; N = Math.ceil((N + padLa) / q) * q; W = Math.floor((W - padLo) / q) * q; E = Math.ceil((E + padLo) / q) * q;
   const key = [S, W, N, E].map((v) => v.toFixed(2)).join(',');
   const have = AX.st.key && (() => { const [s0, w0, n0, e0] = AX.st.key.split(',').map(Number); return S >= s0 - 1e-9 && W >= w0 - 1e-9 && N <= n0 + 1e-9 && E <= e0 + 1e-9; })();

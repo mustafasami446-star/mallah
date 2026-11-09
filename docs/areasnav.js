@@ -160,7 +160,7 @@ function axnLiveOff(keepPanel) {
 function axnZoomTo(pxkm) {
   if (!AZ) return;
   const svg = $('areaSvg'); if (!svg) return;
-  const Ws = svg.getBoundingClientRect().width, k = pxkm * 111.32 / AZ.sc;
+  const Ws = svg.clientWidth, k = pxkm * 111.32 / AZ.sc;
   const w = Math.min(AZ.base.w, Ws / k), h = w * AZ.base.h / AZ.base.w;
   AZ.vb = { x: AZ.vb.x + AZ.vb.w / 2 - w / 2, y: AZ.vb.y + AZ.vb.h / 2 - h / 2, w, h };
 }
