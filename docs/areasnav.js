@@ -66,7 +66,7 @@ function axnFit() {
   AZ.vb = azClamp({ x: (x0 + x1) / 2 - w / 2, y: (y0 + y1) / 2 - h * 0.45, w, h });
   azSoon();
 }
-function axnClear() { AXN.r = null; AXN.to = null; const b = $('axnBar'); if (b) b.remove(); const g = $('azRoute'); if (g) g.innerHTML = ''; azSoon(); }
+function axnClear() { AXN.r = null; AXN.to = null; if (typeof axPin !== 'undefined') axPin = null; const b = $('axnBar'); if (b) b.remove(); const g = $('azRoute'); if (g) g.innerHTML = ''; azSoon(); }
 function axnBar() {
   const box = $('azBox'); if (!box) return;
   let b = $('axnBar');
@@ -213,4 +213,14 @@ document.addEventListener('pointerdown', (e) => { if (AXN.live && e.target.close
     nb.insertBefore(b, steps);
     b.onclick = () => (AXN.live ? axnLiveOff() : axnLiveOn());
   }
+}
+
+/* in the live view: a new destination from a long press — the trip restarts to it */
+async function axnRetarget(to) {
+  let r;
+  try { r = await fetchRoute(mode, [me.lat, me.lng], [to.lat, to.lng]); } catch (e) { toast('تعذّر حساب المسار'); return; }
+  AXN.to = to; AXN.r = r; AXN.mode = mode;
+  axnLiveOff(true);
+  if (typeof endNav === 'function') endNav(false, true);
+  axnStart(true);
 }

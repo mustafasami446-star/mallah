@@ -309,11 +309,14 @@ onmessage = async (ev) => {
     if (m.mainIn) {
       // the main roads inside a box, for drawing on the areas map: [class, lat, lng, lat, lng, …] per road piece
       const g = G[m.graph]; if (!g) throw new Error('no graph');
-      const [S, W, N, E, maxC] = m.mainIn, out = [], keep = new Set([0, 1, 2, 3, 9, 10, 11].filter((c) => c <= maxC || (c >= 9 && c - 9 <= maxC)));
+      const [S, W, N, E, maxC] = m.mainIn, out = [];
+      // maxC 99: every street (for a close zoom); otherwise the main roads up to that class
+      const keep = new Set(maxC >= 99 ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 20] : [0, 1, 2, 3, 9, 10, 11].filter((c) => c <= maxC || (c >= 9 && c - 9 <= maxC)));
       const la0 = S * 1e6, la1 = N * 1e6, lo0 = W * 1e6, lo1 = E * 1e6, inB = (i) => g.nodes[2 * i] >= la0 && g.nodes[2 * i] <= la1 && g.nodes[2 * i + 1] >= lo0 && g.nodes[2 * i + 1] <= lo1;
       for (let e = 0; e < g.E; e++) {
         if (!keep.has(g.ecls[e]) || !(inB(g.ea[e]) || inB(g.eb[e]))) continue;
-        const p = epts(g, e); out.push([g.ecls[e] >= 9 ? g.ecls[e] - 9 : g.ecls[e]].concat(p.map((v) => Math.round(v * 1e5) / 1e5)));
+        const c = g.ecls[e], cc = c >= 9 && c <= 13 ? c - 9 : c > 3 ? 4 : c;
+        const p = epts(g, e); out.push([cc].concat(p.map((v) => Math.round(v * 1e5) / 1e5)).concat(maxC >= 99 ? [nameOf(g, e)] : []));
       }
       postMessage({ id: m.id, ok: out }); return;
     }
@@ -378,7 +381,7 @@ async function roadsRoadAt(lat, lng, heading) {
 }
 
 /* the main roads of a box (motorways to secondary roads), from the saved road network */
-async function roadsMainIn(s, w, n, e) {
+async function roadsMainIn(s, w, n, e, all) {
   const id = roadsFor([s, w], [n, e]) || roadsFor([(s + n) / 2, (w + e) / 2], [(s + n) / 2, (w + e) / 2]); if (!id) return null;
-  try { await roadsLoad(id); return await roadsCall({ mainIn: [s, w, n, e, 3], graph: id }); } catch (x) { return null; }
+  try { await roadsLoad(id); return await roadsCall({ mainIn: [s, w, n, e, all ? 99 : 3], graph: id }); } catch (x) { return null; }
 }

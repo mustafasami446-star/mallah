@@ -226,7 +226,7 @@ function arSvg(cur, kids, here, dots, preview) {
   AZ.cur = cur;
   if (me && me.lng >= w && me.lng <= e && me.lat >= s && me.lat <= n) AZ.me = XY(me.lng, me.lat);
   const vb = AZ.vb;
-  return `<div id="azBox"><svg id="areaSvg" viewBox="${vb.x} ${vb.y} ${vb.w} ${vb.h}" xmlns="http://www.w3.org/2000/svg"><g id="azRotG"><g id="azSat"></g>${paths}<g id="azRoads"></g><g id="azRoute"></g><g id="azSvc"></g><g id="azMine"></g><g id="azDots"></g><g id="azMe"></g></g><g id="azLbl"></g></svg>
+  return `<div id="azBox"><svg id="areaSvg" viewBox="${vb.x} ${vb.y} ${vb.w} ${vb.h}" xmlns="http://www.w3.org/2000/svg"><g id="azRotG"><g id="azSat"></g>${paths}<g id="azStreets"></g><g id="azRoads"></g><g id="azRoute"></g><g id="azSvc"></g><g id="azMine"></g><g id="azDots"></g><g id="azMe"></g></g><g id="azLbl"></g></svg>
     <div id="azBtns"><button data-z="in" aria-label="تكبير">＋</button><button data-z="out" aria-label="تصغير">－</button><button data-z="fit" aria-label="الحجم الكامل">⤢</button><button data-z="north" aria-label="الشمال للأعلى" id="azNorth"><svg viewBox="0 0 24 24" width="24" height="24"><path d="M12 3l4 9h-8z" fill="#ef4444"/><path d="M12 21l-4-9h8z" fill="#94a3b8"/></svg></button></div></div>`;
 }
 /* pixels on screen per unit of the drawing */
@@ -300,7 +300,7 @@ function azZoom(f, sx, sy, dr) {
   const vb = AZ.vb, b = AZ.base, X = azXf(), Ws = vb.w * X.k, Hs = vb.h * X.k;
   if (sx == null) { sx = Ws / 2; sy = Hs / 2; }
   const u = X.toU(sx, sy);
-  const nw = Math.min(b.w, Math.max(b.w / 60, vb.w / f)), nh = nw * b.h / b.w, k2 = X.k * vb.w / nw;
+  const nw = Math.min(b.w, Math.max(b.w / 3000, vb.w / f)), nh = nw * b.h / b.w, k2 = X.k * vb.w / nw;
   if (dr) AZ.rot = ((AZ.rot || 0) + dr + 540) % 360 - 180;
   const a = (AZ.rot || 0) * Math.PI / 180, c = Math.cos(a), sn = Math.sin(a);
   const dx = (sx - Ws / 2) / k2, dy = (sy - Hs / 2) / k2;
@@ -338,12 +338,16 @@ function azAttach() {
     else azZoom(z.dataset.z === 'in' ? 2 : 0.5);
   };
   const pts = new Map();
-  let start = null, moved = false, lastTap = 0, pinch = null;
+  let start = null, moved = false, lastTap = 0, pinch = null, longT = 0, longDone = false;
   const rel = (e) => { const r = svg.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
   svg.addEventListener('pointerdown', (e) => {
     pts.set(e.pointerId, rel(e));
     try { svg.setPointerCapture(e.pointerId); } catch (x) {}
-    if (pts.size === 1) { start = { p: rel(e), vb: Object.assign({}, AZ.vb) }; moved = false; }
+    if (pts.size === 1) {
+      start = { p: rel(e), vb: Object.assign({}, AZ.vb) }; moved = false; longDone = false;
+      clearTimeout(longT); const at = rel(e);
+      longT = setTimeout(() => { if (!moved && pts.size === 1 && typeof azLongPress === 'function') { longDone = true; vib('30'); azLongPress(at[0], at[1]); } }, 550);
+    } else clearTimeout(longT);
     if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), ang: Math.atan2(b[1] - a[1], b[0] - a[0]), m: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], turning: false }; moved = true; }
   });
   svg.addEventListener('pointermove', (e) => {
@@ -368,7 +372,7 @@ function azAttach() {
     if (!start) return;
     const p = rel(e), dx = p[0] - start.p[0], dy = p[1] - start.p[1];
     if (!moved && Math.hypot(dx, dy) < 7) return;
-    moved = true;
+    moved = true; clearTimeout(longT);
     // drag: the map follows the finger, also when turned
     const k = azK(), a = (AZ.rot || 0) * Math.PI / 180, c = Math.cos(a), sn = Math.sin(a);
     const ux = (dx * c + dy * sn) / k, uy = (-dx * sn + dy * c) / k;
@@ -381,7 +385,8 @@ function azAttach() {
     pts.delete(e.pointerId);
     if (pts.size < 2) pinch = null;
     if (pts.size) { const q = [...pts.values()][0]; start = { p: q, vb: Object.assign({}, AZ.vb) }; return; }
-    if (e.type === 'pointercancel' || moved) { start = null; return; }
+    clearTimeout(longT);
+    if (e.type === 'pointercancel' || moved || longDone) { start = null; longDone = false; return; }
     start = null;
     const now = Date.now();
     if (now - lastTap < 320) { lastTap = 0; azZoom(2, p[0], p[1]); return; }
@@ -389,6 +394,7 @@ function azAttach() {
     azTap(p[0], p[1], e.clientX, e.clientY);
   };
   svg.addEventListener('pointerup', up); svg.addEventListener('pointercancel', up);
+  svg.addEventListener('contextmenu', (e) => e.preventDefault());
   svg.addEventListener('wheel', (e) => { e.preventDefault(); const p = rel(e); azZoom(e.deltaY < 0 ? 1.25 : 0.8, p[0], p[1]); }, { passive: false });
 }
 function azTap(sx, sy, cx, cy) {

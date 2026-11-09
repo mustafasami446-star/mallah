@@ -153,8 +153,54 @@ function axMineCount(n) {
 
 /* ---------------- drawing on the map (called by azDraw) ---------------- */
 let axPts = [];      // what can be tapped: {x, y, kind, obj}
+/* ---------------- every street when zoomed in close ---------------- */
+AX.st = { key: '', list: null, drawn: '', busy: false, t: 0 };
+function axStreets(X) {
+  const g = $('azStreets'); if (!g) return;
+  const pxkm = X.k * AZ.sc / 111.32;
+  if (!AX.roads || pxkm < 12 || typeof roadsReady !== 'function' || !roadsReady()) { if (g.innerHTML) g.innerHTML = ''; AX.st.drawn = ''; return; }
+  const vb = AZ.vb, Ws = vb.w * X.k, Hs = vb.h * X.k;
+  const cs = [[0, 0], [Ws, 0], [0, Hs], [Ws, Hs]].map(([a, b]) => { const u = X.toU(a, b); return axLL(u[0], u[1]); });
+  let S = Math.min(...cs.map((c) => c[0])), N = Math.max(...cs.map((c) => c[0])), W = Math.min(...cs.map((c) => c[1])), E = Math.max(...cs.map((c) => c[1]));
+  const q = 0.01, padLa = (N - S) * 0.4, padLo = (E - W) * 0.4;
+  S = Math.floor((S - padLa) / q) * q; N = Math.ceil((N + padLa) / q) * q; W = Math.floor((W - padLo) / q) * q; E = Math.ceil((E + padLo) / q) * q;
+  const key = [S, W, N, E].map((v) => v.toFixed(2)).join(',');
+  const have = AX.st.key && (() => { const [s0, w0, n0, e0] = AX.st.key.split(',').map(Number); return S >= s0 - 1e-9 && W >= w0 - 1e-9 && N <= n0 + 1e-9 && E <= e0 + 1e-9; })();
+  if (!have && !AX.st.busy) {
+    AX.st.busy = true;
+    clearTimeout(AX.st.t);
+    AX.st.t = setTimeout(async () => {
+      const list = await roadsMainIn(S, W, N, E, true);
+      AX.st.busy = false; AX.st.key = key; AX.st.list = list || []; AX.st.drawn = '';
+      azSoon();
+    }, 250);
+  }
+  if (AX.st.list && AX.st.drawn !== AX.st.key + '|' + AZ.id) {
+    AX.st.drawn = AX.st.key + '|' + AZ.id;
+    let d = '';
+    AX.st.list.forEach((r) => { if (r[0] < 4) return; let k = 1; d += 'M'; for (; k + 1 < r.length && typeof r[k] === 'number'; k += 2) { const [x, y] = axXY(r[k], r[k + 1]); d += (k === 1 ? '' : 'L') + x.toFixed(1) + ',' + y.toFixed(1); } });
+    g.innerHTML = d ? `<path class="azSt" d="${d}"/>` : '';
+  }
+}
+/* a long press on the areas map: the route to that point, like on the main map */
+let axPin = null;
+async function azLongPress(sx, sy) {
+  const X = azXf(), u = X.toU(sx, sy), [lat, lng] = axLL(u[0], u[1]);
+  axPin = { lat, lng }; azSoon();
+  let name = 'النقطة المختارة';
+  try { const st = typeof roadsStreetAt === 'function' ? await roadsStreetAt(lat, lng) : null; if (st && st.name) name = (/^(شارع|طريق|جسر|ساحة)/.test(st.name) ? '' : 'شارع ') + st.name; } catch (e) {}
+  const leaf = arAreaOf({ lat, lng });
+  const to = { lat, lng, name };
+  const live = typeof AXN !== 'undefined' && AXN.live;
+  actionSheet('📍 ' + name + (leaf ? ' — ' + arShort(leaf) : ''), [
+    live ? { label: '🧭 غيّر الوجهة إلى هنا', fn: () => axnRetarget(to) } : { label: '🧭 المسار إلى هنا', fn: () => axnRoute(to) },
+    { label: '🗺 عرضها على الخريطة الرئيسية', fn: () => { $('areaPanel').classList.add('hidden'); if (live) axnLiveOff(true); setDestination(lat, lng, name, leaf ? arTitle(leaf) : ''); } },
+    { label: '🗺 وصف المكان بالمعالم', fn: () => describePlace(lat, lng, name) }
+  ]);
+}
 function azExtraDraw(X) {
   axSatDraw(X);
+  axStreets(X);
   if (typeof axnDraw === 'function') axnDraw(X);
   if (AZ.roadsDrawnFor !== AZ.id + '|' + AX.roads) { AZ.roadsDrawnFor = AZ.id + '|' + AX.roads; axRoadsDraw(); }
   const k = X.k, vb = AZ.vb, Ws = vb.w * k, Hs = vb.h * k;
@@ -175,6 +221,10 @@ function azExtraDraw(X) {
     h += `<path class="axMine" d="M${x.toFixed(2)},${(y - r * 1.4).toFixed(2)}L${(x + r).toFixed(2)},${y.toFixed(2)}L${x.toFixed(2)},${(y + r * 1.4).toFixed(2)}L${(x - r).toFixed(2)},${y.toFixed(2)}Z" style="fill:${AX_MINE[m.k][2]};stroke-width:${(1.5 / k).toFixed(2)}"/>`;
     axPts.push({ s, kind: 'mine', obj: m });
   });
+  if (axPin) {
+    const [x, y] = axXY(axPin.lat, axPin.lng), r = 9 / k;
+    h += `<g transform="translate(${x.toFixed(2)} ${y.toFixed(2)})"><path class="axPin" d="M0,0 L${(-r * 0.7).toFixed(2)},${(-r * 1.6).toFixed(2)} A${(r * 0.8).toFixed(2)},${(r * 0.8).toFixed(2)} 0 1 1 ${(r * 0.7).toFixed(2)},${(-r * 1.6).toFixed(2)} Z" style="stroke-width:${(1.5 / k).toFixed(2)}"/></g>`;
+  }
   $('azMine').innerHTML = h;
   axWxFill();
 }
