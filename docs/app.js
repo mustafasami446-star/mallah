@@ -78,6 +78,16 @@ const CachedLayer = L.TileLayer.extend({
         tile.onload = () => { if (S) { S.ok++; S.ms += Date.now() - t0; } finish(null); };
         tile.onerror = () => { if (S) S.err++; next(); };
         tile.src = t.src;
+        // a picture through the phone's store that neither comes nor fails: ask the source directly instead (once)
+        if (NET && t.src.indexOf('/net/tile/') > 0) {
+          const asked = t.src;
+          setTimeout(() => {
+            if (finished || tile.src !== asked) return;               // came, failed on, or Leaflet let it go
+            const m = asked.match(/[?&]u=([^&]+)/); if (!m) return;
+            if (S) S.retry = (S.retry || 0) + 1;
+            tile.src = decodeURIComponent(m[1]);
+          }, 8000);
+        }
         return;
       }
       const img = new Image();            // part of a parent tile: cut it out, then show it

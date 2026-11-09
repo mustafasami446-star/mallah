@@ -1,8 +1,8 @@
 {
-  "versionCode": 94,
-  "versionName": "5.48",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.48/Mallah-Navigator.apk",
+  "versionCode": 95,
+  "versionName": "5.49",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.49/Mallah-Navigator.apk",
   "size": 2684407,
-  "notes": "تشخيص الخريطة يعرض تفاصيل وصول صور القمر الصناعي من الإنترنت.",
-  "sha256": "39f6781ea418452d57b9308aa09160926b4552322de6c23eb39d84964cf9d93d"
+  "notes": "صور القمر الصناعي التي تعلق ولا تصل تُطلب مباشرة من المصدر بعد 8 ثوانٍ، وتشخيص أوضح للخريطة.",
+  "sha256": "8deb6e2d52a6c4b29e58659e367cf601cd44f98d71678a2344dcf07731a6e353"
 }
