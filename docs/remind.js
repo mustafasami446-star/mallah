@@ -146,7 +146,7 @@ setTimeout(async () => {
   if (s) {
     const mk = (id, icon, label, fn) => { const b = document.createElement('button'); b.id = id; b.innerHTML = '<span style="font-size:19px;width:22px;text-align:center">' + icon + '</span>' + label; b.onclick = () => { $('menuDrop').classList.add('hidden'); fn(); }; s.parentNode.insertBefore(b, s); };
     mk('openRemind', '⏰', 'تذكيرات الأماكن', remListSheet);
-    mk('openMorning', '☀️', 'الملخّص الصباحي', mornSheet);
+    mk('openMorning', '☀️', 'الملخّص الصباحي وطريق العمل', () => mornSheet());
   }
   const _share = shareMenu;
   shareMenu = function (title, lat, lng, extra, msgTitle) {

@@ -69,6 +69,57 @@ function axWxFill() {
     if (c) p.style.fill = `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${Math.max(0.35, c[3])})`;
   });
 }
+/* services: with a service chosen (and no weather colouring), each area is coloured by how many it has for
+   its size — the darker green, the more; red: none at all. Shown as a rank among the areas on the screen. */
+function axSvcFill() {
+  const svg = $('areaSvg'); if (!svg) return;
+  const on = !AX.wx && !!AX.svc;
+  svg.classList.toggle('axSvcOn', on);
+  if (!on) return;
+  const vals = [];
+  svg.querySelectorAll('path.pv').forEach((p) => {
+    const n = AR.byId[p.dataset.ar]; if (!n) return;
+    const c = axStats(n)[AX.svc] || 0;
+    vals.push({ p, c, d: c / Math.max(0.5, axKm2(n) || 1) });
+  });
+  const pos = vals.filter((v) => v.c > 0).map((v) => v.d).sort((a, b) => a - b);
+  vals.forEach((v) => {
+    if (!v.c) { v.p.style.fill = 'rgba(239,68,68,.45)'; return; }
+    const r = pos.length > 1 ? pos.findIndex((x) => x >= v.d) / (pos.length - 1) : 1;
+    v.p.style.fill = `rgba(34,197,94,${(0.22 + 0.6 * r).toFixed(2)})`;
+  });
+}
+/* the weather colouring through the coming hours: a slider (and ▶) over the map */
+let axWxPlay = null;
+function axWxBar() {
+  const box = $('azBox'); if (!box) return;
+  let b = $('axWxBar');
+  if (!AX.wx || !WX.data) { if (b) b.remove(); if (axWxPlay) { clearInterval(axWxPlay); axWxPlay = null; } return; }
+  const n0 = wxNowIdx(), n1 = WX.data.hours - 1;
+  if (WX.mode !== 'h') { WX.mode = 'h'; WX.idx = n0; }
+  if (!b) {
+    b = document.createElement('div'); b.id = 'axWxBar';
+    b.innerHTML = '<button data-w="play" aria-label="تشغيل">▶</button><input type="range" step="1"><span></span>';
+    box.appendChild(b);
+    const r = b.querySelector('input');
+    const go = (i) => { WX.idx = Math.max(n0, Math.min(n1, i)); axWxFill(); axSvcFill(); axWxBarShow(); };
+    r.oninput = () => { if (axWxPlay) { clearInterval(axWxPlay); axWxPlay = null; b.querySelector('[data-w]').textContent = '▶'; } go(+r.value); };
+    r.onchange = () => arRender();                    // the card's weather line follows the chosen hour
+    b.querySelector('[data-w]').onclick = (e) => {
+      e.stopPropagation();
+      const k = e.currentTarget;
+      if (axWxPlay) { clearInterval(axWxPlay); axWxPlay = null; k.textContent = '▶'; arRender(); return; }
+      if (WX.idx >= n1) WX.idx = n0;
+      k.textContent = '⏸';
+      axWxPlay = setInterval(() => { if (!$('axWxBar') || WX.idx >= n1) { clearInterval(axWxPlay); axWxPlay = null; k.textContent = '▶'; return; } go(WX.idx + 1); }, 650);
+    };
+    b.onpointerdown = (e) => e.stopPropagation();
+  }
+  const r = b.querySelector('input'); r.min = n0; r.max = n1;
+  if (WX.idx < n0) WX.idx = n0;
+  axWxBarShow();
+}
+function axWxBarShow() { const b = $('axWxBar'); if (!b) return; b.querySelector('input').value = WX.idx; b.querySelector('span').textContent = WX.idx === wxNowIdx() ? 'الآن' : wxTimeLabel(WX.idx); }
 async function axWxToggle() {
   const hasDust = () => !!(WX.data && WX.data.grid.h.u && WX.data.grid.h.u.some((r) => r && r.some((x) => x != null)));
   AX.wx = { '': 'temp', temp: 'rain', rain: 'dust', dust: '' }[AX.wx]; store.set('axWx', AX.wx);
@@ -76,7 +127,7 @@ async function axWxToggle() {
     toast('🌦 جارٍ تحميل الطقس…', 2000);
     try { WX.mode = 'h'; await Promise.all([wxLoad(), arLoad().then((a) => { WX.ar = a; })]); WX.idx = wxNowIdx(); } catch (e) { toast('تعذّر تحميل الطقس'); AX.wx = ''; }
   }
-  if (WX.data && WX.mode === 'h') WX.idx = wxNowIdx();
+  if (WX.data) { WX.mode = 'h'; WX.idx = wxNowIdx(); }
   if (AX.wx === 'dust' && !hasDust()) { AX.wx = ''; store.set('axWx', ''); }
   toast(AX.wx === 'dust' ? '🌫 المناطق ملوّنة بالغبار الآن' : AX.wx === 'temp' ? '🌡 المناطق ملوّنة بالحرارة الآن' : AX.wx === 'rain' ? '🌧 المناطق ملوّنة باحتمال المطر اليوم' : 'أوقفتَ تلوين الطقس', 2500);
   arRender();
@@ -405,7 +456,7 @@ function azExtraDraw(X) {
     h += `<g transform="translate(${fz(x)} ${fz(y)})"><path class="axPin" d="M0,0 L${fz((-r * 0.7))},${fz((-r * 1.6))} A${fz((r * 0.8))},${fz((r * 0.8))} 0 1 1 ${fz((r * 0.7))},${fz((-r * 1.6))} Z" style="stroke-width:${fz((1.5 / k))}"/></g>`;
   }
   $('azMine').innerHTML = h;
-  axWxFill();
+  axWxFill(); axSvcFill(); axWxBar();
 }
 function azExtraTap(sx, sy) {
   let best = null, bd = 18;
@@ -594,6 +645,7 @@ async function axDownload(n) {
       <div class="s">📐 ${axFmtKm2(axKm2(n))}${n.c ? ' · <span id="axDist"></span>' : ''}</div>
       ${axWxLine(n)}
       ${chips ? '<div class="axChips">' + chips + '</div>' : ''}
+      ${AX.svc && !AX.wx ? '<div class="s axLine">🟩 المناطق الأغمق فيها ' + esc((AX_SVC.find((s) => s[0] === AX.svc) || [0, 0, ''])[2]) + ' أكثر لمساحتها · 🟥 لا يوجد فيها شيء</div>' : ''}
       ${mine ? '<div class="s axLine">📌 مواقعك هنا: ' + mine + '</div>' : ''}
       <div class="areaBtns"><button class="chip go" data-x="route" data-id="${n.id}">🧭 المسار إليها</button><button class="chip${AX.cmp === n.id ? ' on' : ''}" data-x="cmp" data-id="${n.id}">⚖ ${AX.cmp && AX.cmp !== n.id ? 'قارن مع ' + esc(arShort(AR.byId[AX.cmp])) : AX.cmp === n.id ? 'اختر منطقة ثانية…' : 'قارن'}</button><button class="chip" data-x="exp" data-id="${n.id}">📤 تصدير</button>${NATIVE ? `<button class="chip" data-x="dl" data-id="${n.id}">⬇ شوارعها بدون إنترنت</button>` : ''}</div>
     </div>`;

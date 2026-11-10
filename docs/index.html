@@ -550,7 +550,10 @@ body.azLive #azBtns{top:calc(130px + env(safe-area-inset-top))}
 #azBtns2 button{width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:rgba(17,28,51,.88);font-size:17px;line-height:1;display:flex;align-items:center;justify-content:center}
 #azBtns2 button.on{border-color:#38bdf8;background:#0c4a6e}
 #areaSvg.axSat .pv{fill-opacity:.1}#areaSvg.axSat .pv.sel{fill-opacity:.25}#areaSvg.axSat .pvSub{stroke:#e2e8f0}
-#areaSvg.axWxOn .pv,#areaSvg.axWxOn .pv.sel{fill-opacity:1}#areaSvg.axWxOn .pv.sel{stroke:#fff;stroke-width:3}
+#areaSvg.axWxOn .pv,#areaSvg.axWxOn .pv.sel,#areaSvg.axSvcOn .pv,#areaSvg.axSvcOn .pv.sel{fill-opacity:1}#areaSvg.axSvcOn .pv.sel{stroke:#fff;stroke-width:3}
+#axWxBar{position:absolute;top:10px;left:64px;right:64px;display:flex;gap:6px;align-items:center;background:rgba(15,23,42,.9);border:1px solid var(--line);border-radius:14px;padding:5px 8px;font-size:12.5px;z-index:3}
+#axWxBar input{flex:1;min-width:0;accent-color:var(--accent)}#axWxBar span{min-width:64px;text-align:center;font-weight:700}#axWxBar button{width:30px;height:30px;border-radius:10px;background:var(--panel2);font-size:14px}
+body.azLive #axWxBar{display:none}body.sun #axWxBar{background:#fff;color:#000;border:2px solid #0f172a}#areaSvg.axWxOn .pv.sel{stroke:#fff;stroke-width:3}
 #areaSvg .azRd{fill:none;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;pointer-events:none}
 #areaSvg .azRd.c0{stroke:#f59e0b;stroke-width:3}#areaSvg .azRd.c1{stroke:#fbbf24;stroke-width:2.4}#areaSvg .azRd.c2{stroke:#fde68a;stroke-width:1.6;opacity:.85}#areaSvg .azRd.c3{stroke:#cbd5e1;stroke-width:1.1;opacity:.7}
 #areaSvg .azSt{fill:none;stroke:#94a3b8;stroke-width:1.2;opacity:.75;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;pointer-events:none}#areaSvg.axSat .azSt{stroke:#f8fafc;opacity:.45;stroke-width:1}
@@ -793,6 +796,19 @@ body.sun #dayBar .dt{color:#111}
 body.sun #glmap,body.sun .leaflet-tile-pane{filter:contrast(1.18) saturate(1.2)!important}
 body.sun path.rtLine{stroke-width:9px}body.sun path.rtCase{stroke-width:15px;stroke:#000;stroke-opacity:.75}
 body.sun input,body.sun select,body.sun textarea{color:#000;background:#fff}
+
+/* ---------- الوضع المبسّط: six big buttons, the rest hidden ---------- */
+#simpleBar{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:2px 0 6px}
+#simpleBar button{min-height:84px;border-radius:20px;background:var(--panel2);border:2px solid var(--line);color:var(--text);font-size:18px;font-weight:800;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px;line-height:1.25}
+#simpleBar button i{font-style:normal;font-size:30px}
+#simpleBar button[data-s="home"]{background:#0ea5e9;color:#04121f;border-color:#0ea5e9}
+#simpleBar a{grid-column:1/-1;text-align:center;color:var(--muted);font-size:14px;padding:8px;text-decoration:underline}
+body.simple #searchWrap > :not(.grab):not(#simpleBar){display:none!important}
+body.simple #searchWrap.mini > #simpleBar{display:grid!important}
+body.simple #layersBtn,body.simple #moreBtn,body.simple #arBtn,body.simple #teamBtn,body.simple #rptBtn,body.simple #carBar{display:none!important}
+body.simple .fab{width:60px;height:60px}
+body.simple #navText{font-size:20px;font-weight:700}body.simple #navDist{font-size:36px}
+body.sun #simpleBar button{background:#fff;color:#000;border:2px solid #0f172a}body.sun #simpleBar button[data-s="home"]{background:#7dd3fc}
 </style>
 </head>
 <body>
@@ -1087,6 +1103,9 @@ body.sun input,body.sun select,body.sun textarea{color:#000;background:#fff}
 <script src="areasnav.js"></script>
 <script src="reach.js"></script>
 <script src="remind.js"></script>
+<script src="commute.js"></script>
+<script src="widget.js"></script>
+<script src="simple.js"></script>
 <script src="layout.js"></script>
 <script src="sun.js"></script>
 <script src="trip.js"></script>
