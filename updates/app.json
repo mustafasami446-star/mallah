@@ -1,8 +1,8 @@
 {
-  "versionCode": 97,
-  "versionName": "5.51",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.51/Mallah-Navigator.apk",
+  "versionCode": 98,
+  "versionName": "5.52",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.52/Mallah-Navigator.apk",
   "size": 2684407,
-  "notes": "خريطة المناطق: عند التصغير بإصبعين يظهر ما حول المنطقة مباشرة بدل مستطيل صغير.",
-  "sha256": "0250bf9cd66dd7ba9dda5559863eb816d8172a3d21e6b80a78a5a52b738b29a3"
+  "notes": "خريطة المناطق: زرّا «⬆» و«🗺 خريطة العراق» للعودة، وتكبير وتصغير أخف بالأصابع.",
+  "sha256": "8106a1727534e4f814f34cee9cf98cd86703ab1a248659af5fbbbf3813b66e90"
 }

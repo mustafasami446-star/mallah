@@ -112,6 +112,7 @@ function arEnsure() {
 }
 function openAreas(startId) {
   arEnsure();
+  $('areaMapWrap').onclick = (e) => { const b = e.target.closest('#azUp [data-up]'); if (!b) return; e.stopPropagation(); arUp(+b.dataset.up); arSheet('min'); };
   $('areaPanel').classList.remove('hidden');
   arSheet('min');                   // the map first; the cards come up with a tap or a swipe
   $('areaSel').innerHTML = '<div class="item"><div class="grow s">جارٍ التحميل…</div></div>';
@@ -127,6 +128,12 @@ function openAreas(startId) {
     else { arPath = []; arSel = null; }
     arRender();
   }).catch(() => { $('areaSel').innerHTML = '<div class="item"><div class="grow s">تعذّر تحميل حدود المناطق</div></div>'; });
+}
+/* the way back up, on the map itself: one level up, and straight to the whole of Iraq */
+function azUpHtml() {
+  if (!arPath.length) return '';
+  const up = arPath.length > 1 ? AR.byId[arPath[arPath.length - 2]] : null;
+  return `<div id="azUp">${up ? `<button data-up="${arPath.length - 1}">⬆ ${esc(arShort(up))}</button>` : ''}<button data-up="0" class="iq">🗺 خريطة العراق</button></div>`;
 }
 function arEnter(id) { arPath.push(id); arSel = null; stSel = null; plPick = null; arRender(); arSheet('mid'); $('areaSheetBody').scrollTop = 0; }
 function arUp(depth) { stSel = null; plPick = null; arSel = arPath[depth] || null; arPath = arPath.slice(0, depth); arRender(); }
@@ -233,7 +240,7 @@ function arSvg(cur, kids, here, dots, preview) {
   if (me && me.lng >= w && me.lng <= e && me.lat >= s && me.lat <= n) AZ.me = XY(me.lng, me.lat);
   const vb = AZ.vb;
   return `<div id="azBox"><svg id="areaSvg" viewBox="${vb.x} ${vb.y} ${vb.w} ${vb.h}" xmlns="http://www.w3.org/2000/svg"><g id="azRotG"><g id="azSat"></g>${paths}<g id="azStreets"></g><g id="azRoads"></g><g id="azRoute"></g><g id="azSvc"></g><g id="azMine"></g><g id="azDots"></g><g id="azMe"></g></g><g id="azLbl"></g></svg>
-    <div id="azBtns"><button data-z="in" aria-label="تكبير">＋</button><button data-z="out" aria-label="تصغير">－</button><button data-z="fit" aria-label="الحجم الكامل">⤢</button><button data-z="north" aria-label="الشمال للأعلى" id="azNorth"><svg viewBox="0 0 24 24" width="24" height="24"><path d="M12 3l4 9h-8z" fill="#ef4444"/><path d="M12 21l-4-9h8z" fill="#94a3b8"/></svg></button></div></div>`;
+    <div id="azBtns"><button data-z="in" aria-label="تكبير">＋</button><button data-z="out" aria-label="تصغير">－</button><button data-z="fit" aria-label="الحجم الكامل">⤢</button><button data-z="north" aria-label="الشمال للأعلى" id="azNorth"><svg viewBox="0 0 24 24" width="24" height="24"><path d="M12 3l4 9h-8z" fill="#ef4444"/><path d="M12 21l-4-9h8z" fill="#94a3b8"/></svg></button></div>${azUpHtml()}</div>`;
 }
 /* pixels on screen per unit of the drawing */
 function azK() {
@@ -266,7 +273,7 @@ function azDraw() {
   const svg = $('areaSvg'); if (!svg || !AZ) return;
   const vb = AZ.vb, X = azXf(), k = X.k, pxkm = k * AZ.sc / 111.32, Ws = vb.w * k, Hs = vb.h * k;
   svg.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
-  svg.style.transform = '';                 // the quick preview ends with the real drawing (also if a layer below fails)
+  svg.style.transform = ''; svg.style.willChange = '';   // the quick preview ends with the real drawing (also if a layer below fails)
   AZ.drawn = { vb: Object.assign({}, vb), rot: AZ.rot || 0 };
   try { azClipShapes(X); } catch (e) { console.error(e); }
   $('azRotG').setAttribute('transform', AZ.rot ? `rotate(${fz(AZ.rot)} ${fz(X.cx)} ${fz(X.cy)})` : '');
@@ -359,6 +366,7 @@ function azPreview() {
   const dx = (d.vb.x + d.vb.w / 2) - (v.x + v.w / 2), dy = (d.vb.y + d.vb.h / 2) - (v.y + v.h / 2);
   const tx = kc * (dx * Math.cos(a) - dy * Math.sin(a)), ty = kc * (dx * Math.sin(a) + dy * Math.cos(a));
   svg.style.transformOrigin = '50% 50%';
+  if (!svg.style.willChange) svg.style.willChange = 'transform';
   svg.style.transform = `translate(${tx.toFixed(1)}px,${ty.toFixed(1)}px) rotate(${((AZ.rot || 0) - d.rot).toFixed(2)}deg) scale(${(kc / kr).toFixed(4)})`;
 }
 let azRaf = 0;

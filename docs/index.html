@@ -516,6 +516,10 @@ body.fs-xl #searchWrap,body.fs-xl .panel,body.fs-xl .sheet,body.fs-xl #navTop,bo
 .apl span small{display:block;font-size:11px;font-weight:400;color:#334155;direction:ltr}
 body.night .apl span{color:#f1f5f9;text-shadow:0 0 3px #000,0 0 3px #000,0 0 2px #000}body.night .apl span small{color:#cbd5e1}
 #azBtns{position:absolute;top:10px;left:10px;display:flex;flex-direction:column;gap:6px}
+#azUp{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);display:flex;gap:8px;z-index:3;max-width:calc(100% - 24px)}
+#azUp button{padding:9px 16px;border-radius:22px;background:rgba(15,23,42,.88);border:1px solid var(--line);color:var(--text);font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:var(--shadow);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+#azUp button.iq{color:var(--accent);border-color:var(--accent)}
+body.azLive #azUp{display:none}
 #azBtns button{width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:rgba(17,28,51,.88);color:var(--text);font-size:19px;line-height:1;display:flex;align-items:center;justify-content:center}
 #azBtns button:active{background:var(--panel2)}
 #azNorth svg{transition:transform .15s}#azNorth.on{border-color:#ef4444}
