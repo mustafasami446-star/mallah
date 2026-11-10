@@ -5,8 +5,11 @@ Runs on GitHub every two hours. Asks MET Norway (free, commercial use allowed, C
 forecast at every district / sub-district centre and on a 0.5° grid over Iraq; the chance of rain and of
 strong gusts for each day comes from the ECMWF ensemble (open data, CC BY 4.0). Writes:
   weather.json  everything the app shows (48 hours hour by hour, 7 days, the colour grid)
-  alerts.json   only the warnings (heavy rain, strong wind, storms, heat, frost) — small, for the phone
+  alerts.json   only the warnings (heavy rain, strong wind, storms, heat, frost, dust, fog) — small, for the phone
                 to check in the background
+Dust (surface concentration, µg/m³) comes from the CAMS forecast through Open-Meteo's free air-quality API
+(non-commercial use; the app is free) — asked for the district centres and the grid only; a sub-district
+takes its district's dust (CAMS is ~40 km, finer would not add anything). Fog is MET Norway's fog cover.
 The phones read these two files; nobody's phone talks to the weather service directly.
 """
 import json, sys, time, math, datetime as dt
@@ -65,9 +68,23 @@ def series(doc):
     return out
 
 
+def feels(t, rh, w):
+    """how hot or cold it feels: the heat index in the heat, the wind chill in the cold (°C, m/s)"""
+    if t is None: return None
+    if t >= 27 and rh is not None:
+        f = t * 9 / 5 + 32
+        hi = (-42.379 + 2.04901523 * f + 10.14333127 * rh - .22475541 * f * rh - .00683783 * f * f - .05481717 * rh * rh
+              + .00122874 * f * f * rh + .00085282 * f * rh * rh - .00000199 * f * f * rh * rh)
+        return round((hi - 32) * 5 / 9) if hi > f else round(t)
+    if t <= 10 and w is not None and w * 3.6 > 4.8:
+        v = (w * 3.6) ** 0.16
+        return round(13.12 + .6215 * t - 11.37 * v + .3965 * t * v)
+    return round(t)
+
+
 def hourly(ser, start):
     """48 hours on the hour; where the forecast becomes 6-hourly the last known 6-hour block fills in"""
-    T, W, D, G, R, P, S = [], [], [], [], [], [], []
+    T, W, D, G, R, P, S, F, A = [], [], [], [], [], [], [], [], []
     times = sorted(ser)
     for h in range(HOURS):
         t = start + dt.timedelta(hours=h)
@@ -92,7 +109,51 @@ def hourly(ser, start):
         if pop is None: pop = ((n12 or {}).get('details', {}) or {}).get('probability_of_precipitation')
         P.append(round(pop) if pop is not None else None)
         S.append(sym(((blk or n6 or n12 or {}).get('summary') or {}).get('symbol_code')))
-    return dict(t=T, w=W, d=D, g=G, r=R, p=P, s=S)
+        fog = inst.get('fog_area_fraction')
+        F.append(int(round(fog / 10) * 10) if fog is not None and per == 1 else None)   # %, only where hour by hour
+        A.append(feels(inst.get('air_temperature'), inst.get('relative_humidity'), inst.get('wind_speed')))
+    return dict(t=T, w=W, d=D, g=G, r=R, p=P, s=S, f=F, a=A)
+
+
+AQ = 'https://air-quality-api.open-meteo.com/v1/air-quality'
+def dust_for(pts, start):
+    """hourly dust (µg/m³) for HOURS hours from «start», for each (lat, lon); None where unknown"""
+    out = [None] * len(pts)
+    def one(k0):
+        chunk = pts[k0:k0 + 80]
+        url = '%s?latitude=%s&longitude=%s&hourly=dust&forecast_days=4&timezone=GMT' % (
+            AQ, ','.join('%.2f' % p[0] for p in chunk), ','.join('%.2f' % p[1] for p in chunk))
+        for attempt in range(3):
+            try:
+                req = urllib.request.Request(url, headers={'User-Agent': UA})
+                with urllib.request.urlopen(req, timeout=60) as r:
+                    doc = json.loads(r.read())
+                break
+            except Exception as e:
+                if attempt == 2: print('dust failed', str(e)[:200], file=sys.stderr); return
+                time.sleep(3 + attempt * 5)
+        docs = doc if isinstance(doc, list) else [doc]
+        for n, d in enumerate(docs):
+            hh = (d or {}).get('hourly') or {}
+            at = {t: v for t, v in zip(hh.get('time', []), hh.get('dust', []))}
+            row = []
+            for h in range(HOURS):
+                v = at.get((start + dt.timedelta(hours=h)).strftime('%Y-%m-%dT%H:00'))
+                row.append(int(round(v)) if v is not None else None)
+            if any(x is not None for x in row): out[k0 + n] = row
+    for k0 in range(0, len(pts), 80): one(k0)
+    print('dust: %d/%d places' % (sum(1 for x in out if x), len(pts)))
+    return out
+
+
+def day_max(row, start, day0):
+    """the highest hourly value of each Iraqi day that the hours reach"""
+    out = [None] * DAYS
+    for h, v in enumerate(row or []):
+        if v is None: continue
+        i = ((start + dt.timedelta(hours=h) + TZ).date() - day0).days
+        if 0 <= i < DAYS: out[i] = v if out[i] is None else max(out[i], v)
+    return out
 
 
 def daily(ser, day0):
@@ -159,6 +220,10 @@ def alerts_for(aid, h, d, start, day0):
         if 'wind' not in seen and g is not None and (g >= 120 if h['g'][i] is None else g >= 170): add('wind', i, round(g * 0.36), when); seen.add('wind')   # km/h
         s = h['s'][i]
         if 'storm' not in seen and s >= 0 and 'thunder' in SYM[s]: add('storm', i, 0, when); seen.add('storm')
+        u = (h.get('u') or [None] * HOURS)[i]
+        if 'dust' not in seen and u is not None and u >= 500: add('dust', i, u, when); seen.add('dust')       # thick dust: the sky goes brown, a few km of sight or less
+        f = (h.get('f') or [None] * HOURS)[i]
+        if 'fog' not in seen and f is not None and f >= 70: add('fog', i, f, when); seen.add('fog')
     # the next days: heat, frost, a very wet day
     for i in range(3):                     # further ahead is too uncertain to warn about
         when = (day0 + dt.timedelta(days=i)).isoformat()
@@ -222,13 +287,19 @@ def main():
     grid = [(j, i, GRID['lat0'] + j * GRID['step'], GRID['lon0'] + i * GRID['step']) for j in range(GRID['ny']) for i in range(GRID['nx'])]
     t0 = time.time()
     with ThreadPoolExecutor(8) as ex:                # MET Norway asks for < 20 requests a second
-        area_docs = list(ex.map(lambda p: fetch('compact', p[1], p[2]), pts))
+        area_docs = list(ex.map(lambda p: fetch('complete', p[1], p[2]), pts))   # «complete»: fog, humidity
         grid_docs = list(ex.map(lambda g: fetch('compact', g[2], g[3]), grid))
     ok = sum(1 for x in area_docs if x) + sum(1 for x in grid_docs if x)
     print('fetched %d/%d in %.0fs' % (ok, len(pts) + len(grid), time.time() - t0))
     if sum(1 for x in area_docs if x) < len(pts) * 0.8: sys.exit('too many failures — keeping the previous forecast')
 
     chance = ecmwf_chances(day0, DAYS)
+    # dust: the district centres and the grid; a sub-district takes its district's
+    dists = [a for a in areas if a['k'] == 'd']
+    dust = dust_for([(a['c'][1], a['c'][0]) for a in dists] + [(g[2], g[3]) for g in grid], start)
+    dust_d = {a['id']: dust[n] for n, a in enumerate(dists)}
+    dust_g = dust[len(dists):]
+    up = {a['id']: (a['id'] if a['k'] == 'd' else a.get('up')) for a in areas}
     A, alerts = {}, []
     for (aid, lat, lon), doc in zip(pts, area_docs):
         if not doc: continue
@@ -237,11 +308,16 @@ def main():
         if chance:
             c = chance(lat, lon)
             d['p'] = c['p']; d['p10'] = c['p10']; d['g15'] = c['g15']
+        u = dust_d.get(up.get(aid))
+        if u:
+            h['u'] = u; d['u'] = day_max(u, start, day0)
         A[aid] = dict(h=h, d=d)
         alerts += alerts_for(aid, h, d, start, day0)
     # the grid: hour by hour temperature, rain, wind (speed + direction); day by day max temperature, rain, wind
-    G = dict(GRID, h=dict(t=[], r=[], w=[], d=[]), d=dict(tx=[], tn=[], r=[], w=[], p=[]))
-    for (j, i, lat, lon), doc in zip(grid, grid_docs):
+    G = dict(GRID, h=dict(t=[], r=[], w=[], d=[], u=[]), d=dict(tx=[], tn=[], r=[], w=[], p=[], u=[]))
+    for n, ((j, i, lat, lon), doc) in enumerate(zip(grid, grid_docs)):
+        G['h']['u'].append(dust_g[n] or [None] * HOURS)
+        G['d']['u'].append(day_max(dust_g[n], start, day0))
         ser = series(doc)
         h, d = hourly(ser, start), daily(ser, day0)
         for k in ('t', 'r', 'w', 'd'): G['h'][k].append(h[k])
@@ -249,7 +325,7 @@ def main():
         G['d']['p'].append(chance(lat, lon)['p'] if chance else [None] * DAYS)
     meta = dict(v=1, made=dt.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'), start=start.strftime('%Y-%m-%dT%H:00Z'),
                 day0=day0.isoformat(), hours=HOURS, days=DAYS, sym=SYM,
-                src='بيانات الطقس: MET Norway (المعهد النرويجي للأرصاد) — CC BY 4.0')
+                src='بيانات الطقس: MET Norway (المعهد النرويجي للأرصاد) — CC BY 4.0' + (' · الغبار: CAMS (كوبرنيكوس) عبر Open-Meteo' if any(dust) else ''))
     import os
     os.makedirs(OUT, exist_ok=True)
     json.dump(dict(meta, areas=A, grid=G), open(OUT + '/weather.json', 'w'), separators=(',', ':'))
@@ -259,6 +335,7 @@ def main():
     for a in areas:
         if a['p'] == 'basra' and a['k'] == 'd' and a['id'] in A:
             x = A[a['id']]
+            print(a['ar'], 'dust', (x['h'].get('u') or [])[:12], 'fog', x['h']['f'][:12], 'feels', x['h']['a'][:12])
             print(a['ar'], 'T', x['h']['t'][:6], 'R', x['h']['r'][:6], 'W', x['h']['w'][:6], 'days tx', x['d']['tx'], 'r', x['d']['r'], 'p', x['d']['p'], 'p10', x['d'].get('p10'), 'g15', x['d'].get('g15'), 's', x['d']['s'])
             break
 
