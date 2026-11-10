@@ -143,14 +143,22 @@ function axViewBox(X, pad) {
   return [S - pa, W - po, N + pa, E + po];
 }
 /* a path of the roads that cross a box (keeps the drawing small when zoomed in — a huge path makes the phone drop the whole map) */
-function axRoadPath(list, box, keep) {
-  const [S, W, N, E] = box || [], out = {};
+function axRoadPath(list, box, keep, tol) {
+  const [S, W, N, E] = box || [], out = {}, t2 = (tol || 0) * (tol || 0);   // tol: points closer than this are skipped
   list.forEach((r) => {
     if (!keep(r[0])) return;
     if (!r.bb) { let s = 90, w = 180, n = -90, e = -180; for (let k = 1; k + 1 < r.length && typeof r[k] === 'number'; k += 2) { s = Math.min(s, r[k]); n = Math.max(n, r[k]); w = Math.min(w, r[k + 1]); e = Math.max(e, r[k + 1]); } r.bb = [s, w, n, e]; }
     if (box && (r.bb[2] < S || r.bb[0] > N || r.bb[3] < W || r.bb[1] > E)) return;
-    let d = '';
-    for (let k = 1; k + 1 < r.length && typeof r[k] === 'number'; k += 2) { const [x, y] = axXY(r[k], r[k + 1]); d += (k === 1 ? 'M' : 'L') + fz(x) + ',' + fz(y); }
+    // points closer than «tol» (about a pixel) to the last one drawn are skipped: the whole country's roads
+    // were 6 MB of drawing, repainted after every zoom
+    let d = '', lx = 0, ly = 0, n = 0, px = 0, py = 0, pend = false;
+    for (let k = 1; k + 1 < r.length && typeof r[k] === 'number'; k += 2) {
+      const [x, y] = axXY(r[k], r[k + 1]);
+      if (n && t2 && (x - lx) * (x - lx) + (y - ly) * (y - ly) < t2) { px = x; py = y; pend = true; continue; }
+      d += (n ? 'L' : 'M') + fz(x) + ',' + fz(y); lx = x; ly = y; n++; pend = false;
+    }
+    if (pend) d += 'L' + fz(px) + ',' + fz(py);
+    if (n < 2 && !pend) return;
     const c = Math.min(4, r[0]); (out[c] = out[c] || []).push(d);
   });
   return out;
@@ -160,12 +168,147 @@ function axRoadsDraw(X) {
   const g = $('azRoads'); if (!g || !AZ) return;
   const list = AX.roads && Array.isArray(AX.roadsFor[AZ.id]) ? AX.roadsFor[AZ.id] : [];
   X = X || azXf();
-  const pxkm = X.k * AZ.sc / 111.32, box = pxkm >= 15 ? axViewBox(X, 0.9) : null;
-  const key = AZ.id + '|' + list.length + '|' + (box ? axBoxKey(box.map((v) => Math.round(v * 200) / 200)) : 'all');
+  const pxkm = X.k * AZ.sc / 111.32;
+  if (!list.length) { if (g.innerHTML) g.innerHTML = ''; AZ.roadsKey = ''; AZ.roadsPic = null; return; }
+  if (pxkm < 15) { axRoadsPic(X, list, pxkm); return; }
+  // close in: the roads near the view, as lines (sharp at any zoom)
+  const box = axViewBox(X, 0.9);
+  const key = AZ.id + '|' + list.length + '|' + axBoxKey(box.map((v) => Math.round(v * 200) / 200));
   if (key === AZ.roadsKey) return;
-  AZ.roadsKey = key;
+  AZ.roadsKey = key; AZ.roadsPic = null;
   const by = axRoadPath(list, box, (c) => c <= 3);
   g.innerHTML = [0, 1, 2, 3].map((c) => by[c] ? `<path class="azRd c${c}" d="${by[c].join('')}"/>` : '').join('');
+}
+/* far out, the roads are painted once into a picture: a whole country of roads as lines was megabytes of drawing,
+   repainted by the phone after every zoom (the map froze a second or more after the fingers left it).
+   The picture is made for the view and a margin around it, at this zoom level's sharpness, and remade only
+   when the view leaves it or the zoom changes a level. */
+const AX_RD = [['#cbd5e1', 1.1, 0.7], ['#fde68a', 1.6, 0.85], ['#fbbf24', 2.4, 1], ['#f59e0b', 3, 1]];   // c3 … c0
+function axRoadsPic(X, list, pxkm) {
+  const lod = Math.floor(Math.log2(pxkm)), maxC = pxkm < 1.5 ? 1 : pxkm < 5 ? 2 : 3;
+  const view = axViewBox(X, 0.1), c = AZ.roadsPic;
+  if (c && c.id === AZ.id && c.lod === lod && c.n === list.length && view[0] >= c.box[0] && view[1] >= c.box[1] && view[2] <= c.box[2] && view[3] <= c.box[3]) return;
+  // made a moment later: the map shows its new view at once, the old roads picture (in place) until the new one is ready
+  const box = axViewBox(X, 0.6), id = AZ.id;
+  AZ.roadsPic = { id, lod, n: list.length, box, wait: true };
+  clearTimeout(axRoadsPic.t);
+  axRoadsPic.t = setTimeout(() => { if (AZ && AZ.id === id && AZ.roadsPic && AZ.roadsPic.box === box) axRoadsPaint(list, lod, maxC, box); }, 60);
+}
+/* the painting itself runs in a background worker (the map stays free to move while it paints);
+   phones without one paint here */
+const AX_RW_SRC = `
+const lists = {};
+onmessage = async (e) => {
+  const m = e.data;
+  if (m.put) { lists[m.put] = m.cls; return; }
+  const cls = lists[m.id]; if (!cls) { postMessage({ seq: m.seq, err: 'nolist' }); return; }
+  const cv = new OffscreenCanvas(m.cw, m.ch), ctx = cv.getContext('2d');
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  const [S, W, N, E] = m.box, fx = m.fx, fy = m.fy, tiny = 0.6 / Math.min(fx, fy);
+  for (let cl = Math.min(3, m.maxC); cl >= 0; cl--) {
+    const c = cls[cl]; if (!c) continue;
+    const st = m.styles[3 - cl]; ctx.strokeStyle = st[0]; ctx.globalAlpha = st[2]; ctx.lineWidth = st[1] * m.dpr;
+    ctx.beginPath();
+    const bb = c.bb, pts = c.pts, at = c.at;
+    for (let r = 0; r < at.length - 1; r++) {
+      const b = r * 4;
+      if (bb[b + 2] < S || bb[b] > N || bb[b + 3] < W || bb[b + 1] > E) continue;
+      if (bb[b + 2] - bb[b] < tiny && bb[b + 3] - bb[b + 1] < tiny) continue;
+      const a0 = at[r], a1 = at[r + 1];
+      let lx = -1e9, ly = -1e9;
+      for (let q = a0; q < a1; q += 2) {
+        const px = (pts[q + 1] - W) * fx, py = (N - pts[q]) * fy;
+        if (q === a0) ctx.moveTo(px, py);
+        else if (Math.abs(px - lx) + Math.abs(py - ly) > 0.8 || q + 2 >= a1) ctx.lineTo(px, py);
+        else continue;
+        lx = px; ly = py;
+      }
+    }
+    ctx.stroke();
+  }
+  const blob = await cv.convertToBlob({ type: 'image/png' });
+  postMessage({ seq: m.seq, blob });
+};`;
+let axRW = null, axRWseq = 0;
+const axRWcb = {};
+function axRWorker() {
+  if (axRW !== null) return axRW;
+  try {
+    if (typeof OffscreenCanvas === 'undefined' || typeof Worker === 'undefined') throw 0;
+    axRW = new Worker(URL.createObjectURL(new Blob([AX_RW_SRC], { type: 'text/javascript' })));
+    axRW.onmessage = (e) => { const f = axRWcb[e.data.seq]; delete axRWcb[e.data.seq]; if (f) f(e.data); };
+    axRW.onerror = () => { axRW = false; };
+  } catch (e) { axRW = false; }
+  return axRW;
+}
+/* the roads by class, packed once per list: numbers in flat arrays the worker can keep */
+function axRoadsPack(list) {
+  if (list.pack) return list.pack;
+  const by = [[], [], [], [], []];
+  for (const r of list) by[Math.min(4, r[0])].push(r);
+  const cls = by.map((rs) => {
+    let n = 0; rs.forEach((r) => { for (let q = 1; q + 1 < r.length && typeof r[q] === 'number'; q += 2) n += 2; });
+    const pts = new Float64Array(n), at = new Int32Array(rs.length + 1), bb = new Float64Array(rs.length * 4);
+    let o = 0;
+    rs.forEach((r, i) => {
+      at[i] = o; let s = 90, w = 180, nn = -90, e = -180;
+      for (let q = 1; q + 1 < r.length && typeof r[q] === 'number'; q += 2) {
+        pts[o++] = r[q]; pts[o++] = r[q + 1];
+        s = Math.min(s, r[q]); nn = Math.max(nn, r[q]); w = Math.min(w, r[q + 1]); e = Math.max(e, r[q + 1]);
+      }
+      bb[i * 4] = s; bb[i * 4 + 1] = w; bb[i * 4 + 2] = nn; bb[i * 4 + 3] = e;
+    });
+    at[rs.length] = o;
+    return { pts, at, bb };
+  });
+  list.pack = { id: 'L' + (++axRWseq), cls, sent: false };
+  return list.pack;
+}
+function axRoadsPaint(list, lod, maxC, box) {
+  const g = $('azRoads'); if (!g) return;
+  const [S, W, N, E] = box;
+  const [x0, y0] = axXY(N, W), [x1, y1] = axXY(S, E);
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  let k = Math.pow(2, lod + 0.5) * 111.32 / AZ.sc * dpr;           // canvas pixels per drawing unit
+  k = Math.min(k, 3072 / Math.max(1e-9, x1 - x0), 3072 / Math.max(1e-9, y1 - y0));
+  const cw = Math.max(1, Math.round((x1 - x0) * k)), ch = Math.max(1, Math.round((y1 - y0) * k));
+  const fx = AZ.geo.kx * AZ.geo.sc * k, fy = AZ.geo.sc * k;
+  const pic = AZ.roadsPic;
+  const show = (b) => {
+    if (!b || AZ.roadsPic !== pic || !g.isConnected) return;
+    pic.wait = false; AZ.roadsKey = '';
+    const url = URL.createObjectURL(b), old = g.dataset.url;
+    g.innerHTML = `<image href="${url}" x="${fz(x0)}" y="${fz(y0)}" width="${fz(x1 - x0)}" height="${fz(y1 - y0)}" preserveAspectRatio="none" style="pointer-events:none"/>`;
+    g.dataset.url = url;
+    if (old) setTimeout(() => URL.revokeObjectURL(old), 1000);
+  };
+  const pack = axRoadsPack(list), w = axRWorker();
+  if (w) {
+    if (!pack.sent) { w.postMessage({ put: pack.id, cls: pack.cls }); pack.sent = true; }
+    const seq = ++axRWseq;
+    axRWcb[seq] = (d) => { if (d.blob) show(d.blob); else { pack.sent = false; } };
+    w.postMessage({ seq, id: pack.id, box, cw, ch, fx, fy, maxC, dpr, styles: AX_RD });
+    return;
+  }
+  // no worker: paint here
+  const cv = document.createElement('canvas'); cv.width = cw; cv.height = ch;
+  const ctx = cv.getContext('2d'); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  const tiny = 0.6 / Math.min(fx, fy);
+  for (let cl = Math.min(3, maxC); cl >= 0; cl--) {
+    const c = pack.cls[cl], st = AX_RD[3 - cl]; ctx.strokeStyle = st[0]; ctx.globalAlpha = st[2]; ctx.lineWidth = st[1] * dpr;
+    ctx.beginPath();
+    for (let r = 0; r < c.at.length - 1; r++) {
+      const b = r * 4, bb = c.bb;
+      if (bb[b + 2] < S || bb[b] > N || bb[b + 3] < W || bb[b + 1] > E) continue;
+      if (bb[b + 2] - bb[b] < tiny && bb[b + 3] - bb[b + 1] < tiny) continue;
+      for (let q = c.at[r]; q < c.at[r + 1]; q += 2) {
+        const px = (c.pts[q + 1] - W) * fx, py = (N - c.pts[q]) * fy;
+        if (q === c.at[r]) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+    }
+    ctx.stroke();
+  }
+  cv.toBlob(show);
 }
 
 /* ---------------- 8. your places ---------------- */
