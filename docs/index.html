@@ -519,7 +519,15 @@ body.night .apl span{color:#f1f5f9;text-shadow:0 0 3px #000,0 0 3px #000,0 0 2px
 #azUp{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);display:flex;gap:8px;z-index:3;max-width:calc(100% - 24px)}
 #azUp button{padding:9px 16px;border-radius:22px;background:rgba(15,23,42,.88);border:1px solid var(--line);color:var(--text);font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:var(--shadow);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
 #azUp button.iq{color:var(--accent);border-color:var(--accent)}
-body.azLive #azUp,#azBox:has(#axnBar) #azUp{display:none}
+body.azLive #azUp,#azBox:has(#axnBar) #azUp,#azBox:has(#axrBar) #azUp{display:none}
+#axrBar{position:absolute;left:10px;right:58px;bottom:10px;background:rgba(15,23,42,.95);border:1px solid var(--line);border-radius:16px;padding:10px 12px;box-shadow:var(--shadow);font-size:13.5px;display:flex;flex-direction:column;gap:6px;z-index:4}
+#azBox:has(#axnBar) #axrBar{display:none}
+.axrRow{display:flex;align-items:center;gap:8px}
+.axrRow i{width:14px;height:14px;border-radius:4px;flex:none;font-style:normal;display:flex;align-items:center;justify-content:center}
+.axrRow b{min-width:38px}
+.axrRow span{color:var(--muted);flex:1}
+.axrRow.h{cursor:pointer}.axrRow.h span{color:var(--text)}
+.axrStart{fill:#fff;stroke:#0f172a;stroke-width:3}
 #azBtns button{width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:rgba(17,28,51,.88);color:var(--text);font-size:19px;line-height:1;display:flex;align-items:center;justify-content:center}
 #azBtns button:active{background:var(--panel2)}
 #azNorth svg{transition:transform .15s}#azNorth.on{border-color:#ef4444}
@@ -1059,6 +1067,7 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
 <script src="drive.js"></script>
 <script src="areas2.js"></script>
 <script src="areasnav.js"></script>
+<script src="reach.js"></script>
 <script src="layout.js"></script>
 <script src="trip.js"></script>
 <script src="arbaeen.js"></script>

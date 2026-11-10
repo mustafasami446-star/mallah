@@ -300,9 +300,79 @@ function build(g, mode, parts, s, t, cost) {
   return { code: 'Ok', routes: [{ geometry: { type: 'LineString', coordinates: coords }, legs: [{ steps }], distance, duration: cost, offline: true }],
     snap: { from: s.d, to: t.d } };
 }
+/* «where can I get to in …»: every road reached from a point within the time, painted into a picture
+   (the bands coloured: the nearest last, on top), and how long to reach each of the given points */
+async function reach(g, mode, from, bands, probe) {
+  const s = snap(g, from[0], from[1], mode); if (!s) return null;
+  const T = bands[bands.length - 1] * 60;
+  const dist = new Float64Array(g.N).fill(Infinity), heap = new Heap(), sv = speedOf(g, s.e, mode);
+  if (canGo(g, s.e, true, mode)) { const c = (g.elen[s.e] - s.off) / sv; dist[g.eb[s.e]] = c; heap.push(c, g.eb[s.e]); }
+  if (canGo(g, s.e, false, mode)) { const c = s.off / sv; if (c < dist[g.ea[s.e]]) { dist[g.ea[s.e]] = c; heap.push(c, g.ea[s.e]); } }
+  const done = [];
+  while (heap.size) {
+    const du = heap.topKey(), u = heap.pop();
+    if (du > dist[u]) continue;
+    if (du > T) break;
+    done.push(u);
+    for (let k = g.deg[u]; k < g.deg[u + 1]; k++) {
+      const x = g.adj[k], e = x >> 1, fwd = !(x & 1);
+      if (!usable(g, e, mode) || !canGo(g, e, fwd, mode)) continue;
+      const v = fwd ? g.eb[e] : g.ea[e], c = du + g.elen[e] / speedOf(g, e, mode);
+      if (c < dist[v]) { dist[v] = c; heap.push(c, v); }
+    }
+  }
+  if (!done.length) return null;
+  // the box of what was reached
+  let S = 90, W = 180, N = -90, E = -180;
+  for (const u of done) { const la = g.nodes[2 * u] / 1e6, lo = g.nodes[2 * u + 1] / 1e6; if (la < S) S = la; if (la > N) N = la; if (lo < W) W = lo; if (lo > E) E = lo; }
+  const padLa = Math.max(0.005, (N - S) * 0.04), padLo = Math.max(0.005, (E - W) * 0.04); S -= padLa; N += padLa; W -= padLo; E += padLo;
+  const kx = Math.cos((S + N) / 2 * rad), wKm = (E - W) * 111.32 * kx, hKm = (N - S) * 110.54;
+  const ppk = Math.min(2048 / wKm, 2048 / hKm, 40);              // pixels per km
+  const cw = Math.max(1, Math.round(wKm * ppk)), ch = Math.max(1, Math.round(hKm * ppk));
+  const cv = new OffscreenCanvas(cw, ch), ctx = cv.getContext('2d');
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  const X = (lo) => (lo - W) * 111.32 * kx * ppk, Y = (la) => (N - la) * 110.54 * ppk;
+  const band = (t) => { for (let i = 0; i < bands.length; i++) if (t <= bands[i] * 60) return i; return -1; };
+  // the edges of each band: an edge belongs to the band of its nearer end
+  const paths = bands.map(() => new Path2D());
+  const seen = new Uint8Array(g.E);
+  for (const u of done) {
+    for (let k = g.deg[u]; k < g.deg[u + 1]; k++) {
+      const e = g.adj[k] >> 1; if (seen[e] || !usable(g, e, mode)) continue; seen[e] = 1;
+      const b = band(Math.min(dist[g.ea[e]], dist[g.eb[e]])); if (b < 0) continue;
+      const p = epts(g, e), P = paths[b];
+      P.moveTo(X(p[1]), Y(p[0])); for (let q = 2; q < p.length; q += 2) P.lineTo(X(p[q + 1]), Y(p[q]));
+    }
+  }
+  const COL = ['#22c55e', '#facc15', '#f97316', '#ef4444'], LINE = ['#166534', '#a16207', '#c2410c', '#991b1b'];
+  // wide soft strokes around every reached road make the reached area (about 1 km either side, softened);
+  // the far band first, so the near ones lie on top; then the roads themselves, thin and darker
+  const wide = Math.max(6, 1.6 * ppk);
+  try { ctx.filter = 'blur(' + Math.max(1, Math.round(wide / 5)) + 'px)'; } catch (e) {}
+  for (let b = bands.length - 1; b >= 0; b--) { ctx.strokeStyle = COL[b]; ctx.lineWidth = wide; ctx.stroke(paths[b]); }
+  try { ctx.filter = 'none'; } catch (e) {}
+  const thin = Math.max(0.8, Math.min(2, ppk / 15));
+  for (let b = bands.length - 1; b >= 0; b--) { ctx.strokeStyle = LINE[b]; ctx.lineWidth = thin; ctx.stroke(paths[b]); }
+  const blob = await cv.convertToBlob({ type: 'image/png' });
+  // the time to each asked point: the nearest reached junction within ~600 m (plus walking that bit)
+  const cell = 0.006, grid = new Map();
+  for (const u of done) { const key = Math.floor(g.nodes[2 * u] / 1e6 / cell) * 100000 + Math.floor(g.nodes[2 * u + 1] / 1e6 / cell); let a = grid.get(key); if (!a) grid.set(key, a = []); a.push(u); }
+  const times = new Float32Array(probe.length / 2).fill(-1);
+  for (let i = 0; i < times.length; i++) {
+    const la = probe[2 * i], lo = probe[2 * i + 1], cy = Math.floor(la / cell), cx = Math.floor(lo / cell);
+    let best = Infinity;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      const a = grid.get((cy + dy) * 100000 + cx + dx); if (!a) continue;
+      for (const u of a) { const d = hav(la, lo, g.nodes[2 * u] / 1e6, g.nodes[2 * u + 1] / 1e6); if (d < 600) best = Math.min(best, dist[u] + d / 1.3); }
+    }
+    if (best <= T) times[i] = best / 60;
+  }
+  return { blob, box: [S, W, N, E], times, start: [s.lat, s.lng], nodes: done.length };
+}
 onmessage = async (ev) => {
   const m = ev.data;
   try {
+    if (m.reach) { const g = G[m.graph]; if (!g) throw new Error('no graph'); const r = await reach(g, m.reach.mode, m.reach.from, m.reach.bands, m.reach.probe); postMessage({ id: m.id, ok: r }); return; }
     if (m.load) { const r = await load(m.load, m.buf); postMessage({ id: m.id, ok: r }); return; }
     if (m.drop) { delete G[m.drop]; postMessage({ id: m.id, ok: 1 }); return; }
     if (m.has) { postMessage({ id: m.id, ok: !!G[m.has] }); return; }
@@ -380,6 +450,12 @@ async function roadsRoadAt(lat, lng, heading) {
   try { await roadsLoad(id); return await roadsCall({ road: [lat, lng, heading == null ? null : heading], graph: id }); } catch (e) { return null; }
 }
 
+/* where you can get to from a point within the given minutes (the last band is the limit) */
+async function roadsReach(lat, lng, mode, bands, probe) {
+  const id = roadsFor([lat, lng], [lat, lng]); if (!id) throw new Error('NoOffline');
+  await roadsLoad(id);
+  return roadsCall({ reach: { from: [lat, lng], mode, bands, probe: probe || new Float64Array(0) }, graph: id });
+}
 /* the main roads of a box (motorways to secondary roads), from the saved road network */
 async function roadsMainIn(s, w, n, e, all) {
   const id = roadsFor([s, w], [n, e]) || roadsFor([(s + n) / 2, (w + e) / 2], [(s + n) / 2, (w + e) / 2]); if (!id) return null;
