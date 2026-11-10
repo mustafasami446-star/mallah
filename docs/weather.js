@@ -14,6 +14,15 @@ let wxCfg = store.get('wxCfg', { alerts: true, follow: [] });
 const wxSaveCfg = () => { store.set('wxCfg', wxCfg); wxNative(); };
 
 /* ---------------- words and pictures ---------------- */
+/* dust (µg/m³ near the ground, CAMS) in words: what you see outside */
+function wxDust(u) {
+  if (u == null || u < 100) return null;
+  if (u < 300) return ['🌫', 'غبار خفيف', 1];
+  if (u < 700) return ['🌫', 'غبار', 2];
+  if (u < 1500) return ['🟤', 'غبار كثيف', 3];
+  return ['🟤', 'عاصفة ترابية', 4];
+}
+const wxFogTxt = (f) => (f == null || f < 40 ? null : f >= 70 ? 'ضباب كثيف' : 'ضباب');
 const WX_SYM = {
   clearsky: ['☀️', 'صحو'], fair: ['🌤', 'صحو غالبًا'], partlycloudy: ['⛅', 'غائم جزئيًا'], cloudy: ['☁️', 'غائم'], fog: ['🌫', 'ضباب'],
   lightrain: ['🌦', 'مطر خفيف'], rain: ['🌧', 'مطر'], heavyrain: ['🌧', 'مطر غزير'],
@@ -93,12 +102,14 @@ function wxValues(id) {
     const di = wxDayOfHour(i), hr = iqDate(wxHourMs(i)).getUTCHours();
     return {
       n, t: avg(pick((a) => a.h.t[i])), r: max(pick((a) => a.h.r[i])), w: max(pick((a) => a.h.w[i])), d: list.length === 1 ? list[0].h.d[i] : null,
+      a: avg(pick((a) => a.h.a && a.h.a[i])), f: max(pick((a) => a.h.f && a.h.f[i])), u: max(pick((a) => a.h.u && a.h.u[i])),
       s: most(pick((a) => a.h.s[i])), p: max(pick((a) => a.d.p && a.d.p[di])), night: hr < 6 || hr >= 18
     };
   }
   return {
     n, tx: max(pick((a) => a.d.tx[i])), tn: avg(pick((a) => a.d.tn[i])), r: max(pick((a) => a.d.r[i])), p: max(pick((a) => a.d.p && a.d.p[i])),
-    w: max(pick((a) => a.d.w[i])), s: most(pick((a) => a.d.s[i])), p10: max(pick((a) => a.d.p10 && a.d.p10[i])), g15: max(pick((a) => a.d.g15 && a.d.g15[i]))
+    w: max(pick((a) => a.d.w[i])), s: most(pick((a) => a.d.s[i])), p10: max(pick((a) => a.d.p10 && a.d.p10[i])), g15: max(pick((a) => a.d.g15 && a.d.g15[i])),
+    u: max(pick((a) => a.d.u && a.d.u[i]))
   };
 }
 
@@ -108,6 +119,7 @@ const WX_RAMP = {
   rainP: [[0, 0, 0, 0, 0], [10, 125, 211, 252, 0.15], [30, 56, 189, 248, 0.4], [60, 37, 99, 235, 0.6], [90, 124, 58, 237, 0.75]],
   rainD: [[0, 0, 0, 0, 0], [1, 125, 211, 252, 0.45], [5, 56, 189, 248, 0.6], [15, 37, 99, 235, 0.7], [40, 124, 58, 237, 0.8]],
   wind: [[0, 34, 197, 94, 0.18], [4, 132, 204, 22, 0.35], [8, 250, 204, 21, 0.5], [12, 249, 115, 22, 0.62], [17, 239, 68, 68, 0.72], [25, 168, 85, 247, 0.8]],
+  dust: [[0, 0, 0, 0, 0], [100, 222, 200, 150, 0.18], [300, 214, 170, 100, 0.4], [700, 190, 125, 60, 0.58], [1500, 150, 85, 40, 0.72], [4000, 105, 55, 30, 0.85]],
   temp: [[-5, 147, 197, 253, 0.55], [5, 96, 165, 250, 0.5], [15, 52, 211, 153, 0.45], [25, 250, 204, 21, 0.5], [35, 249, 115, 22, 0.55], [45, 220, 38, 38, 0.62], [52, 136, 19, 55, 0.7]]
 };
 function wxColor(ramp, v) {
@@ -123,6 +135,7 @@ function wxColor(ramp, v) {
 function wxRampFor() {
   if (WX.tab === 'wind') return { ramp: 'wind', unit: 'كم/س', ticks: [[0, '0'], [4, '15'], [8, '30'], [12, '45'], [17, '60'], [25, '90']] };
   if (WX.tab === 'temp') return { ramp: 'temp', unit: '°م', ticks: [[-5, '-5'], [5, '5'], [15, '15'], [25, '25'], [35, '35'], [45, '45']] };
+  if (WX.tab === 'dust') return { ramp: 'dust', unit: 'الغبار', ticks: [[100, 'خفيف'], [300, 'غبار'], [700, 'كثيف'], [1500, 'عاصفة']] };
   if (WX.mode === 'd' && wxHasChance()) return { ramp: 'rainP', unit: 'احتمال المطر', ticks: [[10, '10%'], [30, '30%'], [60, '60%'], [90, '90%']] };
   if (WX.mode === 'd') return { ramp: 'rainD', unit: 'ملم في اليوم', ticks: [[1, '1'], [5, '5'], [15, '15'], [40, '40']] };
   return { ramp: 'rainH', unit: 'ملم في الساعة', ticks: [[0.4, '0.4'], [1, '1'], [3, '3'], [8, '8'], [20, '20']] };
@@ -134,10 +147,12 @@ function wxGridVal(k) {
   if (WX.mode === 'h') {
     if (WX.tab === 'wind') { const v = G.h.w[k][i]; return v == null ? null : v / 10; }
     if (WX.tab === 'temp') return G.h.t[k][i];
+    if (WX.tab === 'dust') return G.h.u && G.h.u[k] ? G.h.u[k][i] : null;
     const v = G.h.r[k][i]; return v == null ? null : v / 10;
   }
   if (WX.tab === 'wind') { const v = G.d.w[k][i]; return v == null ? null : v / 10; }
   if (WX.tab === 'temp') return G.d.tx[k][i];
+  if (WX.tab === 'dust') return G.d.u && G.d.u[k] ? G.d.u[k][i] : null;
   if (wxHasChance()) return G.d.p[k] ? G.d.p[k][i] : null;
   const v = G.d.r[k][i]; return v == null ? null : v / 10;
 }
@@ -419,6 +434,7 @@ function wxLabelText(v) {
   if (WX.tab === 'temp') return WX.mode === 'h' ? (v.t == null ? null : v.t + '°') : (v.tx == null ? null : v.tx + '°<small>/' + v.tn + '°</small>');
   if (WX.tab === 'wind') { const w = WX.mode === 'h' ? v.w : v.w; return w == null ? null : kmh(w) + (v.d != null ? '<i style="transform:rotate(' + (v.d + 180) + 'deg)">↑</i>' : ''); }
   if (WX.tab === 'sky') { const s = wxSym(v.s, v.night); return s[0]; }
+  if (WX.tab === 'dust') { const d = wxDust(v.u); return d ? d[0] : v.u == null ? null : '✓'; }
   if (WX.mode === 'd' && v.p != null) return v.p + '%';
   if (v.r == null) return null;
   return v.r ? '💧' + mm(v.r) : (v.p != null && WX.mode === 'h' ? '<small>' + v.p + '%</small>' : '0');
@@ -428,6 +444,7 @@ function wxLabelColor(v) {
   let c = null;
   if (WX.tab === 'temp') c = wxColor('temp', WX.mode === 'h' ? v.t : v.tx);
   else if (WX.tab === 'wind') c = wxColor('wind', v.w == null ? null : v.w / 10);
+  else if (WX.tab === 'dust') c = wxColor('dust', v.u);
   else if (WX.tab === 'rain') c = WX.mode === 'd' && v.p != null ? wxColor('rainP', v.p) : wxColor(WX.mode === 'd' ? 'rainD' : 'rainH', v.r == null ? null : v.r / 10);
   return c && c[3] > 0.2 ? 'rgba(' + c.slice(0, 3).map(Math.round).join(',') + ',.92)' : null;
 }
@@ -457,7 +474,7 @@ function wxEnsure() {
   const el = document.createElement('div'); el.id = 'wxSheet'; el.className = 'sheet hidden';
   el.innerHTML = `<div class="grab" id="wxGrab"></div><div class="wxTop"><b>🌦 الطقس</b><span class="s" id="wxMade"></span><button class="iconBtn" id="wxClose" aria-label="إغلاق"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
     <div class="wxPeek" id="wxPeek"></div>
-    <div class="wxTabs" id="wxTabs"><button data-tab="rain">🌧 المطر</button><button data-tab="wind">💨 الرياح</button><button data-tab="temp">🌡 الحرارة</button><button data-tab="sky">⛅ الحالة</button></div>
+    <div class="wxTabs" id="wxTabs"><button data-tab="rain">🌧 المطر</button><button data-tab="wind">💨 الرياح</button><button data-tab="temp">🌡 الحرارة</button><button data-tab="sky">⛅ الحالة</button><button data-tab="dust" class="wxDustTab">🌫 الغبار</button></div>
     <div class="wxTime"><div class="wxMode" id="wxMode"><button data-m="h">ساعة بساعة</button><button data-m="d">الأيام</button></div><button class="wxPlay" id="wxPlay" aria-label="تشغيل">▶</button></div>
     <div class="wxSlide"><input type="range" id="wxRange" min="0" max="47" step="1" dir="ltr"><div id="wxWhen"></div></div>
     <div class="wxLegend" id="wxLegend"></div>
@@ -547,13 +564,15 @@ function wxRender(fast) {
   if (!WX.on || !WX.data) return;
   const D = WX.data, n = WX.mode === 'h' ? D.hours : D.days;
   WX.idx = Math.max(0, Math.min(n - 1, WX.idx));
-  document.querySelectorAll('#wxTabs [data-tab]').forEach((b) => b.classList.toggle('on', b.dataset.tab === WX.tab));
+  const hasDust = !!(D.grid.h.u && D.grid.h.u.some((r) => r && r.some((x) => x != null)));
+  if (!hasDust && WX.tab === 'dust') WX.tab = 'rain';
+  document.querySelectorAll('#wxTabs [data-tab]').forEach((b) => { b.classList.toggle('on', b.dataset.tab === WX.tab); if (b.dataset.tab === 'dust') b.classList.toggle('hidden', !hasDust); });
   document.querySelectorAll('#wxMode [data-m]').forEach((b) => b.classList.toggle('on', b.dataset.m === WX.mode));
   const r = $('wxRange'); r.max = n - 1; r.value = WX.idx;
   $('wxWhen').textContent = wxTimeLabel(WX.idx);
   const age = Math.round((Date.now() - Date.parse(D.made)) / 60e3);
   $('wxMade').textContent = 'حُدّثت ' + (age < 60 ? 'قبل ' + Math.max(1, age) + ' د' : age < 1440 ? 'قبل ' + Math.round(age / 60) + ' س' : 'قبل ' + Math.round(age / 1440) + ' يوم');
-  $('wxSrc').textContent = D.src + (wxHasChance() ? ' · احتمالات المطر: ECMWF' : '');
+  $('wxSrc').textContent = D.src + (wxHasChance() ? ' · احتمالات المطر: ECMWF' : '');   // the dust source is named in D.src
   // the picture
   if (WX.tab === 'sky' && WX.mode === 'd') { if (WX.overlay) { map.removeLayer(WX.overlay); WX.overlay = null; } }
   else {
@@ -575,7 +594,10 @@ function wxLine(v, full) {
   if (WX.mode === 'h') {
     const s = wxSym(v.s, v.night);
     parts.push(`<span class="big">${s[0]}</span> ${s[1]}`);
-    if (v.t != null) parts.push(`🌡 <b>${v.t}°</b>`);
+    if (v.t != null) parts.push(`🌡 <b>${v.t}°</b>${v.a != null && Math.abs(v.a - v.t) >= 3 ? ' · تُحسّ <b>' + v.a + '°</b>' : ''}`);
+    const du = wxDust(v.u), fg = wxFogTxt(v.f);
+    if (du) parts.push(`${du[0]} <b>${du[1]}</b>`);
+    if (fg) parts.push(`🌫 <b>${fg}</b> — رؤية ضعيفة`);
     parts.push(`🌧 ${v.r ? '<b>' + mm(v.r) + '</b> ملم/س' : 'لا مطر'}${v.p != null ? ' · احتمال اليوم <b>' + v.p + '%</b>' : ''}`);
     if (v.w != null) parts.push(`💨 <b>${kmh(v.w)}</b> كم/س${v.d != null ? ' ' + wxDirName(v.d) : ''}`);
   } else {
@@ -585,6 +607,7 @@ function wxLine(v, full) {
     parts.push(`🌧 ${v.p != null ? 'احتمال <b>' + v.p + '%</b>' : ''}${v.r != null ? (v.p != null ? ' · ' : '') + (v.r ? '<b>' + mm(v.r) + '</b> ملم' : 'لا مطر') : ''}`);
     if (v.w != null) parts.push(`💨 حتى <b>${kmh(v.w)}</b> كم/س`);
     if (full && v.g15 != null && v.g15 >= 30) parts.push(`🌪 احتمال هبّات قوية ${v.g15}%`);
+    const du = wxDust(v.u); if (du) parts.push(`${du[0]} ${du[1]}`);
   }
   return parts.map((p) => '<span class="wxP">' + p + '</span>').join('');
 }
@@ -608,7 +631,7 @@ function wxWeekDays(id) {
 function wxWeekHtml(id) {
   const days = wxWeekDays(id);
   if (!days.some(Boolean)) return '';
-  return '<div class="wxWeek">' + days.map((v, i) => !v ? '' : `<button data-wd="${i}" class="${WX.mode === 'd' && WX.idx === i ? 'on' : ''}"><small>${wxDayLabel(i, true)}</small><span>${wxSym(v.s)[0]}</span><b>${v.tx != null ? v.tx + '°' : '—'}</b><small>${v.tn != null ? v.tn + '°' : ''}</small>${v.p != null && v.p >= 20 ? '<i>💧' + v.p + '%</i>' : ''}</button>`).join('') + '</div>';
+  return '<div class="wxWeek">' + days.map((v, i) => !v ? '' : `<button data-wd="${i}" class="${WX.mode === 'd' && WX.idx === i ? 'on' : ''}"><small>${wxDayLabel(i, true)}</small><span>${wxSym(v.s)[0]}</span><b>${v.tx != null ? v.tx + '°' : '—'}</b><small>${v.tn != null ? v.tn + '°' : ''}</small>${v.p != null && v.p >= 20 ? '<i>💧' + v.p + '%</i>' : ''}${wxDust(v.u) && wxDust(v.u)[2] >= 2 ? '<i>' + wxDust(v.u)[0] + ' ' + wxDust(v.u)[1] + '</i>' : ''}</button>`).join('') + '</div>';
 }
 /* a picture of the forecast to send in WhatsApp */
 async function wxShareCard() {
@@ -716,6 +739,8 @@ const WX_ALERT = {
   wind: (v) => '💨 ' + (v < 0 ? 'احتمال رياح قوية ' + (-v) + '%' : 'رياح قوية نحو ' + v + ' كم/س') + ' — قد تثير الغبار',
   storm: () => '⛈ عواصف رعدية متوقعة',
   heat: (v) => '🔥 حر شديد — العظمى ' + v + '°',
+  dust: (v) => (v >= 1500 ? '🟤 عاصفة ترابية' : '🟤 غبار كثيف') + ' — الرؤية قليلة، خفّف السرعة وأغلق النوافذ',
+  fog: () => '🌫 ضباب كثيف — رؤية ضعيفة على الطرق، انتبه عند القيادة',
   frost: (v) => '❄️ صقيع — الصغرى ' + v + '°'
 };
 function wxWhenText(t) {
@@ -787,7 +812,7 @@ function wxAlertSettings() {
   const mine = (store.get('wxMine', null) || []).map((id) => WX.ar && WX.ar.byId[id]).filter(Boolean);
   const el = document.createElement('div'); el.id = 'wxBellBox'; el.className = 'wxModal';
   el.innerHTML = `<div class="card"><h3>🔔 تنبيهات الطقس</h3>
-    <label class="wxSw"><input type="checkbox" id="wxAl" ${wxCfg.alerts ? 'checked' : ''}> تنبيهي بالأمطار الغزيرة والرياح القوية والعواصف والحر الشديد والصقيع</label>
+    <label class="wxSw"><input type="checkbox" id="wxAl" ${wxCfg.alerts ? 'checked' : ''}> تنبيهي بالأمطار الغزيرة والرياح القوية والعواصف والغبار الكثيف والضباب والحر الشديد والصقيع</label>
     <div class="s" style="padding:4px 14px">${NATIVE ? 'يفحص الهاتف التنبيهات كل ساعتين حتى والبرنامج مغلق، ويرسل إشعارًا.' : 'في نسخة الويب تظهر التنبيهات عند فتح الملاح.'}</div>
     <div class="s" style="padding:8px 14px 2px"><b>📍 منطقتي (حسب موقعي):</b> ${mine.length ? mine.map((n) => esc(arShort(n))).join(' ← ') : 'غير معروفة بعد — شغّل الموقع'}</div>
     <div class="s" style="padding:8px 14px 2px"><b>⭐ مناطق أتابعها:</b></div>

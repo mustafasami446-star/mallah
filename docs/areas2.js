@@ -64,18 +64,21 @@ function axWxFill() {
     const v = wxValues(p.dataset.ar); if (!v) return;
     let c = null;
     if (AX.wx === 'temp') c = wxColor('temp', v.t != null ? v.t : v.tx);
+    else if (AX.wx === 'dust') c = wxColor('dust', v.u);
     else c = v.p != null ? wxColor('rainP', v.p) : wxColor('rainH', v.r);
     if (c) p.style.fill = `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${Math.max(0.35, c[3])})`;
   });
 }
 async function axWxToggle() {
-  AX.wx = { '': 'temp', temp: 'rain', rain: '' }[AX.wx]; store.set('axWx', AX.wx);
+  const hasDust = () => !!(WX.data && WX.data.grid.h.u && WX.data.grid.h.u.some((r) => r && r.some((x) => x != null)));
+  AX.wx = { '': 'temp', temp: 'rain', rain: 'dust', dust: '' }[AX.wx]; store.set('axWx', AX.wx);
   if (AX.wx && !WX.data) {
     toast('🌦 جارٍ تحميل الطقس…', 2000);
     try { WX.mode = 'h'; await Promise.all([wxLoad(), arLoad().then((a) => { WX.ar = a; })]); WX.idx = wxNowIdx(); } catch (e) { toast('تعذّر تحميل الطقس'); AX.wx = ''; }
   }
   if (WX.data && WX.mode === 'h') WX.idx = wxNowIdx();
-  toast(AX.wx === 'temp' ? '🌡 المناطق ملوّنة بالحرارة الآن' : AX.wx === 'rain' ? '🌧 المناطق ملوّنة باحتمال المطر اليوم' : 'أوقفتَ تلوين الطقس', 2500);
+  if (AX.wx === 'dust' && !hasDust()) { AX.wx = ''; store.set('axWx', ''); }
+  toast(AX.wx === 'dust' ? '🌫 المناطق ملوّنة بالغبار الآن' : AX.wx === 'temp' ? '🌡 المناطق ملوّنة بالحرارة الآن' : AX.wx === 'rain' ? '🌧 المناطق ملوّنة باحتمال المطر اليوم' : 'أوقفتَ تلوين الطقس', 2500);
   arRender();
 }
 function axWxLine(n) {
@@ -421,7 +424,7 @@ function axButtons() {
   const box = $('azBox'); if (!box || $('azBtns2')) return;
   const b = document.createElement('div'); b.id = 'azBtns2';
   b.innerHTML = `<button data-x="find" aria-label="بحث">🔍</button><button data-x="sat" aria-label="قمر صناعي" class="${AX.sat ? 'on' : ''}">🛰</button>`
-    + `<button data-x="wx" aria-label="الطقس" class="${AX.wx ? 'on' : ''}">${AX.wx === 'rain' ? '🌧' : AX.wx === 'temp' ? '🌡' : '🌦'}</button>`
+    + `<button data-x="wx" aria-label="الطقس" class="${AX.wx ? 'on' : ''}">${AX.wx === 'rain' ? '🌧' : AX.wx === 'temp' ? '🌡' : AX.wx === 'dust' ? '🌫' : '🌦'}</button>`
     + `<button data-x="roads" aria-label="الطرق الرئيسية" class="${AX.roads ? 'on' : ''}">🛣</button><button data-x="mine" aria-label="مواقعي" class="${AX.mine ? 'on' : ''}">📌</button>`;
   box.appendChild(b);
   b.onclick = (e) => {

@@ -1,8 +1,8 @@
 {
-  "versionCode": 99,
-  "versionName": "5.53",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.53/Mallah-Navigator.apk",
+  "versionCode": 100,
+  "versionName": "5.54",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.54/Mallah-Navigator.apk",
   "size": 2688503,
-  "notes": "خريطة المناطق أسرع كثيرًا بعد التكبير والتصغير: الطرق البعيدة تُرسم صورة واحدة في الخلفية بدل آلاف الخطوط.",
-  "sha256": "76254e8c4dca26dacff153096a81336d44c44daa7e0a26fa877305d0e076f4ca"
+  "notes": "الغبار والضباب: تبويب الغبار في الطقس، وتنبيهات الغبار الكثيف والضباب، و«تُحسّ» بجانب الحرارة، والطقس على طريقك.",
+  "sha256": "be7f850b97c1bd2bc1e6192d4e0b6bc1c6f54a04dde72f0ea603bc72963e3dc1"
 }

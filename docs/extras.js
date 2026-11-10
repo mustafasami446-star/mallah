@@ -54,7 +54,9 @@ function dayBar() {
     const a = dayArea && WX.data.areas[dayArea], i = wxNowIdx();
     if (a && a.h.t[i] != null) {
       const hr = new Date(Date.now() + 3 * 3600e3).getUTCHours(), s = wxSym(a.h.s[i], hr < 6 || hr >= 18);
-      wx = `<span class="di">${s[0]}</span><b>${a.h.t[i]}°</b><span class="dt">${esc(s[1])}</span>`;
+      const du = wxDust(a.h.u && a.h.u[i]), fg = wxFogTxt(a.h.f && a.h.f[i]);
+      const word = du && du[2] >= 2 ? du : fg ? ['🌫', fg] : s;          // what you will see outside first
+      wx = `<span class="di">${word[0]}</span><b>${a.h.t[i]}°</b><span class="dt">${esc(word[1])}${a.h.a && a.h.a[i] != null && Math.abs(a.h.a[i] - a.h.t[i]) >= 3 ? ' · تُحسّ ' + a.h.a[i] + '°' : ''}</span>`;
     }
   }
   $('dbWx').innerHTML = wx || '<span class="di">🌦</span><span class="dt">الطقس</span>';
@@ -285,7 +287,7 @@ async function routeChecks(r) {
     if (!WX.data) await dayWxLoad();
     if (WX.data && WX.ar) {
       const G = WX.data.grid, t0 = Date.now();
-      let rain = null, wind = null, storm = null;
+      let rain = null, wind = null, storm = null, dust = null, fog = null, hot = null;
       for (let k = 0, next = 0; k < r.pts.length; k++) {
         if (r.cum[k] < next) continue;
         next = r.cum[k] + 8000;
@@ -298,13 +300,23 @@ async function routeChecks(r) {
         const place = () => { const id = dayNearestArea(lat, lng); return id && WX.ar.byId[id] ? arShort(WX.ar.byId[id]) : ''; };
         if (!rain && rr != null && rr >= 5) rain = { p: place(), t: when, mm: rr / 10 };
         if (!wind && ww != null && ww >= 110) wind = { p: place(), t: when, k: kmh(ww) };
-        if (!storm) { const id = dayNearestArea(lat, lng), a = id && WX.data.areas[id], s = a && a.h.s[hi]; if (s >= 0 && /thunder/.test(WX.data.sym[s])) storm = { p: place(), t: when }; }
+        const aid = dayNearestArea(lat, lng), A = aid && WX.data.areas[aid];
+        if (!storm) { const s = A && A.h.s[hi]; if (s >= 0 && /thunder/.test(WX.data.sym[s])) storm = { p: place(), t: when }; }
+        if (A) {
+          const u = A.h.u && A.h.u[hi], f = A.h.f && A.h.f[hi], fe = A.h.a && A.h.a[hi];
+          if (!dust && u != null && u >= 300) dust = { p: place(), t: when, d: wxDust(u) };
+          if (!fog && f != null && f >= 50) fog = { p: place(), t: when, f };
+          if (fe != null && fe >= 46 && (!hot || fe > hot.v)) hot = { p: place(), t: when, v: fe };
+        }
       }
       const at = (x) => (x.p ? ' قرب ' + esc(x.p) : '') + ' حوالي ' + prClock(new Date(x.t));
+      if (fog) notes.push('🌫 ' + (fog.f >= 70 ? 'ضباب كثيف' : 'ضباب') + ' متوقع على طريقك' + at(fog) + ' — خفّف السرعة وشغّل الأضواء');
+      if (dust) notes.push(dust.d[0] + ' ' + dust.d[1] + ' متوقع على طريقك' + at(dust) + (dust.d[2] >= 3 ? ' — الرؤية قليلة' : ''));
+      if (hot) notes.push('🔥 حر شديد على طريقك (تُحسّ ' + hot.v + '°)' + at(hot) + ' — خذ ماءً وتأكد من تبريد السيارة');
       if (storm) notes.push('⛈ عواصف رعدية متوقعة على طريقك' + at(storm));
       if (rain) notes.push('🌧 ' + (rain.mm >= 4 ? 'أمطار غزيرة' : 'أمطار') + ' متوقعة على طريقك' + at(rain));
       if (wind) notes.push('💨 رياح قوية (' + wind.k + ' كم/س) على طريقك' + at(wind) + ' — قد تثير الغبار');
-      if (storm || rain || wind) btns.push(['🌦 الطقس', () => openWeather()]);
+      if (storm || rain || wind || dust || fog || hot) btns.push(['🌦 الطقس', () => openWeather()]);
     }
   } catch (e) {}
   // the prayers that come while you drive, and in Ramadan the iftar
