@@ -373,7 +373,8 @@ async function azLongPress(sx, sy) {
     live ? { label: '🧭 غيّر الوجهة إلى هنا', fn: () => axnRetarget(to) } : { label: '🧭 المسار إلى هنا', fn: () => axnRoute(to) },
     { label: '🗺 عرضها على الخريطة الرئيسية', fn: () => { $('areaPanel').classList.add('hidden'); if (live) axnLiveOff(true); setDestination(lat, lng, name, leaf ? arTitle(leaf) : ''); } },
     { label: '🗺 وصف المكان بالمعالم', fn: () => describePlace(lat, lng, name) },
-    { label: '⏱ أين أصل من هنا خلال ساعة', fn: () => axReach({ lat, lng }, 'هذه النقطة') }
+    { label: '⏱ أين أصل من هنا خلال ساعة', fn: () => axReach({ lat, lng }, 'هذه النقطة') },
+    { label: '⏰ ذكّرني عند الوصول هنا', fn: () => remAdd(lat, lng, name) }
   ]);
 }
 function azExtraDraw(X) {
