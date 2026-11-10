@@ -775,6 +775,24 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
 .arChips{position:absolute;left:0;right:0;bottom:calc(64px + env(safe-area-inset-bottom));display:flex;gap:8px;justify-content:center;flex-wrap:wrap;padding:0 10px;z-index:2}
 .arChip{height:34px;padding:0 12px;border-radius:17px;background:rgba(2,6,23,.6);color:#94a3b8;border:1px solid rgba(148,163,184,.3);font-size:13px;font-weight:600}
 .arChip.on{color:#fff;background:rgba(3,105,161,.8);border-color:#7dd3fc}
+
+/* ---------- وضع الشمس: light, strong contrast, bolder — readable in bright sun ---------- */
+body.sun{--bg:#ffffff;--panel:#ffffff;--panel2:#e6ebf2;--line:#1e293b;--text:#000000;--muted:#1f2937;--accent:#0369a1;--accent2:#0284c7;--go:#15803d;--warn:#b45309;--danger:#b91c1c;--route:#1d4ed8;--shadow:0 3px 12px rgba(0,0,0,.5)}
+body.sun{color:#000;font-weight:500}
+body.sun .fab,body.sun #searchWrap,body.sun #navBottom,body.sun #menuDrop,body.sun #layerMenu,body.sun #dayBar .db,body.sun .hchip,body.sun #carBar button{border:2px solid #0f172a!important}
+body.sun .fab{color:#000;background:#fff}
+body.sun .mode.sel,body.sun .seg button.sel,body.sun #layerMenu button.sel,body.sun .chip.on,body.sun button.on{background:#bae6fd!important;color:#000!important;border-color:#0369a1!important}
+body.sun #searchBar,body.sun .hchip,body.sun #homeCards,body.sun .ncat{background:#fff;border:2px solid #0f172a;color:#000}body.sun #searchBar input::placeholder{color:#334155}body.sun .hchip{color:#000}
+body.sun.night .leaflet-tile-pane{filter:contrast(1.18) saturate(1.2)!important}
+body.sun #toast,body.sun #routeNote,body.sun #wxAlertBar,body.sun #axnBar,body.sun #axrBar,body.sun #azUp button{background:#fff!important;color:#000!important;border:2px solid #0f172a!important}
+body.sun #navTop{background:#064e3b;border:3px solid #000}
+body.sun #navDist{font-size:36px}body.sun #navText{font-size:19px;font-weight:700}body.sun #navThen{font-size:15px;font-weight:700;background:rgba(0,0,0,.35)}
+body.sun #navEta{font-size:26px}body.sun #navRemain{color:#111;font-size:15px;font-weight:600}
+body.sun #speed{border-color:#000;border-width:5px}
+body.sun #dayBar .dt{color:#111}
+body.sun #glmap,body.sun .leaflet-tile-pane{filter:contrast(1.18) saturate(1.2)!important}
+body.sun path.rtLine{stroke-width:9px}body.sun path.rtCase{stroke-width:15px;stroke:#000;stroke-opacity:.75}
+body.sun input,body.sun select,body.sun textarea{color:#000;background:#fff}
 </style>
 </head>
 <body>
@@ -1070,6 +1088,7 @@ body.cov-hint #toast{top:calc(122px + env(safe-area-inset-top))}
 <script src="reach.js"></script>
 <script src="remind.js"></script>
 <script src="layout.js"></script>
+<script src="sun.js"></script>
 <script src="trip.js"></script>
 <script src="arbaeen.js"></script>
 <script src="describe.js"></script>

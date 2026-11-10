@@ -609,8 +609,8 @@ async function computeAllModes() {
 }
 function drawRoute(r) {
   clearRouteLayer();
-  routeCasing = L.polyline(r.pts, { color: '#0b3a8a', weight: 11, opacity: .55, lineJoin: 'round', interactive: false }).addTo(map);
-  routeLayer = L.polyline(r.pts, { color: mode === 'foot' ? '#7c3aed' : (mode === 'bike' ? '#0891b2' : '#2563eb'), weight: 7, opacity: .95, lineJoin: 'round', interactive: false, dashArray: mode === 'foot' ? '2 10' : null, lineCap: 'round' }).addTo(map);
+  routeCasing = L.polyline(r.pts, { color: '#0b3a8a', weight: 11, opacity: .55, lineJoin: 'round', interactive: false, className: 'rtCase' }).addTo(map);
+  routeLayer = L.polyline(r.pts, { color: mode === 'foot' ? '#7c3aed' : (mode === 'bike' ? '#0891b2' : '#2563eb'), weight: 7, opacity: .95, lineJoin: 'round', interactive: false, className: 'rtLine', dashArray: mode === 'foot' ? '2 10' : null, lineCap: 'round' }).addTo(map);
 }
 function showRoute(fit) {
   if (!dest) return;
