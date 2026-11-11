@@ -111,6 +111,7 @@ function arEnsure() {
   arSheetInit();
 }
 function openAreas(startId) {
+  document.body.classList.remove('azCalm', 'azMove');
   arEnsure();
   $('areaMapWrap').onclick = (e) => { const b = e.target.closest('#azUp [data-up]'); if (!b) return; e.stopPropagation(); arUp(+b.dataset.up); arSheet('min'); };
   $('areaPanel').classList.remove('hidden');
@@ -394,7 +395,21 @@ setInterval(() => {
   azStuck++;
 }, 700);
 let azPts = null, azStuck = 0;
-function azGestureEnd() { if (AZ) { AZ.gesture = false; azSoon(); } }
+function azGestureEnd() { if (AZ) { AZ.gesture = false; azSoon(); } clearTimeout(azMoveT); azMoveT = setTimeout(() => document.body.classList.remove('azMove'), 900); }
+/* a tap on the empty map hides the buttons, the sheet and the path above it, as on the main map; another tap
+   (or the back button, or choosing an area) brings them back. While the map is moved, the buttons fade back. */
+let azMoveT = 0;
+function azCalm(on) {
+  const B = document.body;
+  if (B.classList.contains('azCalm') === on) return;
+  B.classList.toggle('azCalm', on);
+  if (on && !store.get('azCalmHint', false)) { store.set('azCalmHint', true); toast('المس مكانًا فارغًا مرة أخرى لإظهار الأزرار', 3500); }
+  setTimeout(() => { if ($('areaSvg')) { azFit(); azSoon(); } }, 280);   // the map takes the freed room
+}
+{
+  const _back = window.handleBack;
+  window.handleBack = function () { if (document.body.classList.contains('azCalm') && !$('areaPanel').classList.contains('hidden')) { azCalm(false); return true; } return _back(); };
+}
 /* zoom by f (and turn by dr degrees) keeping the point under the fingers where it is */
 function azZoom(f, sx, sy, dr) {
   if (!AZ) return;
@@ -477,7 +492,7 @@ function azAttach() {
     if (!start) return;
     const p = rel(e), dx = p[0] - start.p[0], dy = p[1] - start.p[1];
     if (!moved && Math.hypot(dx, dy) < 7) return;
-    moved = true; clearTimeout(longT);
+    moved = true; clearTimeout(longT); document.body.classList.add('azMove');
     // drag: the map follows the finger, also when turned
     const k = azK(), a = (AZ.rot || 0) * Math.PI / 180, c = Math.cos(a), sn = Math.sin(a);
     const ux = (dx * c + dy * sn) / k, uy = (-dx * sn + dy * c) / k;
@@ -514,8 +529,13 @@ function azTap(sx, sy, cx, cy) {
     arRender(); arSheet('mid'); $('areaSheetBody').scrollTop = 0; return;
   }
   const t = document.elementFromPoint(cx, cy), a = t && t.closest && t.closest('[data-ar]');
-  if (!a) { if (plPick) { plPick = null; arRender(); } return; }
-  plPick = null;
+  // the empty map: outside the shapes, or the shape of the level itself (a town, a sub-district with only its dots)
+  if (!a || AZ.leaf || a.dataset.ar === AZ.id) {
+    if (plPick) { plPick = null; arRender(); return; }
+    azCalm(!document.body.classList.contains('azCalm'));   // a tap on the empty map: the map alone (and back)
+    return;
+  }
+  plPick = null; azCalm(false);
   if (a.dataset.ar === arSel && (arKids(arSel).length || arSettle(AR.byId[arSel]).length)) arEnter(arSel);
   else { arSel = a.dataset.ar; arRender(); arSheet('mid'); $('areaSheetBody').scrollTop = 0; }
 }

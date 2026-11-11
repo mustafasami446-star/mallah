@@ -542,6 +542,12 @@ body.azLive #azUp,#azBox:has(#axnBar) #azUp,#azBox:has(#axrBar) #azUp{display:no
 #axnBar .axnGo{background:#2563eb;color:#fff;border-radius:12px;padding:10px;font-weight:700;font-size:15px;margin-top:2px}
 body.azLive #areaPanel .panelHead,body.azLive #areaCrumbs,body.azLive #areaSheet,body.azLive #azBtns2{display:none}
 body.azLive #areaMapWrap{margin-bottom:0}
+#azBtns,#azBtns2,#azUp,#axWxBar{transition:opacity .2s}#areaSheet{transition:max-height .25s ease,transform .25s}
+body.azCalm #azBtns,body.azCalm #azBtns2,body.azCalm #azUp,body.azCalm #axWxBar,body.azCalm #axrBar{opacity:0;pointer-events:none}
+body.azCalm #areaSheet{transform:translateY(110%)}
+body.azCalm #areaCrumbs{display:none}
+body.azCalm #areaMapWrap{margin-bottom:0}
+body.azMove #azBtns,body.azMove #azBtns2,body.azMove #azUp,body.azMove #axWxBar{opacity:.25}
 body.azLive #navTop,body.azLive #navBottom,body.azLive #speed,body.azLive #spdLim,body.azLive #toast{z-index:1400}
 body.azLive #azBtns{top:calc(130px + env(safe-area-inset-top))}
 #axnLiveBtns{position:fixed;top:calc(128px + env(safe-area-inset-top));right:12px;z-index:1400;display:flex;flex-direction:column;gap:8px;align-items:flex-end}
