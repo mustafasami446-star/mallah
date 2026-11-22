@@ -19,7 +19,9 @@ jobs:
         with:
           sparse-checkout: tools/arbaeen.py
           sparse-checkout-cone-mode: false
-      - name: Places from OpenStreetMap (Overpass, just this box)
+      - name: Places from OpenStreetMap (map packs + Overpass for this box)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           B="31.88,43.85,32.78,44.55"
           cat > q.txt <<Q
@@ -44,8 +46,11 @@ jobs:
               sleep 30
             done
           done
-          [ $ok = 1 ]
-          python3 tools/arbaeen.py ov.json out
+          [ $ok = 1 ] || echo '{"elements":[]}' > ov.json        # the map packs alone are enough
+          # the places of the Karbala and Najaf map packs (built from the full Iraq extract)
+          T=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" -q '[.[]|select(.tag_name|startswith("map-"))][0].tag_name'); echo "map release: $T"
+          for n in karbala najaf; do gh release download "$T" -p "mallah-$n.zip" -R "$GITHUB_REPOSITORY" --clobber; mkdir -p $n; unzip -o -q "mallah-$n.zip" places.tsv -d $n; done
+          python3 tools/arbaeen.py ov.json out karbala/places.tsv najaf/places.tsv
       - name: Publish
         env:
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
