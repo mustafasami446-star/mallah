@@ -798,6 +798,7 @@ window.handleBack = function () {
   if (typeof licHandleBack === 'function' && licHandleBack()) return true;
   if (typeof onbHandleBack === 'function' && onbHandleBack()) return true;
   if (typeof wnHandleBack === 'function' && wnHandleBack()) return true;
+  if (typeof msgHandleBack === 'function' && msgHandleBack()) return true;
   if (typeof arHandleBack === 'function' && arHandleBack()) return true;
   if (!$('modal').classList.contains('hidden')) { closeModal(); return true; }
   if (typeof guideHandleBack === 'function' && guideHandleBack()) return true;
