@@ -24,7 +24,7 @@ jobs:
           sudo apt-get update -qq && sudo apt-get install -y -qq osmium-tool
           # Geofabrik, a few tries (it sometimes refuses a busy moment), then mirrors
           get() { curl -sL -A "Mallah-guide-build/1.0 (+https://github.com/mustafasami446-star/mallah)" --retry 3 --retry-delay 20 -o iraq.osm.pbf -w "%{http_code} %{size_download} $1\n" "$1"; }
-          for u in https://download.geofabrik.de/asia/iraq-latest.osm.pbf https://download.geofabrik.de/asia/iraq-latest.osm.pbf https://download.openstreetmap.fr/extracts/asia/iraq-latest.osm.pbf https://download.openstreetmap.fr/extracts/asia/iraq.osm.pbf; do
+          for u in https://download.geofabrik.de/asia/iraq/iraq-latest.osm.pbf https://download.geofabrik.de/asia/iraq/iraq-latest.osm.pbf https://download.openstreetmap.fr/extracts/asia/iraq-latest.osm.pbf https://download.openstreetmap.fr/extracts/asia/iraq.osm.pbf; do
             c=$(get "$u"); echo "$c"; case "$c" in 200*) break;; esac; sleep 30
           done
           ls -la iraq.osm.pbf

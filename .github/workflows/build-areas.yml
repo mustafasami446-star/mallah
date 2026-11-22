@@ -21,7 +21,7 @@ jobs:
           pip install -q shapely pmtiles
       - name: Boundaries from OpenStreetMap
         run: |
-          curl -sfL https://download.geofabrik.de/asia/iraq-latest.osm.pbf -o iraq.osm.pbf
+          curl -sfL https://download.geofabrik.de/asia/iraq/iraq-latest.osm.pbf -o iraq.osm.pbf
           osmium tags-filter iraq.osm.pbf r/boundary=administrative -o admin.osm.pbf --overwrite
           osmium export admin.osm.pbf -f geojsonseq -o admin.geojsonseq --overwrite --geometry-types=polygon
       - name: Areas
