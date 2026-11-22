@@ -95,6 +95,7 @@ setInterval(() => { if (typeof WX !== 'undefined' && WX.data && Date.now() - Dat
 /* ---------------- quick words in the search box ---------------- */
 const QWORDS = [
   { re: /^(دليل )?(زائر )?(ال)?[أا]ربعين$|^(ال)?مواكب$|^(ال)?حسينيات$/, t: '🕌 دليل زائر الأربعين', go: () => openArbGuide() },
+  { re: /^(ال)?مسبح[ةه]$|^(ال)?تسبيح|^تسبيح[ةه]? (ال)?زهراء/, t: '📿 المسبحة', go: () => openTasbih() },
   { re: /^(ال)?قبل[ةه]$|^اتجاه (ال)?قبل[ةه]$/, t: '🕋 اتجاه القبلة', go: () => { openPrayer(); setTimeout(() => { const c = document.querySelector('.prQibla'); if (c) c.scrollIntoView({ behavior: 'smooth' }); }, 300); } },
   { re: /^(ال)?(صلا[ةه]|اذان|أذان|آذان|مواقيت( الصلا[ةه])?|اوقات الصلا[ةه]|أوقات الصلا[ةه])$/, t: '🕌 أوقات الصلاة والأذان', go: () => openPrayer() },
   { re: /^(ال)?(طقس|جو|مطر|امطار|أمطار|حرار[ةه]|رياح|الانواء|الأنواء)$/, t: '🌦 الطقس', go: () => openWeather() },

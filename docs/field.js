@@ -500,7 +500,7 @@ $('directBtn').onclick = () => { if (dest) { if (!me) { toast('بانتظار ت
 
 /* ================= direct (compass) navigation ================= */
 let directState = null;
-let devHeading = null, devHeadingT = 0;
+let devHeading = null, devHeadingT = 0, devHeadingJit = 0, devHeadingAcc = null;   // jitter (°) and the iPhone's own accuracy, for «calibrate»
 const CARD = ['الشمال', 'الشمال الشرقي', 'الشرق', 'الجنوب الشرقي', 'الجنوب', 'الجنوب الغربي', 'الغرب', 'الشمال الغربي'];
 function cardinal(b) { return CARD[Math.round(b / 45) % 8]; }
 function onOrient(e) {
@@ -510,8 +510,9 @@ function onOrient(e) {
   if (h == null || isNaN(h)) return;
   const ang = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
   h = (h + ang + 720) % 360;
+  if (e.webkitCompassAccuracy != null) devHeadingAcc = e.webkitCompassAccuracy;
   if (devHeading == null) devHeading = h;
-  else { let d = ((h - devHeading + 540) % 360) - 180; devHeading = (devHeading + d * 0.25 + 360) % 360; } // smoothing
+  else { let d = ((h - devHeading + 540) % 360) - 180; devHeading = (devHeading + d * 0.25 + 360) % 360; devHeadingJit = devHeadingJit * 0.9 + Math.abs(d) * 0.1; } // smoothing
   devHeadingT = Date.now();
   if (directState) renderDirect();
 }

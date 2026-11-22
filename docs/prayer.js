@@ -126,19 +126,19 @@ function prRender() {
     <div class="card"><div id="prRows">${rows.map((k) => `<div class="res prRow${k === nx.k && nx.t.getDate() === now.getDate() ? ' on' : ''}${k === 'sunrise' || k === 'sunset' || k === 'imsak' ? ' minor' : ''}"><div class="t" style="flex:1">${PR_NAMES[k]}</div><div class="tm">${prClock(T[k])}</div></div>`).join('')}</div>
       <div class="btnRow" style="padding:10px 14px 12px"><button class="chip" id="prMethod">⚙️ ${esc(PR_METHODS[prCfg.method].name)}${prCfg.method !== 'jafari' ? ' · العصر ' + (prCfg.asr === 2 ? 'الحنفي' : 'الجمهور') : ''}</button></div></div>
     <div class="card prQibla"><h3>🕋 اتجاه القبلة</h3>
-      <div class="prDial" id="prDial"><svg viewBox="0 0 220 220"><g id="prRose"><circle cx="110" cy="110" r="100" fill="none" stroke="rgba(148,163,184,.35)" stroke-width="2"/>
-        ${[0, 90, 180, 270].map((a, i) => `<text x="110" y="28" fill="${i ? '#94a3b8' : '#ef4444'}" font-size="16" font-weight="700" text-anchor="middle" transform="rotate(${a} 110 110)">${['ش', 'ق', 'ج', 'غ'][i]}</text>`).join('')}
-        ${Array.from({ length: 36 }, (_, i) => `<line x1="110" y1="12" x2="110" y2="${i % 9 ? 18 : 22}" stroke="rgba(148,163,184,.55)" stroke-width="2" transform="rotate(${i * 10} 110 110)"/>`).join('')}
-        <g transform="rotate(${q.toFixed(1)} 110 110)"><path d="M110 30 L122 110 L110 100 L98 110 Z" fill="#22c55e"/><text x="110" y="62" font-size="20" text-anchor="middle">🕋</text></g></g>
-        <path d="M110 4 l7 12 h-14z" fill="#f8fafc"/></svg></div>
-      <div class="prQtxt"><b>${Math.round(q)}°</b> من الشمال (${cardinal(q)}) · مكة على بعد ${Math.round(dist / 1000).toLocaleString('ar-IQ-u-nu-latn')} كم</div>
-      <div class="s" id="prQhint" style="text-align:center;padding:2px 14px 6px"></div>
-      <div class="btnRow" style="padding:4px 14px 14px;justify-content:center"><button class="chip" id="prQmap">🗺 أظهر الاتجاه على الخريطة</button></div></div>
+      <div class="prQbig" id="prQhint">…</div>
+      <div class="prDial" id="prDial">${prDialSvg(q)}</div>
+      <div class="prQtxt">القبلة <b>${Math.round(q)}°</b> من الشمال (${cardinal(q)}) · <span id="prQhd"></span><br>🕋 مكة المكرمة على بعد <b>${Math.round(dist / 1000).toLocaleString('ar-IQ-u-nu-latn')} كم</b></div>
+      <div class="prCal hidden" id="prCal"><svg viewBox="0 0 64 32" width="64" height="32"><path d="M32 16c-7-9-18-11-24-6s-3 14 6 12 11-6 18-6 11 6 18 6 11-7 6-12-17-3-24 6z" fill="none" stroke="#7dd3fc" stroke-width="2.4" stroke-dasharray="5 4"/><circle r="3.4" fill="#f8fafc"><animateMotion dur="2.6s" repeatCount="indefinite" path="M32 16c-7-9-18-11-24-6s-3 14 6 12 11-6 18-6 11 6 18 6 11-7 6-12-17-3-24 6z"/></circle></svg>
+        <div><b>معايرة البوصلة</b><br>حرّك الهاتف في الهواء على شكل رقم 8 عدة مرات، بعيدًا عن الحديد والسيارة والمغناطيس.</div></div>
+      <div class="btnRow" style="padding:4px 14px 14px;justify-content:center"><button class="chip" id="prQmap">🗺 أظهر الاتجاه على الخريطة</button><button class="chip" id="prQcal">♾ معايرة</button></div></div>
     <div class="card" id="prAdhan"></div>
     <div class="note">تُحسب الأوقات على هاتفك من موقعك والتاريخ، وتعمل بدون إنترنت. قد تختلف دقيقة أو دقيقتين عن تقويم مسجدك؛ يمكنك تعديل كل وقت من «⚙️». ابتعد عن الحديد والسيارة والمغناطيس عند استخدام البوصلة، وحرّك الهاتف على شكل 8 لمعايرتها.</div>`;
   $('prMethod').onclick = () => prChooseMethod(false);
   prAdhanCard();
   $('prQmap').onclick = () => prShowOnMap(w);
+  $('prQcal').onclick = () => { prCalUntil = Date.now() + 15000; };
+  prCalUntil = Date.now() + 6000;
   prTick();
 }
 function prTick() {
@@ -146,21 +146,48 @@ function prTick() {
   const s = Math.max(0, Math.round((nx.t - now) / 1000)), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
   if ($('prCount')) $('prCount').textContent = 'بعد ' + (h ? h + ' س ' : '') + m + ' د';
   if ($('prNextName') && !$('prNextName').textContent.startsWith(PR_NAMES[nx.k])) prRender();
-  // the dial turns with the phone so that the green arrow points at the Kaaba
-  const hd = typeof currentHeading === 'function' ? currentHeading() : null, rose = $('prRose');
-  if (!rose) return;
-  const q = qiblaBearing(w.lat, w.lng);
-  if (hd && hd.src === 'compass') {
-    rose.setAttribute('transform', 'rotate(' + (-hd.h).toFixed(1) + ' 110 110)');
-    const off = ((q - hd.h + 540) % 360) - 180;
-    const ok = Math.abs(off) <= 4;
-    $('prDial').classList.toggle('ok', ok);
-    $('prQhint').textContent = ok ? '✓ أنت متّجه نحو القبلة' : (off > 0 ? 'استدر يمينًا ' : 'استدر يسارًا ') + Math.round(Math.abs(off)) + '°';
-    if (ok && !prTick.buzz) { prTick.buzz = true; try { Android.vibrate && Android.vibrate('60'); } catch (e) {} }
-    if (!ok) prTick.buzz = false;
+  prQiblaTick(w);
+}
+/* ---------------- the qibla compass ----------------
+   The ring (degrees, ش ق ج غ, and 🕋 on it) turns with the phone so north stays north; the big arrow in the
+   middle points at the Kaaba from where the phone points (the marker at the top). Lined up: green, a short buzz. */
+let prCalUntil = 0;
+function prDialSvg(q) {
+  const C = 150, ticks = Array.from({ length: 72 }, (_, i) => { const big = i % 6 === 0; return `<line x1="${C}" y1="${big ? 22 : 24}" x2="${C}" y2="${big ? 36 : 31}" stroke="${big ? 'rgba(226,232,240,.8)' : 'rgba(148,163,184,.45)'}" stroke-width="${big ? 2.4 : 1.4}" transform="rotate(${i * 5} ${C} ${C})"/>`; }).join('');
+  const nums = Array.from({ length: 12 }, (_, i) => { const a = i * 30, card = { 0: 'ش', 90: 'ق', 180: 'ج', 270: 'غ' }[a];
+    return `<text x="${C}" y="${card ? 58 : 54}" fill="${a === 0 ? '#ef4444' : card ? '#e2e8f0' : '#94a3b8'}" font-size="${card ? 19 : 12}" font-weight="${card ? 800 : 600}" text-anchor="middle" transform="rotate(${a} ${C} ${C})">${card || a}</text>`; }).join('');
+  return `<svg viewBox="0 0 300 300">
+    <circle cx="${C}" cy="${C}" r="138" fill="rgba(15,23,42,.55)" stroke="rgba(148,163,184,.3)" stroke-width="2"/>
+    <g id="prRose">${ticks}${nums}
+      <g transform="rotate(${q.toFixed(1)} ${C} ${C})"><circle cx="${C}" cy="82" r="15" fill="#14532d" stroke="#22c55e" stroke-width="2.5"/><text x="${C}" y="88" font-size="17" text-anchor="middle">🕋</text></g></g>
+    <path d="M${C} 2 l9 14 h-18z" fill="#f8fafc"/>
+    <g id="prArrow" transform="rotate(${q.toFixed(1)} ${C} ${C})"><path d="M${C} 104 L${C + 28} 166 L${C + 10} 159 L${C + 10} 214 L${C - 10} 214 L${C - 10} 159 L${C - 28} 166 Z" fill="#0ea5e9" stroke="rgba(255,255,255,.85)" stroke-width="2" stroke-linejoin="round"/></g>
+    <circle cx="${C}" cy="${C}" r="7" fill="#f8fafc"/>
+  </svg>`;
+}
+/* the magnetic north is ~3–6° east of the true north around Iraq and the Gulf; the compass gives the magnetic */
+function prDecl(lat, lng) { return lat > 12 && lat < 42 && lng > 30 && lng < 64 ? 4.9 + 0.2 * (lat - 33.3) - 0.05 * (lng - 44.4) : 0; }
+function prQiblaTick(w) {
+  const hd = typeof currentHeading === 'function' ? currentHeading() : null, rose = $('prRose'), arrow = $('prArrow');
+  if (!rose || !arrow) return;
+  const q = qiblaBearing(w.lat, w.lng), hint = $('prQhint'), dial = $('prDial'), cal = $('prCal');
+  if (hd) {
+    const h = hd.src === 'compass' ? (hd.h + prDecl(w.lat, w.lng) + 360) % 360 : hd.h;
+    rose.setAttribute('transform', 'rotate(' + (-h).toFixed(1) + ' 150 150)');
+    const off = ((q - h + 540) % 360) - 180, ok = Math.abs(off) <= 4;
+    arrow.setAttribute('transform', 'rotate(' + off.toFixed(1) + ' 150 150)');
+    dial.classList.toggle('ok', ok); hint.classList.toggle('ok', ok);
+    hint.innerHTML = ok ? '✓ أنت متّجه نحو القبلة' : 'استدر <b>' + Math.round(Math.abs(off)) + '°</b> ' + (off > 0 ? 'يمينًا ↻' : 'يسارًا ↺');
+    if ($('prQhd')) $('prQhd').textContent = 'هاتفك ' + Math.round(h) + '°' + (hd.src === 'gps' ? ' (من اتجاه سيرك)' : '');
+    if (ok && !prTick.buzz) { prTick.buzz = true; try { if (NATIVE && Android.vibrate) Android.vibrate('70'); else if (navigator.vibrate) navigator.vibrate(70); } catch (e) {} }
+    if (Math.abs(off) > 7) prTick.buzz = false;
+    const bad = hd.src === 'compass' && ((typeof devHeadingJit !== 'undefined' && devHeadingJit > 9) || (typeof devHeadingAcc !== 'undefined' && devHeadingAcc != null && (devHeadingAcc < 0 || devHeadingAcc > 25)));
+    if (cal) cal.classList.toggle('hidden', !(bad || Date.now() < prCalUntil));
   } else {
-    rose.setAttribute('transform', '');
-    $('prQhint').textContent = 'البوصلة غير متاحة الآن — الشمال إلى أعلى الدائرة';
+    rose.setAttribute('transform', ''); arrow.setAttribute('transform', 'rotate(' + q.toFixed(1) + ' 150 150)');
+    dial.classList.remove('ok'); hint.classList.remove('ok');
+    hint.innerHTML = '<span class="s">البوصلة غير متاحة الآن — الشمال إلى أعلى الدائرة، والسهم نحو القبلة</span>';
+    if (cal) cal.classList.add('hidden');
   }
 }
 /* a line from here to Mecca along the shortest way */
@@ -230,8 +257,10 @@ function prAdhanCard() {
       <div class="s" style="padding:4px 14px 12px">${!ready ? '⏳ جارٍ تنزيل صوت الأذان (مرة واحدة)… ' : ''}${next}</div>
       ${adhanPushHtml()}
     </div>
+    ${NATIVE ? `<label class="wxSw"><input type="checkbox" id="prCountOn" ${prCfg.count ? 'checked' : ''}> ⏳ إشعار ثابت بالعدّ التنازلي للصلاة القادمة</label>` : ''}
     <label class="wxSw"><input type="checkbox" id="prRoad" ${store.get('prRoadOn', true) ? 'checked' : ''}> 🚗 أثناء القيادة: نبّهني قبل الأذان بجامع على طريقي</label>`;
   $('prRoad').onchange = () => store.set('prRoadOn', $('prRoad').checked);
+  if ($('prCountOn')) $('prCountOn').onchange = () => { prCfg.count = $('prCountOn').checked; store.set('prCfg', prCfg); adhanSync(true); if (prCfg.count) toast('⏳ يظهر في الإشعارات: الصلاة القادمة والوقت الباقي عليها', 3500); };
   if ($('adPushOn')) $('adPushOn').onclick = () => adhanPushEnable(false);
   if ($('adPushTest')) $('adPushTest').onclick = () => adhanPushEnable(true);
   const save = (ch) => { prCfg.adhan = Object.assign(adhanCfg(), ch); store.set('prCfg', prCfg); adhanSync(true); prAdhanCard(); };
@@ -250,15 +279,21 @@ function prAdhanCard() {
     };
   });
 }
+/* the name of the place for «صلاة الظهر في الكحلاء»: the nearest district or town of the forecast */
+function prPlaceName(w) {
+  try { if (typeof WX !== 'undefined' && WX.ar && typeof dayNearestArea === 'function') { const id = dayNearestArea(w.lat, w.lng); if (id && WX.ar.byId[id]) return arShort(WX.ar.byId[id]); } } catch (e) {}
+  return w.city || '';
+}
 /* tell the phone (Android) what to do; it keeps one alarm for the next adhan */
 let adhanSent = null;
 function adhanSync(force) {
   if (!prCfg) return;
   const a = adhanCfg(), w = prWhere(), snd = adhanSound(a.sound);
-  if (!force && adhanSent && Math.abs(adhanSent.lat - w.lat) < 0.15 && Math.abs(adhanSent.lng - w.lng) < 0.15) return;
-  adhanSent = { lat: w.lat, lng: w.lng };
+  const place = prPlaceName(w);
+  if (!force && adhanSent && adhanSent.place === place && Math.abs(adhanSent.lat - w.lat) < 0.15 && Math.abs(adhanSent.lng - w.lng) < 0.15) return;
+  adhanSent = { lat: w.lat, lng: w.lng, place };
   if (NATIVE && Android.adhanConfig) {
-    try { Android.adhanConfig(JSON.stringify({ on: !!a.on && !!snd, prayers: a.prayers, method: prCfg.method, asr: prCfg.asr || 1, adj: prCfg.adj || {}, lat: w.lat, lng: w.lng, loud: !!a.loud, sound: snd ? { id: snd.id, url: ADHAN_BASE + snd.file } : null })); } catch (e) {}
+    try { Android.adhanConfig(JSON.stringify({ on: !!a.on && !!snd, prayers: a.prayers, method: prCfg.method, asr: prCfg.asr || 1, adj: prCfg.adj || {}, lat: w.lat, lng: w.lng, loud: !!a.loud, sound: snd ? { id: snd.id, url: ADHAN_BASE + snd.file } : null, count: !!prCfg.count, place })); } catch (e) {}
   } else { adhanWebPlan(); adhanPushSync(); }
 }
 /* ---------------- web (iPhone, laptop): a notification at prayer time even with the page closed ----------------

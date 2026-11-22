@@ -455,9 +455,17 @@ body.ui-wx #wxBtn{color:#38bdf8;border-color:#38bdf8}
 /* prayer times, trip sharing */
 .prNext{text-align:center;padding:16px 14px 8px}.prNext .big{font-size:26px;font-weight:800;color:#7dd3fc;margin:6px 0 2px}.prNext .cd{font-size:15px;font-weight:600;margin-bottom:6px}.prNext .s{color:var(--muted);font-size:12.5px}
 .prRow{align-items:center}.prRow .tm{font-weight:700;font-size:16px;unicode-bidi:isolate}.prRow.on{background:rgba(14,165,233,.16)}.prRow.on .t,.prRow.on .tm{color:#7dd3fc}.prRow.minor .t,.prRow.minor .tm{color:var(--muted);font-weight:500;font-size:14px}
-.prDial{width:220px;height:220px;margin:6px auto 4px;border-radius:50%;transition:box-shadow .2s}.prDial svg{width:100%;height:100%}.prDial.ok{box-shadow:0 0 0 4px #22c55e,0 0 26px rgba(34,197,94,.55)}
-#prRose{transition:transform .15s linear}
-.prQtxt{text-align:center;font-size:14px}.prQtxt b{font-size:18px;color:#86efac}
+.prDial{width:min(300px,78vw);aspect-ratio:1;margin:4px auto 8px;border-radius:50%;transition:box-shadow .2s}.prDial svg{width:100%;height:100%;display:block}.prDial.ok{box-shadow:0 0 0 5px #22c55e,0 0 34px rgba(34,197,94,.6)}
+.prDial.ok #prArrow path{fill:#22c55e}
+.prQbig{text-align:center;font-size:21px;font-weight:800;color:#e2e8f0;padding:2px 14px 4px;min-height:32px}.prQbig b{color:#7dd3fc;font-size:26px}.prQbig.ok{color:#22c55e}
+.prQtxt{text-align:center;font-size:14px;line-height:1.8}.prQtxt b{font-size:16px;color:#86efac}
+.tsbChips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;padding:12px 12px 4px}
+.tsbSteps{display:flex;flex-wrap:wrap;gap:4px 6px;justify-content:center;align-items:center;padding:8px 12px 0;font-size:13.5px;color:var(--muted)}.tsbSteps span{padding:3px 9px;border-radius:999px;background:rgba(148,163,184,.12)}.tsbSteps span.on{background:rgba(14,165,233,.22);color:#7dd3fc;font-weight:700}.tsbSteps span.d{color:#86efac}.tsbSteps span.d::before{content:"✓ "}.tsbSteps i{font-style:normal;opacity:.5}
+.tsbBtn{position:relative;display:block;width:min(290px,76vw);aspect-ratio:1;margin:14px auto 6px;border-radius:50%;border:0;background:radial-gradient(circle at 50% 38%,#1e3a5f,#0b1729 72%);box-shadow:0 10px 30px rgba(0,0,0,.45),inset 0 0 0 1px rgba(125,211,252,.18);color:#e2e8f0;padding:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;transition:transform .06s}
+.tsbBtn:active{transform:scale(.97)}.tsbBtn svg{position:absolute;inset:0;width:100%;height:100%}.tsbBtn.fin{background:radial-gradient(circle at 50% 38%,#14532d,#0b1729 72%)}
+.tsbIn{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}.tsbT{font-size:22px;font-weight:800;color:#7dd3fc;padding:0 30px;text-align:center;line-height:1.35}.tsbBtn.fin .tsbT{color:#86efac}.tsbN{font-size:64px;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums}
+.tsbRow{justify-content:center;padding:6px 14px}
+.prCal{display:flex;gap:10px;align-items:center;margin:8px 14px 2px;padding:10px 12px;border-radius:12px;background:rgba(14,165,233,.1);border:1px solid rgba(14,165,233,.3);font-size:13px;line-height:1.6}.prCal.hidden{display:none}
 .prAdj{display:flex;align-items:center;gap:8px;padding:4px 0}.prAdj span{flex:1;font-size:13.5px}.prAdj .chip{height:30px;width:34px;padding:0}.prAdj b{min-width:24px;text-align:center}
 .adPush{margin:6px 14px 12px;padding:10px 12px;border-radius:12px;background:rgba(14,165,233,.1);border:1px solid rgba(14,165,233,.3);font-size:13px;line-height:1.7}
 .adPr{display:flex;flex-wrap:wrap;gap:6px;padding:4px 14px}.adPr .chip{height:34px;padding:0 12px}.adPr .chip.on{background:#0369a1;color:#e0f2fe}.adSnd{align-items:center}.adSnd .chip{height:34px;width:40px;padding:0;flex:none}
@@ -1153,6 +1161,7 @@ body.sun #simpleBar button{background:#fff;color:#000;border:2px solid #0f172a}b
 <script src="arbaeen.js"></script>
 <script src="describe.js"></script>
 <script src="prayer.js"></script>
+<script src="tasbih.js"></script>
 <script src="extras.js"></script>
 <script src="weather.js"></script>
 <script src="licadmin.js"></script>
