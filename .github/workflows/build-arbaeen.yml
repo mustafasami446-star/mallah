@@ -22,7 +22,10 @@ jobs:
       - name: Places from OpenStreetMap
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq osmium-tool
-          curl -sfL https://download.geofabrik.de/asia/iraq-latest.osm.pbf -o iraq.osm.pbf
+          # Geofabrik, a few tries (it sometimes refuses a busy moment), then the French mirror
+          ok=0; for i in 1 2 3; do curl -sfL --retry 3 --retry-delay 20 https://download.geofabrik.de/asia/iraq-latest.osm.pbf -o iraq.osm.pbf && ok=1 && break; sleep 60; done
+          [ $ok = 1 ] || curl -sfL --retry 3 https://download.openstreetmap.fr/extracts/asia/iraq-latest.osm.pbf -o iraq.osm.pbf
+          ls -la iraq.osm.pbf
           osmium extract -b 43.85,31.88,44.55,32.78 iraq.osm.pbf -o box.osm.pbf --overwrite
           osmium tags-filter box.osm.pbf nwr/amenity nwr/tourism nwr/historic nwr/building=mosque,shrine nwr/place=square nwr/name -o sel.osm.pbf --overwrite
           osmium export sel.osm.pbf -f geojsonseq -o sel.geojsonseq --overwrite --geometry-types=point,linestring,polygon
