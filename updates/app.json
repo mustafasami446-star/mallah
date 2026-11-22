@@ -1,8 +1,8 @@
 {
-  "versionCode": 108,
-  "versionName": "5.62",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.62/Mallah-Navigator.apk",
-  "size": 2742810,
-  "notes": "📨 رسائل المصمم: تحديثات وتنبيهات وردود خاصة تصلك إشعارًا وتجدها في القائمة.",
-  "sha256": "7fb9b4d2af36fd9959abae8a3fac76382b51bbd7d6216f41cd0a76dd54b42869"
+  "versionCode": 109,
+  "versionName": "5.63",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.63/Mallah-Navigator.apk",
+  "size": 2746906,
+  "notes": "تحسينات في وضع المصمم: اختيار المستخدمين من قائمة منسدلة لرسائل المصمم.",
+  "sha256": "d3e47158abd158329d6807603eccdb030050299ed92ce243fd59cbc49e7d2a2c"
 }

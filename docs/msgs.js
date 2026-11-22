@@ -128,11 +128,14 @@ async function msgaHashes() {
   for (const r of LICA.log) out[await msgHashOf(r.dev)] = r;
   return out;
 }
+/* the people a sent message went to: [{dev, h, id, name}] (null = everyone) */
+const msgaRcp = (m) => m.rcp || (m.box === 'all' ? null : [{ dev: m.dev, h: m.box, id: m.id, name: m.to }]);
+const msgaDay = (t) => new Date(t).toLocaleDateString('ar-IQ-u-nu-latn', { day: 'numeric', month: 'long', year: 'numeric' });
 function msgaCard(root) {
   const c = document.createElement('div'); c.className = 'card'; c.id = 'laMsg';
   c.innerHTML = `<h3>📨 رسالة إلى المستخدمين</h3><div class="frm">
-      <div class="seg" id="lmTo"><button class="sel" data-t="all">👥 الجميع</button><button data-t="one">👤 مستخدم واحد</button></div>
-      <div id="lmOne" class="hidden"><label>ابحث بالاسم أو برقم الجهاز</label><input type="text" id="lmFind" placeholder="مثال: أحمد"><div id="lmPick"></div></div>
+      <div class="seg" id="lmTo"><button class="sel" data-t="all">👥 الجميع</button><button data-t="one">👤 مستخدمون محددون</button></div>
+      <div id="lmOne" class="hidden"><label>إلى</label><div class="lmDrop" id="lmDrop" role="button" tabindex="0"></div><div class="lmList hidden" id="lmList"></div></div>
       <label>العنوان (اختياري)</label><input type="text" id="lmTi" maxlength="60" placeholder="مثال: تحديث جديد">
       <label>نص الرسالة</label><textarea id="lmB" rows="4" maxlength="1500" placeholder="اكتب رسالتك…"></textarea>
       <label>تبقى ظاهرة لمدة</label><div class="seg" id="lmX"><button data-d="7">أسبوع</button><button class="sel" data-d="30">شهر</button><button data-d="90">3 أشهر</button></div></div>
@@ -141,32 +144,99 @@ function msgaCard(root) {
     <h3 style="margin-top:6px">المُرسَلة</h3><div id="lmSent"></div>`;
   root.insertBefore(c, root.children[1] || null);
   const q = (id) => c.querySelector('#' + id);
-  let to = 'all', who = null, days = 30;
+  let to = 'all', days = 30, find = '';
+  const chosen = new Set();             // device numbers
+  const readOf = {};                    // dev → {t, read} of the last message sent to them
+  // everyone in the activation log, once each (the latest entry), alphabetically
+  const people = () => {
+    const by = {};
+    LICA.log.forEach((r) => { if (!by[r.dev] || r.t > by[r.dev].t) by[r.dev] = r; });
+    return Object.values(by).sort((x, y) => (x.name || '￿').localeCompare(y.name || '￿', 'ar') || x.dev.localeCompare(y.dev));
+  };
+  const nameOf = (dev) => { const r = people().find((x) => x.dev === dev); return (r && r.name) || dev; };
+  const drawDrop = () => {
+    q('lmDrop').innerHTML = chosen.size
+      ? [...chosen].map((d) => `<span class="lmTag">${escA(nameOf(d))}<i data-x="${d}">✕</i></span>`).join('') + '<span class="lmArr">▾</span>'
+      : '<span class="lmPh">اختر المستخدمين</span><span class="lmArr">▾</span>';
+  };
+  const readTxt = (dev) => {
+    const r = readOf[dev]; if (r === undefined) return '';
+    if (!r) return '';
+    return r.read ? `<span class="lmOk">✓✓ قرأ آخر رسالة</span>` : `<span class="lmNo">✓ لم يقرأ آخر رسالة (${msgWhen(r.t)})</span>`;
+  };
+  const drawList = () => {
+    const f = find.trim().toLowerCase().replace(/-/g, ''), all = people();
+    const list = all.filter((r) => !f || (r.name || '').toLowerCase().includes(f) || r.dev.toLowerCase().replace(/-/g, '').includes(f));
+    const el = q('lmList');
+    const keep = el.querySelector('#lmFind');
+    if (!keep) {
+      el.innerHTML = `<div class="lmTop"><input type="text" id="lmFind" placeholder="🔎 ابحث بالاسم أو برقم الجهاز"></div><div id="lmRows"></div>
+        <div class="lmFoot"><button class="chip" id="lmAll">تحديد الظاهرين</button><button class="chip" id="lmNone">إلغاء التحديد</button><button class="chip go" id="lmDone">تم</button></div>`;
+      q('lmFind').oninput = () => { find = q('lmFind').value; drawList(); };
+      q('lmAll').onclick = () => { people().filter((r) => !find.trim() || q('lmRows').querySelector(`[data-d="${r.dev}"]`)).forEach((r) => chosen.add(r.dev)); drawList(); drawDrop(); };
+      q('lmNone').onclick = () => { chosen.clear(); drawList(); drawDrop(); };
+      q('lmDone').onclick = () => { el.classList.add('hidden'); };
+    }
+    q('lmRows').innerHTML = list.map((r) => `<div class="lmRow${chosen.has(r.dev) ? ' on' : ''}" data-d="${r.dev}"><span class="lmChk">${chosen.has(r.dev) ? '✓' : ''}</span>
+        <div style="flex:1;min-width:0"><div class="t">${escA(r.name || '— بلا اسم')}</div><div class="s"><span dir="ltr">${r.dev}</span> · فُعّل ${msgaDay(r.t)}</div><div class="s">${readTxt(r.dev)}</div></div></div>`).join('')
+      || `<div class="s" style="padding:10px">${all.length ? 'لا أحد بهذا الاسم أو الرقم' : 'سجل التفعيل فارغ — من تفعّله يظهر هنا'}</div>`;
+    q('lmDone').textContent = chosen.size ? 'تم (' + chosen.size + ')' : 'تم';
+    q('lmRows').querySelectorAll('[data-d]').forEach((x) => { x.onclick = () => { const d = x.dataset.d; chosen.has(d) ? chosen.delete(d) : chosen.add(d); drawList(); drawDrop(); }; });
+  };
+  // whether each one read the last message you sent them (looked up when the list opens)
+  let readBusy = false;
+  const loadRead = async () => {
+    if (readBusy) return; readBusy = true;
+    const last = {};
+    msgaSent.forEach((m) => (msgaRcp(m) || []).forEach((r) => { if (!last[r.dev] || m.t > last[r.dev].t) last[r.dev] = { t: m.t, h: r.h, id: r.id }; }));
+    for (const r of people()) {
+      const l = last[r.dev]; if (!l) { readOf[r.dev] = null; continue; }
+      if (readOf[r.dev] && readOf[r.dev].read) continue;
+      try { const v = await lsReq('GET', '/msgread/' + l.id + '/' + l.h); readOf[r.dev] = { t: l.t, read: !!v }; } catch (e) { break; }
+      if (!q('lmList').classList.contains('hidden')) drawList();
+    }
+    readBusy = false;
+  };
+  q('lmDrop').onclick = (e) => {
+    const x = e.target.closest('[data-x]');
+    if (x) { chosen.delete(x.dataset.x); drawDrop(); if (!q('lmList').classList.contains('hidden')) drawList(); return; }
+    const L = q('lmList'); L.classList.toggle('hidden');
+    if (!L.classList.contains('hidden')) { drawList(); loadRead(); }
+  };
+  drawDrop();
   q('lmTo').onclick = (e) => { const b = e.target.closest('[data-t]'); if (!b) return; to = b.dataset.t; q('lmTo').querySelectorAll('button').forEach((x) => x.classList.toggle('sel', x === b)); q('lmOne').classList.toggle('hidden', to !== 'one'); };
   q('lmX').onclick = (e) => { const b = e.target.closest('[data-d]'); if (!b) return; days = +b.dataset.d; q('lmX').querySelectorAll('button').forEach((x) => x.classList.toggle('sel', x === b)); };
-  const pick = () => {
-    const f = q('lmFind').value.trim().toLowerCase().replace(/-/g, '');
-    const list = LICA.log.slice().reverse().filter((r) => !f || (r.name || '').toLowerCase().includes(f) || r.dev.toLowerCase().replace(/-/g, '').includes(f)).slice(0, 8);
-    q('lmPick').innerHTML = list.map((r) => `<div class="res lmRow${who && who.dev === r.dev ? ' on' : ''}" data-d="${r.dev}"><div style="flex:1;min-width:0"><div class="t">${escA(r.name || '— بلا اسم')}</div><div class="s" dir="ltr" style="text-align:right">${r.dev}</div></div>${who && who.dev === r.dev ? '✓' : ''}</div>`).join('') || '<div class="s" style="padding:6px 2px">لا أحد في السجل بهذا الاسم أو الرقم</div>';
-    q('lmPick').querySelectorAll('[data-d]').forEach((x) => { x.onclick = () => { who = LICA.log.find((r) => r.dev === x.dataset.d); pick(); }; });
-  };
-  q('lmFind').oninput = pick; pick();
+  const sign = async (key, id, box, m) => b64u(new Uint8Array(await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, key, licTe.encode(msgSigned(id, box, m)))));
   q('lmSend').onclick = async () => {
     const b = q('lmB').value.trim(), ti = q('lmTi').value.trim();
     if (!b) { msgA('اكتب نص الرسالة'); return; }
-    if (to === 'one' && !who) { msgA('اختر المستخدم من القائمة'); return; }
+    if (to === 'one' && !chosen.size) { msgA('اختر مستخدمًا واحدًا على الأقل من القائمة'); return; }
     const key = await licaKey().catch(() => null); if (!key) { msgA('المفتاح السري غير موجود على هذا الجهاز'); return; }
-    const box = to === 'all' ? 'all' : await msgHashOf(who.dev);
-    if (!(await uiConfirm(to === 'all' ? 'إرسال الرسالة إلى كل مستخدمي الملاح؟' : 'إرسال الرسالة إلى ' + (who.name || who.dev) + '؟', { ok: 'إرسال' }))) return;
-    const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6), t = Date.now(), x = t + days * 86400e3;
-    const m = { ti, b, t, x };
-    m.s = b64u(new Uint8Array(await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, key, licTe.encode(msgSigned(id, box, m)))));
-    try {
-      const tok = await lsToken(); m.u = JSON.parse(atob(tok.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).user_id;
-      await lsReq('PUT', to === 'all' ? '/msgs/all/' + id : '/msgs/to/' + box + '/' + id, m);
-    } catch (e) { msgA(e && e.message === 'rules' ? '⚠️ لم تُقبل الرسالة — أضف قواعد msgs في Firebase' : '⚠️ تعذّر الإرسال — تحقق من الإنترنت'); return; }
-    msgaSent.push({ id, box, to: to === 'all' ? 'الجميع' : (who.name || who.dev), dev: to === 'all' ? '' : who.dev, ti, b, t, x }); msgaSave();
-    q('lmB').value = ''; q('lmTi').value = '';
+    const devs = [...chosen], names = devs.map(nameOf);
+    const ask = to === 'all' ? 'إرسال الرسالة إلى كل مستخدمي الملاح؟' : devs.length === 1 ? 'إرسال الرسالة إلى ' + names[0] + '؟' : 'إرسال الرسالة إلى ' + devs.length + ' مستخدمين:\n' + names.join('، ') + '؟';
+    if (!(await uiConfirm(ask, { ok: 'إرسال' }))) return;
+    const base = Date.now().toString(36) + Math.random().toString(36).slice(2, 6), t = Date.now(), x = t + days * 86400e3;
+    let u;
+    try { const tok = await lsToken(); u = JSON.parse(atob(tok.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).user_id; } catch (e) { msgA('⚠️ تعذّر الإرسال — تحقق من الإنترنت'); return; }
+    const fail = (e) => msgA(e && e.message === 'rules' ? '⚠️ لم تُقبل الرسالة — أضف قواعد msgs في Firebase' : '⚠️ تعذّر الإرسال — تحقق من الإنترنت');
+    if (to === 'all') {
+      const m = { ti, b, t, x, u }; m.s = await sign(key, base, 'all', m);
+      try { await lsReq('PUT', '/msgs/all/' + base, m); } catch (e) { fail(e); return; }
+      msgaSent.push({ id: base, box: 'all', to: 'الجميع', ti, b, t, x });
+    } else {
+      const rcp = [];
+      for (let i = 0; i < devs.length; i++) {
+        const h = await msgHashOf(devs[i]), id = devs.length === 1 ? base : base + '-' + i;
+        const m = { ti, b, t, x, u }; m.s = await sign(key, id, h, m);
+        try { await lsReq('PUT', '/msgs/to/' + h + '/' + id, m); } catch (e) { fail(e); if (!rcp.length) return; break; }
+        rcp.push({ dev: devs[i], h, id, name: names[i] });
+        readOf[devs[i]] = { t, read: false };
+      }
+      msgaSent.push({ id: base, box: 'to', rcp, to: rcp.length === 1 ? rcp[0].name : rcp.length + ' مستخدمين', ti, b, t, x });
+      if (rcp.length < devs.length) msgA('⚠️ وصلت إلى ' + rcp.length + ' من ' + devs.length + ' فقط');
+    }
+    msgaSave();
+    q('lmB').value = ''; q('lmTi').value = ''; chosen.clear(); drawDrop(); q('lmList').classList.add('hidden');
     msgA('✓ أُرسلت الرسالة'); drawSent();
   };
   const drawSent = async () => {
@@ -175,19 +245,32 @@ function msgaCard(root) {
     q('lmSent').querySelectorAll('[data-del]').forEach((b) => {
       b.onclick = async () => {
         const m = msgaSent.find((x) => x.id === b.dataset.del); if (!m || !(await confirmA('سحب هذه الرسالة؟ لن تظهر لمن لم يقرأها بعد.'))) return;
-        try { await lsReq('DELETE', m.box === 'all' ? '/msgs/all/' + m.id : '/msgs/to/' + m.box + '/' + m.id); } catch (e) { msgA('⚠️ تعذّر السحب'); return; }
+        try {
+          const R = msgaRcp(m);
+          if (!R) await lsReq('DELETE', '/msgs/all/' + m.id);
+          else for (const r of R) await lsReq('DELETE', '/msgs/to/' + r.h + '/' + r.id);
+        } catch (e) { msgA('⚠️ تعذّر السحب'); return; }
         msgaSent = msgaSent.filter((x) => x !== m); msgaSave(); drawSent();
       };
     });
     let H = null;
     for (const m of list) {
       const el = q('lmSent').querySelector(`[data-r="${m.id}"]`); if (!el) continue;
-      let r = null; try { r = await lsReq('GET', '/msgread/' + m.id); } catch (e) { el.textContent = ''; continue; }
-      const hs = Object.keys(r || {});
-      if (m.box !== 'all') { el.innerHTML = hs.length ? '✓✓ <b style="color:#86efac">قرأها</b> ' + msgWhen(r[hs[0]]) : '✓ لم يقرأها بعد'; continue; }
-      if (!H) H = await msgaHashes();
-      const names = hs.map((h) => H[h] && (H[h].name || H[h].dev)).filter(Boolean), other = hs.length - names.length;
-      el.innerHTML = hs.length ? `👁 قرأها <b style="color:#86efac">${hs.length}</b>${names.length ? ': ' + names.slice(0, 12).map(escA).join('، ') + (names.length > 12 ? ' و' + (names.length - 12) + ' آخرون' : '') : ''}${other ? (names.length ? ' + ' : ' — ') + other + ' في فترة التجربة' : ''}` : '👁 لم يقرأها أحد بعد';
+      const R = msgaRcp(m);
+      try {
+        if (R) {
+          const st = [];
+          for (const r of R) { const v = await lsReq('GET', '/msgread/' + r.id + '/' + r.h); st.push({ n: r.name, v }); readOf[r.dev] = readOf[r.dev] && readOf[r.dev].t > m.t ? readOf[r.dev] : { t: m.t, read: !!v }; }
+          const n = st.filter((x) => x.v).length;
+          el.innerHTML = R.length === 1 ? (n ? '✓✓ <b style="color:#86efac">قرأها</b> ' + msgWhen(st[0].v) : '✓ لم يقرأها بعد')
+            : `👁 قرأها <b style="color:#86efac">${n}</b> من ${R.length}: ` + st.map((x) => escA(x.n) + (x.v ? ' <span class="lmOk">✓✓</span>' : ' <span class="lmNo">✓</span>')).join('، ');
+          continue;
+        }
+        const r = await lsReq('GET', '/msgread/' + m.id), hs = Object.keys(r || {});
+        if (!H) H = await msgaHashes();
+        const names = hs.map((h) => H[h] && (H[h].name || H[h].dev)).filter(Boolean), other = hs.length - names.length;
+        el.innerHTML = hs.length ? `👁 قرأها <b style="color:#86efac">${hs.length}</b>${names.length ? ': ' + names.slice(0, 12).map(escA).join('، ') + (names.length > 12 ? ' و' + (names.length - 12) + ' آخرون' : '') : ''}${other ? (names.length ? ' + ' : ' — ') + other + ' في فترة التجربة' : ''}` : '👁 لم يقرأها أحد بعد';
+      } catch (e) { el.textContent = ''; }
     }
   };
   drawSent();
