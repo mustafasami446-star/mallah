@@ -55,19 +55,38 @@ def city(lat, lng):
     return 'الطريق'
 
 
+def features(src):
+    """GeoJSON features: from osmium's geojsonseq, or from an Overpass answer (elements with centre and bounds)"""
+    if src.endswith('.json'):
+        for el in json.load(open(src)).get('elements', []):
+            c = el.get('center') or ({'lat': el['lat'], 'lon': el['lon']} if 'lat' in el else None)
+            if not c: continue
+            b = el.get('bounds')
+            if b:
+                ring = [[b['minlon'], b['minlat']], [b['maxlon'], b['minlat']], [b['maxlon'], b['maxlat']], [b['minlon'], b['maxlat']], [b['minlon'], b['minlat']]]
+                g = {'type': 'Polygon', 'coordinates': [ring]}
+                yield {'properties': el.get('tags') or {}, 'geometry': g, 'center': [c['lon'], c['lat']]}
+            else:
+                yield {'properties': el.get('tags') or {}, 'geometry': {'type': 'Point', 'coordinates': [c['lon'], c['lat']]}}
+        return
+    with open(src) as f:
+        for line in f:
+            line = line.strip().lstrip('\x1e')
+            if not line: continue
+            try: yield json.loads(line)
+            except Exception: continue
+
+
 rows, seen = [], set()
-with open(SRC) as f:
-    for line in f:
-        line = line.strip().lstrip('\x1e')
-        if not line: continue
-        try: ft = json.loads(line)
-        except Exception: continue
+if True:
+    for ft in features(SRC):
         t = ft.get('properties') or {}
         name = (t.get('name:ar') or t.get('name') or '').strip()
         k = kind(t, name)
         if not k: continue
         if not name and k not in ('water', 'toilets', 'health', 'police'): continue
         p, area = centre(ft.get('geometry') or {})
+        if ft.get('center'): p = ft['center']
         if not p: continue
         lng, lat = round(p[0], 5), round(p[1], 5)
         key = (k, name, round(lat, 3), round(lng, 3))

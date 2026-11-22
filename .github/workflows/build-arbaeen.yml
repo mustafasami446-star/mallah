@@ -19,17 +19,31 @@ jobs:
         with:
           sparse-checkout: tools/arbaeen.py
           sparse-checkout-cone-mode: false
-      - name: Places from OpenStreetMap
+      - name: Places from OpenStreetMap (Overpass, just this box)
         run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq osmium-tool
-          # the file's address from Geofabrik's own index (it moved its files in November 2026)
-          PBF_URL=$(curl -sL https://download.geofabrik.de/index-v1-nogeom.json | jq -r '.features[]|select(.properties.id=="iraq")|.properties.urls.pbf' | head -1); echo "Iraq extract: $PBF_URL"; [ -n "$PBF_URL" ] || PBF_URL=https://download.geofabrik.de/asia/iraq-latest.osm.pbf
-          curl -sfL --retry 4 --retry-delay 30 "$PBF_URL" -o iraq.osm.pbf
-          ls -la iraq.osm.pbf
-          osmium extract -b 43.85,31.88,44.55,32.78 iraq.osm.pbf -o box.osm.pbf --overwrite
-          osmium tags-filter box.osm.pbf nwr/amenity nwr/tourism nwr/historic nwr/building=mosque,shrine nwr/place=square nwr/name -o sel.osm.pbf --overwrite
-          osmium export sel.osm.pbf -f geojsonseq -o sel.geojsonseq --overwrite --geometry-types=point,linestring,polygon
-          python3 tools/arbaeen.py sel.geojsonseq out
+          B="31.88,43.85,32.78,44.55"
+          cat > q.txt <<Q
+          [out:json][timeout:240];
+          (
+            nwr["amenity"~"^(place_of_worship|hospital|clinic|doctors|pharmacy|drinking_water|water_point|toilets|police|fire_station|community_centre|social_facility)$"]($B);
+            nwr["tourism"~"^(hotel|motel|guest_house|hostel|apartment|attraction|viewpoint)$"]($B);
+            nwr["historic"]($B);
+            nwr["building"~"^(mosque|shrine)$"]($B);
+            nwr["place"="square"]($B);
+            nwr["name"~"حسيني|ضريح|مرقد|مقام|العتبة|باب |ساحة|تل |مخيم|بوابة|سيطرة|نصب|وادي السلام|بين الحرمين"]($B);
+          );
+          out tags center bb;
+          Q
+          ok=0
+          for u in https://overpass-api.de/api/interpreter https://overpass.kumi.systems/api/interpreter https://maps.mail.ru/osm/tools/overpass/api/interpreter; do
+            for i in 1 2; do
+              c=$(curl -s -A "Mallah-guide-build/1.0 (+https://github.com/mustafasami446-star/mallah)" --data-urlencode "data@q.txt" -o ov.json -w "%{http_code}" "$u"); echo "$u -> $c $(stat -c %s ov.json 2>/dev/null)"
+              if [ "$c" = 200 ] && python3 -c "import json,sys; d=json.load(open('ov.json')); sys.exit(0 if len(d.get('elements',[]))>200 else 1)"; then ok=1; break 2; fi
+              sleep 30
+            done
+          done
+          [ $ok = 1 ]
+          python3 tools/arbaeen.py ov.json out
       - name: Publish
         env:
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
