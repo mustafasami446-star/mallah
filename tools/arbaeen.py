@@ -77,9 +77,10 @@ def features(src):
             except Exception: continue
 
 
-rows, seen = [], set()
+rows, seen, RAW = [], set(), []
 if True:
     for ft in features(SRC):
+        RAW.append(ft)
         t = ft.get('properties') or {}
         name = (t.get('name:ar') or t.get('name') or '').strip()
         k = kind(t, name)
@@ -140,6 +141,14 @@ for title, cty, pats in CHOSEN:
         print('✓ %-30s ← %s (%.5f, %.5f) %s' % (title, r['n'], r['lat'], r['lng'], r['c']))
     else:
         print('✗ %-30s not found' % title)
+    # what the map has under those names, whatever it is tagged (to tune the rules)
+    for ft in RAW:
+        t = ft.get('properties') or {}
+        nm = ' '.join(str(t.get(x, '')) for x in ('name', 'name:ar', 'name:en', 'alt_name', 'official_name'))
+        if re.search(pats[0], nm) or (len(pats) > 1 and re.search(pats[1], nm, re.I)):
+            c = ft.get('center') or (ft.get('geometry') or {}).get('coordinates')
+            keep = {k: v for k, v in t.items() if k in ('name', 'name:ar', 'name:en', 'amenity', 'religion', 'building', 'historic', 'tourism', 'landuse', 'denomination', 'place')}
+            print('     · %s %s' % (c if isinstance(c, list) and len(c) == 2 and not isinstance(c[0], list) else '', json.dumps(keep, ensure_ascii=False)[:220]))
 
 os.makedirs(OUT, exist_ok=True)
 from collections import Counter

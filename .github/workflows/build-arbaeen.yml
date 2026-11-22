@@ -31,6 +31,8 @@ jobs:
             nwr["building"~"^(mosque|shrine)$"]($B);
             nwr["place"="square"]($B);
             nwr["name"~"حسيني|ضريح|مرقد|مقام|العتبة|باب |ساحة|تل |مخيم|بوابة|سيطرة|نصب|وادي السلام|بين الحرمين"]($B);
+            nwr["name:en"~"Shrine|Mosque|Husayn|Hussein|Abbas|Kufa|Wadi",i]($B);
+            nwr["landuse"="cemetery"]["name"]($B);
           );
           out tags center bb;
           Q
