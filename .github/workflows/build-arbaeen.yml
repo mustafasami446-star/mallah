@@ -1,0 +1,39 @@
+name: Build Arbaeen guide
+
+# «دليل زائر الأربعين»: the places of Karbala, Najaf, Kufa and the road between them from OpenStreetMap,
+# with the chosen holy places located in the same data, on the "arbaeen" branch (replaced each time).
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "41 2 12 * *"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: tools/arbaeen.py
+          sparse-checkout-cone-mode: false
+      - name: Places from OpenStreetMap
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq osmium-tool
+          curl -sfL https://download.geofabrik.de/asia/iraq-latest.osm.pbf -o iraq.osm.pbf
+          osmium extract -b 43.85,31.88,44.55,32.78 iraq.osm.pbf -o box.osm.pbf --overwrite
+          osmium tags-filter box.osm.pbf nwr/amenity nwr/tourism nwr/historic nwr/building=mosque,shrine nwr/place=square nwr/name -o sel.osm.pbf --overwrite
+          osmium export sel.osm.pbf -f geojsonseq -o sel.geojsonseq --overwrite --geometry-types=point,linestring,polygon
+          python3 tools/arbaeen.py sel.geojsonseq out
+      - name: Publish
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd out
+          git init -q -b arbaeen
+          git config user.name "github-actions[bot]"
+          git config user.email "41898599+github-actions[bot]@users.noreply.github.com"
+          git add . && git commit -qm "Arbaeen guide $(date -u +%Y-%m-%d)"
+          git push -fq "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" arbaeen
