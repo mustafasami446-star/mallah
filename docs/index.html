@@ -815,6 +815,40 @@ body.simple #layersBtn,body.simple #moreBtn,body.simple #arBtn,body.simple #team
 body.simple .fab{width:60px;height:60px}
 body.simple #navText{font-size:20px;font-weight:700}body.simple #navDist{font-size:36px}
 body.sun #simpleBar button{background:#fff;color:#000;border:2px solid #0f172a}body.sun #simpleBar button[data-s="home"]{background:#7dd3fc}
+
+/* ---------- دليل زائر الأربعين ---------- */
+.agSearch{display:flex;gap:8px;padding:10px 12px 4px}
+.agSearch input{flex:1;min-width:0;height:46px;border-radius:14px;border:1px solid var(--line);background:var(--panel2);color:var(--text);padding:0 14px;font-size:15px}
+.agSearch button{width:46px;height:46px;border-radius:14px;background:var(--panel2);border:1px solid var(--line);font-size:19px}
+.agCities{display:flex;gap:6px;padding:6px 12px;overflow-x:auto;scrollbar-width:none}
+.agCities button{flex:none;padding:7px 14px;border-radius:18px;background:var(--panel2);border:1px solid var(--line);color:var(--text);font-size:13.5px}
+.agCities button.on{background:var(--accent);color:#04121f;border-color:var(--accent);font-weight:700}
+.agChips{display:flex;gap:8px;padding:10px 12px;overflow-x:auto;scrollbar-width:none}
+.agChips button{flex:none;padding:10px 16px;border-radius:22px;background:var(--panel2);border:1px solid var(--line);color:var(--text);font-size:14px;font-weight:600;white-space:nowrap}
+.agSec{padding:14px 16px 6px;color:var(--muted);font-size:14px;font-weight:700}
+.agCard{margin:0 12px;background:var(--panel);border:1px solid var(--line);border-radius:18px;overflow:hidden}
+.agCat{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border-bottom:1px solid var(--line);text-align:right;color:var(--text)}
+.agCat:last-child{border-bottom:0}
+.agCat i{font-style:normal;font-size:22px;width:44px;height:44px;border-radius:12px;background:var(--panel2);display:flex;align-items:center;justify-content:center;flex:none}
+.agCat b{flex:1;font-size:15.5px;display:flex;flex-direction:column;gap:2px}
+.agCat b small{font-weight:400;color:var(--muted);font-size:12.5px}
+.agCat > small{color:var(--muted);font-size:13px}
+.agCat > span{color:var(--muted);font-size:20px}
+.agTools{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;color:var(--muted);font-size:13px}
+.agTools button{padding:7px 12px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);color:var(--text);font-size:13px}
+.agList{margin:0 12px;background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.agRow{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border-bottom:1px solid var(--line);text-align:right;color:var(--text)}
+.agRow:last-child{border-bottom:0}
+.agRow i{font-style:normal;font-size:20px;width:36px;text-align:center;flex:none}
+.agRow span{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.agRow b{font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.agRow small{color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.agRow em{font-style:normal;color:var(--accent);font-size:12.5px;flex:none}
+.agEmpty{padding:30px 20px;text-align:center;color:var(--muted);line-height:1.8}
+.agNote{padding:12px 16px;color:var(--muted);font-size:12px;line-height:1.6}
+.agAdd{display:block;margin:12px 12px 0;width:calc(100% - 24px);padding:13px;border-radius:14px;background:var(--accent);color:#04121f;font-weight:800;font-size:15px}
+.agPin span{display:flex;width:30px;height:30px;border-radius:50%;background:#fff;border:2px solid #0f172a;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+#agChip{position:absolute;top:calc(70px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:470;padding:9px 16px;border-radius:20px;background:var(--panel);border:1px solid var(--accent);color:var(--text);font-weight:700;font-size:14px;box-shadow:var(--shadow);max-width:80%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </style>
 </head>
 <body>
@@ -1112,6 +1146,7 @@ body.sun #simpleBar button{background:#fff;color:#000;border:2px solid #0f172a}b
 <script src="commute.js"></script>
 <script src="widget.js"></script>
 <script src="simple.js"></script>
+<script src="arbguide.js"></script>
 <script src="layout.js"></script>
 <script src="sun.js"></script>
 <script src="trip.js"></script>

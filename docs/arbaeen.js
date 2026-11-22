@@ -106,6 +106,7 @@ function arbMenu() {
     ...(arb.meet ? [{ label: '🧭 نقطة اللقاء: العمود ' + arb.meet.n + ' — ' + (arb.meet.n === n ? 'أنت عندها' : 'بعد ' + Math.abs(arb.meet.n - n) + ' عمود ' + ((arb.meet.n - n) * arb.dir > 0 ? 'أمامك' : 'خلفك')), fn: () => arbShowMeet() }] : []),
     { label: '↗ أرسل موقعي: «أنا عند العمود ' + n + '»', fn: () => doShare('🚶 أنا الآن عند العمود ' + n + ' في طريق المشاية' + (me ? '\nhttps://maps.google.com/?q=' + me.lat.toFixed(6) + ',' + me.lng.toFixed(6) : '')) },
     { label: '✉️ نفس الرسالة SMS — بدون إنترنت', fn: () => doSms('أنا الآن عند العمود ' + n + ' في طريق المشاية' + (me ? ' ' + me.lat.toFixed(5) + ',' + me.lng.toFixed(5) : '')) },
+    { label: '🕌 دليل زائر الأربعين (المزارات، المواكب، المرافق…)', fn: () => openArbGuide() },
     { label: '🍲 سجّل موكبًا هنا', fn: () => arbAddMawkib(n) },
     ...(near ? [{ label: '🍲 أقرب موكب سجّلته أمامك: ' + esc(near.name) + ' (العمود ' + near.n + '، بعد ' + near.gap + ')', fn: () => {} }] : []),
     ...((arb.mawakib || []).length ? [{ label: '📋 مواكبي (' + arb.mawakib.length + ')', fn: arbMawakib }] : []),
