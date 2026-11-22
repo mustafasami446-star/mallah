@@ -22,7 +22,8 @@ jobs:
       - name: Places from OpenStreetMap
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq osmium-tool
-          curl -sfL https://download.geofabrik.de/asia/iraq/iraq-latest.osm.pbf -o iraq.osm.pbf
+          PBF_URL=$(curl -sL https://download.geofabrik.de/index-v1-nogeom.json | jq -r '.features[]|select(.properties.id=="iraq")|.properties.urls.pbf' | head -1); echo "Iraq extract: $PBF_URL"; [ -n "$PBF_URL" ] || PBF_URL=https://download.geofabrik.de/asia/iraq-latest.osm.pbf
+          curl -sfL --retry 4 --retry-delay 30 "$PBF_URL" -o iraq.osm.pbf
           osmium tags-filter iraq.osm.pbf nwr/amenity=fuel,hospital,clinic,doctors,restaurant,fast_food,cafe,pharmacy,bank,atm,marketplace,place_of_worship nwr/shop=supermarket,mall,convenience,department_store nwr/tourism=hotel,motel,guest_house -o pois.osm.pbf --overwrite
           osmium export pois.osm.pbf -f geojsonseq -o pois.geojsonseq --overwrite --geometry-types=point,linestring,polygon
           python3 tools/pois.py pois.geojsonseq out

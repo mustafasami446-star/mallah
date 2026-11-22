@@ -87,7 +87,8 @@ jobs:
 
       - name: Places index for offline search
         run: |
-          curl -sfL https://download.geofabrik.de/asia/iraq/iraq-latest.osm.pbf -o iraq.osm.pbf
+          PBF_URL=$(curl -sL https://download.geofabrik.de/index-v1-nogeom.json | jq -r '.features[]|select(.properties.id=="iraq")|.properties.urls.pbf' | head -1); echo "Iraq extract: $PBF_URL"; [ -n "$PBF_URL" ] || PBF_URL=https://download.geofabrik.de/asia/iraq-latest.osm.pbf
+          curl -sfL --retry 4 --retry-delay 30 "$PBF_URL" -o iraq.osm.pbf
           osmium tags-filter iraq.osm.pbf \
             nwr/place nwr/amenity nwr/shop nwr/tourism nwr/healthcare nwr/office=government \
             nwr/leisure=park,stadium,sports_centre nwr/aeroway=aerodrome nwr/railway=station \
