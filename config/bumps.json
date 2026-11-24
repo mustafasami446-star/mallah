@@ -1,0 +1,15 @@
+{
+  "v": 1,
+  "on": true,
+  "minKmh": 20,
+  "thr": 4.5,
+  "p2p": 8,
+  "gyro": 70,
+  "ask": 0.6,
+  "show": false,
+  "alert": false,
+  "minDev": 3,
+  "gone": 3,
+  "days": 45,
+  "r": 15
+}

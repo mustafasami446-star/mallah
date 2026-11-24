@@ -1,8 +1,8 @@
 {
-  "versionCode": 109,
-  "versionName": "5.63",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.63/Mallah-Navigator.apk",
-  "size": 2746906,
-  "notes": "تحسينات في وضع المصمم: اختيار المستخدمين من قائمة منسدلة لرسائل المصمم.",
-  "sha256": "d3e47158abd158329d6807603eccdb030050299ed92ce243fd59cbc49e7d2a2c"
+  "versionCode": 110,
+  "versionName": "5.64",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.64/Mallah-Navigator.apk",
+  "size": 2755159,
+  "notes": "🕳 رصد الحفر تلقائيًا أثناء القيادة — يجمع بصمت في البداية حتى تثبت دقته.",
+  "sha256": "2f6c148bc2e26c0a5251a3842d0b072f2ebd87472799ba89ba58a4318b15b205"
 }
