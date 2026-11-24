@@ -180,9 +180,9 @@ function fitNear() {
   requestAnimationFrame(() => {
     const pts = nearHits.slice(0, nearMode === 'map' ? 15 : 6).map((h) => [h.lat, h.lng]);
     if (me) pts.push([me.lat, me.lng]);
-    const wide = innerWidth >= 760, bottom = wide ? 40 : homeEl.offsetHeight + 24;
+    const wide = innerWidth >= 760, wb = document.body.classList.contains('wideHome'), bottom = wide && !wb ? 40 : homeEl.offsetHeight + 24;
     setFollow(false);
-    map.fitBounds(L.latLngBounds(pts), { paddingTopLeft: [wide ? 40 : 30, 90], paddingBottomRight: [wide ? 470 : 30, bottom], maxZoom: 16 });
+    map.fitBounds(L.latLngBounds(pts), { paddingTopLeft: [wide ? 40 : 30, 90], paddingBottomRight: [wide && !wb ? 470 : wb ? 40 : 30, bottom], maxZoom: 16 });
   });
 }
 function setNearMode(m) {
@@ -197,7 +197,7 @@ function selectNear(i) {
   renderNear(); drawNearMarkers();
   const h = nearHits[i];
   if (h) requestAnimationFrame(() => {
-    const y = innerWidth >= 760 ? 0 : homeEl.offsetHeight / 2;
+    const y = innerWidth >= 760 && !document.body.classList.contains('wideHome') ? 0 : homeEl.offsetHeight / 2;
     const p = map.project([h.lat, h.lng], map.getZoom()).add([innerWidth >= 760 ? 220 : 0, y]);
     map.panTo(map.unproject(p, map.getZoom()), { animate: true });
   });

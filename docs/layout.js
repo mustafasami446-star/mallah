@@ -107,8 +107,7 @@ map.on('click', () => { if (!calmBusy) calmSet(!calmOn); calmBusy = false; });
 {
   const W = matchMedia('(min-width:1100px) and (min-height:560px)'), home = $('searchWrap'), B = document.body;
   const fit = () => {
-    const on = W.matches && home && !home.classList.contains('mini') && !home.classList.contains('searching')
-      && !home.classList.contains('nearOn') && !/\bui-(dest|nav|meas)\b/.test(B.className) && getComputedStyle(home).display !== 'none';
+    const on = W.matches && home && !home.classList.contains('mini') && !/\bui-(dest|nav|meas)\b/.test(B.className) && getComputedStyle(home).display !== 'none';
     B.classList.toggle('wideHome', !!on);
     if (on) B.style.setProperty('--hw', home.offsetHeight + 'px');
   };
@@ -136,11 +135,24 @@ map.on('click', () => { if (!calmBusy) calmSet(!calmOn); calmBusy = false; });
       const r = el.getBoundingClientRect(); if (!r.width || !r.height) return;
       const dx = r.left + r.width / 2 - x0, dy = r.top + r.height / 2 - y0;
       const along = k === 'ArrowRight' ? dx : k === 'ArrowLeft' ? -dx : k === 'ArrowDown' ? dy : -dy;
-      const side = k === 'ArrowRight' || k === 'ArrowLeft' ? Math.abs(dy) : Math.abs(dx);
+      const hz = k === 'ArrowRight' || k === 'ArrowLeft', side = hz ? Math.abs(dy) : Math.abs(dx);
       if (along < 6) return;
-      const s = along + side * 2.2;
+      // the same row (or column) first: a button whose band overlaps this one's, then the nearest
+      const overlap = hz ? Math.min(r.bottom, r0.bottom) - Math.max(r.top, r0.top) > 4 : Math.min(r.right, r0.right) - Math.max(r.left, r0.left) > 4;
+      const s = along + side * 2.2 + (overlap ? 0 : 4000);
       if (s < bs) { bs = s; best = el; }
     });
     if (best) { e.preventDefault(); best.focus(); if (best.scrollIntoView) best.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }
+  });
+}
+// the result rows (search and «near you») can be reached by Tab and the arrows, and opened with Enter
+{
+  const res = $('results');
+  if (res) new MutationObserver(() => res.querySelectorAll('.res').forEach((r) => { if (!r.hasAttribute('tabindex') && (r.dataset.near != null || r.onclick || r.dataset.i != null || r.querySelector('.t'))) r.tabIndex = 0; }))
+    .observe(res, { childList: true, subtree: true });
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const a = document.activeElement; if (!a || !a.matches || !a.matches('#results .res[tabindex]')) return;
+    e.preventDefault(); a.click();
   });
 }
