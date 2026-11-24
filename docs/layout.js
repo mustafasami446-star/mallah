@@ -99,3 +99,48 @@ map.on('click', () => { if (!calmBusy) calmSet(!calmOn); calmBusy = false; });
   map.on('dragstart', () => { clearTimeout(t); document.body.classList.add('mapMove'); });
   map.on('dragend', () => { clearTimeout(t); t = setTimeout(() => document.body.classList.remove('mapMove'), 900); });
 }
+
+/* ---------------- a computer's wide screen: the home panel across the bottom, and the keyboard ----------------
+   On a laptop the «discover around you» panel spreads along the bottom of the screen: «إلى أين؟» and the
+   shortcuts on the right, the places in one row and the tools side by side. Tab moves between the buttons,
+   and the arrows move to the nearest button in that direction; Enter opens it. */
+{
+  const W = matchMedia('(min-width:1100px) and (min-height:560px)'), home = $('searchWrap'), B = document.body;
+  const fit = () => {
+    const on = W.matches && home && home.classList.contains('expanded') && !home.classList.contains('mini') && !home.classList.contains('searching')
+      && !home.classList.contains('nearOn') && !/\bui-(dest|nav|meas)\b/.test(B.className) && getComputedStyle(home).display !== 'none';
+    B.classList.toggle('wideHome', !!on);
+    if (on) B.style.setProperty('--hw', home.offsetHeight + 'px');
+  };
+  if (home) {
+    new MutationObserver(fit).observe(home, { attributes: true, attributeFilter: ['class'] });
+    new MutationObserver(fit).observe(B, { attributes: true, attributeFilter: ['class'] });
+    if (window.ResizeObserver) new ResizeObserver(fit).observe(home);
+    (W.addEventListener ? W.addEventListener('change', fit) : W.addListener(fit));
+    fit();
+  }
+  // the arrows: the nearest visible button that way, within the same panel or list
+  const FOC = 'button:not([disabled]),a[href],[tabindex]:not([tabindex="-1"]),input:not([type=hidden]),select';
+  const BOX = '#searchWrap,#sheet,.panel,#menuDrop,#modal,#layerMenu';
+  document.addEventListener('keydown', (e) => {
+    const k = e.key; if (!/^Arrow(Up|Down|Left|Right)$/.test(k) || e.altKey || e.ctrlKey || e.metaKey) return;
+    const a = document.activeElement; if (!a || a === document.body) return;
+    const box = a.closest(BOX); if (!box) return;
+    const typing = a.matches('input,textarea,select,[contenteditable]');
+    if (typing && k !== 'ArrowDown' && k !== 'ArrowUp') return;               // left/right move inside the text
+    if (a.type === 'range') return;
+    const r0 = a.getBoundingClientRect(), x0 = r0.left + r0.width / 2, y0 = r0.top + r0.height / 2;
+    let best = null, bs = 1e9;
+    box.querySelectorAll(FOC).forEach((el) => {
+      if (el === a || el.offsetParent === null) return;
+      const r = el.getBoundingClientRect(); if (!r.width || !r.height) return;
+      const dx = r.left + r.width / 2 - x0, dy = r.top + r.height / 2 - y0;
+      const along = k === 'ArrowRight' ? dx : k === 'ArrowLeft' ? -dx : k === 'ArrowDown' ? dy : -dy;
+      const side = k === 'ArrowRight' || k === 'ArrowLeft' ? Math.abs(dy) : Math.abs(dx);
+      if (along < 6) return;
+      const s = along + side * 2.2;
+      if (s < bs) { bs = s; best = el; }
+    });
+    if (best) { e.preventDefault(); best.focus(); if (best.scrollIntoView) best.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }
+  });
+}

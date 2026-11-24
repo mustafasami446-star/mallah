@@ -377,6 +377,26 @@ body.vec-on .leaflet-tile-pane{filter:none!important}
   body.web .leaflet-container{cursor:default}
 }
 
+/* a computer's wide screen: the home panel across the bottom (layout.js) */
+body.wideHome #searchWrap{left:16px;right:16px;width:auto;bottom:16px;border-radius:22px;border:1px solid var(--line);max-height:min(48vh,420px);display:grid;grid-template-columns:minmax(360px,420px) 1fr;column-gap:26px;align-content:start;padding:10px 20px 16px}
+body.wideHome #searchWrap>*{grid-column:1;min-width:0}
+body.wideHome #homeChips{flex-wrap:wrap;overflow:visible}
+body.wideHome #searchWrap>.grab{grid-column:1/-1}
+body.wideHome #homeMore{grid-column:2;grid-row:2/span 8;display:block;padding-inline-start:22px;border-inline-start:1px solid var(--line)}
+body.wideHome #homeMore .homeH{margin-top:2px}
+body.wideHome #catGrid{grid-template-columns:repeat(8,minmax(0,1fr));gap:10px 6px}
+body.wideHome #homeCards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;background:none;border:0;border-radius:0;margin-top:14px}
+body.wideHome .hcard{border:1px solid var(--line);border-radius:16px;background:#0b1222;padding:11px 12px}
+body.wideHome .hcard:last-child{border-bottom:1px solid var(--line)}
+body.wideHome .hcard .chev{display:none}
+body.wideHome #fabs{bottom:calc(var(--hw,0px) + 30px)!important}
+body.wideHome #speed{bottom:calc(var(--hw,0px) + 30px)}
+body.wideHome .leaflet-bottom{bottom:calc(var(--hw,0px) + 18px)}
+#q::-webkit-search-cancel-button{display:none;-webkit-appearance:none}
+/* the keyboard: where the focus is */
+button:focus-visible,a:focus-visible,[tabindex]:focus-visible,.hchip:focus-visible{outline:3px solid #38bdf8;outline-offset:2px;border-radius:14px}
+.cat:focus-visible .ci{box-shadow:0 0 0 3px #38bdf8}
+
 /* map markers */
 .me{width:28px;height:28px;position:relative}
 .me .dot{position:absolute;inset:5px;border-radius:50%;background:#2563eb;border:3px solid #fff;box-shadow:0 0 0 2px rgba(37,99,235,.35),0 2px 6px rgba(0,0,0,.4)}
