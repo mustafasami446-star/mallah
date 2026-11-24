@@ -1,8 +1,8 @@
 {
-  "versionCode": 111,
-  "versionName": "5.65",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.65/Mallah-Navigator.apk",
+  "versionCode": 112,
+  "versionName": "5.66",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.66/Mallah-Navigator.apk",
   "size": 2755159,
-  "notes": "على الحاسوب: لوحة «اكتشف ما حولك» على عرض الشاشة، والتنقل بين الأزرار بـ Tab والأسهم.",
-  "sha256": "94d1d90f4e4055a15af59bcbcfeb2e82f12b844b2150602d0e3431776b8bd340"
+  "notes": "على الحاسوب: لوحة «اكتشف ما حولك» على عرض الشاشة دائمًا، والتنقل بالأسهم.",
+  "sha256": "999d716bbfe389b2253d5ded8f596661c0708102b9bbc306adb53fc6404cd56d"
 }

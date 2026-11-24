@@ -107,7 +107,7 @@ map.on('click', () => { if (!calmBusy) calmSet(!calmOn); calmBusy = false; });
 {
   const W = matchMedia('(min-width:1100px) and (min-height:560px)'), home = $('searchWrap'), B = document.body;
   const fit = () => {
-    const on = W.matches && home && home.classList.contains('expanded') && !home.classList.contains('mini') && !home.classList.contains('searching')
+    const on = W.matches && home && !home.classList.contains('mini') && !home.classList.contains('searching')
       && !home.classList.contains('nearOn') && !/\bui-(dest|nav|meas)\b/.test(B.className) && getComputedStyle(home).display !== 'none';
     B.classList.toggle('wideHome', !!on);
     if (on) B.style.setProperty('--hw', home.offsetHeight + 'px');
