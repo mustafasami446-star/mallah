@@ -389,7 +389,12 @@ body.wideHome #results.hidden{display:none}
 body.wideHome #results>*{grid-column:1/-1}
 body.wideHome #results>.res{grid-column:auto}
 body.wideHome .nearList{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));column-gap:20px}
-body.wideHome .nearCats{flex-wrap:wrap}
+body.wideHome .nearCats{flex-wrap:wrap;overflow:visible}
+body.wideHome #results>*{min-height:max-content}
+/* «near you»: the title and the kinds stay put, only the list scrolls */
+body.wideHome #results:has(.nearList){display:flex;flex-direction:column;overflow:hidden}
+body.wideHome #results:has(.nearList)>*{flex:none}
+body.wideHome #results:has(.nearList)>.nearList{flex:1 1 auto;min-height:0;overflow-y:auto;align-content:start;padding-inline-end:4px}
 body.wideHome #catGrid{grid-template-columns:repeat(8,minmax(0,1fr));gap:10px 6px}
 body.wideHome #homeCards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;background:none;border:0;border-radius:0;margin-top:14px}
 body.wideHome .hcard{border:1px solid var(--line);border-radius:16px;background:#0b1222;padding:11px 12px}

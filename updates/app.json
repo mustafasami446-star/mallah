@@ -1,8 +1,8 @@
 {
-  "versionCode": 113,
-  "versionName": "5.67",
-  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.67/Mallah-Navigator.apk",
+  "versionCode": 114,
+  "versionName": "5.68",
+  "url": "https://github.com/mustafasami446-star/mallah/releases/download/app-v5.68/Mallah-Navigator.apk",
   "size": 2755159,
-  "notes": "على الحاسوب: نتائج «بالقرب منك» والبحث تبقى على عرض الشاشة في أعمدة، والتنقل بينها بالأسهم وEnter.",
-  "sha256": "9c39bb882521009ee2b0fd88583701c8eb27facc79764ae6d7c9871beaa65bb0"
+  "notes": "على الحاسوب: أزرار الأصناف تظهر كاملة فوق نتائج «بالقرب منك»، والقائمة وحدها تتمرر.",
+  "sha256": "c222406c391682cd8525f2d4fd60a36145f77b7484b824d3cd3f9c1f6ebde941"
 }
